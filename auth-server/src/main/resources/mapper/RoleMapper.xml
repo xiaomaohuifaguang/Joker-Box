@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.auth.mapper.RoleMapper">
+
+    <select id="getRolesByUserId" resultType="com.cat.common.entity.Role" parameterType="java.lang.String">
+        SELECT R.* FROM cat_role R INNER JOIN cat_user_and_role UR on R.id = UR.role_id WHERE user_id = #{userId}
+    </select>
+</mapper>

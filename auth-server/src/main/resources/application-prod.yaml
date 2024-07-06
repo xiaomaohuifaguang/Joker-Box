@@ -1,0 +1,70 @@
+# 自定义配置
+custom:
+  info:
+    version: 1.0
+  host: 192.168.3.12
+  # knife4j doc.html 账号/密码
+  knife4j:
+    username: knife4j
+    password: knife4j
+  database:
+    url: jdbc:mysql://${custom.host}:3306/joker-box?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: root
+    password: six6
+  redis:
+    host: ${custom.host}
+    port: 6379
+    password: six6
+    database: 0
+
+server:
+  port: 8100
+  servlet:
+    context-path: /auth-server
+
+
+spring:
+  web:
+    resources:
+      add-mappings: false
+  mvc:
+    path-match:
+      matching-strategy: ant_path_matcher
+  servlet:
+    multipart:
+      max-file-size: 5GB
+      max-request-size: 5GB
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${custom.database.url}
+    username: ${custom.database.username}
+    password: ${custom.database.password}
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:/sql/*.sql
+  data:
+    redis:
+      host: ${custom.redis.host}
+      port: ${custom.redis.port}
+      password: ${custom.redis.password}
+      database: ${custom.redis.database}
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**.xml
+
+# knife4j 配置
+knife4j:
+  enable: true
+  basic:
+    enable: true
+    username: ${custom.knife4j.username}
+    password: ${custom.knife4j.password}
+  setting:
+    language: zh_cn
+    enable-home-custom: true
+    home-custom-path: classpath:doc/home.md
+    # 开启动态请求参数，true-开启，false-关闭
+    enable-dynamic-parameter: true
+
+
