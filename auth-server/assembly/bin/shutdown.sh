@@ -4,7 +4,8 @@
 # 小猫会发光
 #############################
 #
-SERVER_BIN_FOLDER=$(cd "$(dirname "$0")" || exit 1 ;pwd)
+SERVER_FOLDER=.
+SERVER_BIN_FOLDER=$SERVER_FOLDER/bin
 PID_FILE_NAME="server.pid"
 PID_FILE="${SERVER_BIN_FOLDER}/${PID_FILE_NAME}"
 #
