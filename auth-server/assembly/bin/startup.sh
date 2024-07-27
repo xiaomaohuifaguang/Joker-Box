@@ -25,4 +25,5 @@ if [ -s "${PID_FILE}" ]; then
   PROCESS=$(ps -ef | grep -v grep | grep java | grep auth-server | awk 'NR==1{print $2}')
   # 启动成功后将进程号写入pid文件
   echo "$PROCESS" > "$PID_FILE"
+  echo "进程启动成功，进程号为：${PROCESS}"
 fi
