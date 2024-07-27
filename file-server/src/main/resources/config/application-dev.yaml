@@ -13,7 +13,7 @@ custom:
     username: root
     password: six6
   redis:
-    host: 127.0.0.1
+    host: ${custom.host}
     port: 6379
     password: six6
     database: 15

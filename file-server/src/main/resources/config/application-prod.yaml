@@ -9,11 +9,11 @@ custom:
     username: knife4j
     password: knife4j
   database:
-    url: jdbc:mysql://${custom.host}:3306/joker-box-test?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    url: jdbc:mysql://${custom.host}:3306/joker-box?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
     username: root
     password: six6
   redis:
-    host: 127.0.0.1
+    host: ${custom.host}
     port: 6379
     password: six6
     database: 0
