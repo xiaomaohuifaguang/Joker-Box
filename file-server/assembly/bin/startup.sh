@@ -18,7 +18,7 @@ if [ -s "${PID_FILE}" ]; then
   PID=$(cat "${PID_FILE}")
   echo "进程已处于运行状态，进程号为：${PID}"
   exit 1
-
+  else
   ## 启动kkFileView
   echo "Starting ..."
   nohup java -Dfile.encoding=UTF-8 -Dspring.config.import=file:../config/ -jar file-server-1.0-SNAPSHOT.jar > ../log/server.log 2>&1 &
