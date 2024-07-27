@@ -8,14 +8,14 @@ custom:
     username: knife4j
     password: knife4j
   database:
-    url: jdbc:mysql://${custom.host}:3306/joker-box?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    url: jdbc:mysql://${custom.host}:3306/joker-box-dev?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
     username: root
     password: six6
   redis:
     host: ${custom.host}
     port: 6379
     password: six6
-    database: 0
+    database: 15
   mail:
     username: xiaomaohuifaguang@163.com
     password: OCFCJALGZHBXHARC
@@ -24,7 +24,6 @@ server:
   port: 8100
   servlet:
     context-path: /auth-server
-
 
 spring:
   web:
@@ -45,7 +44,7 @@ spring:
   sql:
     init:
       mode: always
-      data-locations: classpath:/sql/*.sql
+      data-locations: classpath:/sql/init.sql
   data:
     redis:
       host: ${custom.redis.host}
@@ -68,8 +67,8 @@ spring:
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**.xml
-#  configuration:
-#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #开启sql日志
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #开启sql日志
 
 # knife4j 配置
 knife4j:
