@@ -38,6 +38,17 @@ public class HttpResult<T> {
         return back(HttpResultStatus.SUCCESS, data);
     }
 
+//    public static <T> HttpResult<T> back(DTO<?> dto){
+//        HttpResult<T> back = back(dto.flag ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
+//        return back.setMsg(!dto.flag && dto.msg != null && !dto.msg.equals("") ? dto.msg : back.getMsg());
+//    }
+
+    public static <T> HttpResult<T> back(DTO<T> dto){
+        HttpResult<T> back = back(dto.flag ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
+        back.setData(dto.getData());
+        return back.setMsg(!dto.flag && dto.msg != null && !dto.msg.equals("") ? dto.msg : back.getMsg());
+    }
+
     public static <T> HttpResult<T> back(HttpResultStatus httpResultStatus, T data){
         return back(httpResultStatus.code(), data, httpResultStatus.msg());
     }
@@ -49,6 +60,5 @@ public class HttpResult<T> {
     public static <T> HttpResult<T> back(HttpResultStatus httpResultStatus){
         return new HttpResult<T>().setCode(httpResultStatus.code()).setMsg(httpResultStatus.msg());
     }
-
 
 }

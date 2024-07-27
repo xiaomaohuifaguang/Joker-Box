@@ -36,6 +36,12 @@ public class FileInfo implements Serializable {
     @Schema(description = "文件类型")
     private String contentType;
 
+    @Schema(description = "类型 file 文件 folder 文件夹")
+    private String type;
+
+    @Schema(description = "父级文件夹id 根目录0")
+    private String parentId;
+
     @Schema(description = "文件大小")
     private long size;
 

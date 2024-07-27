@@ -16,6 +16,9 @@ custom:
     port: 6379
     password: six6
     database: 15
+  mail:
+    username: xiaomaohuifaguang@163.com
+    password: OCFCJALGZHBXHARC
 
 server:
   port: 8100
@@ -48,9 +51,24 @@ spring:
       port: ${custom.redis.port}
       password: ${custom.redis.password}
       database: ${custom.redis.database}
+  mail:
+    host: smtp.163.com
+    port: 465
+    username: ${custom.mail.username}
+    password: ${custom.mail.password}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+            trust: smtp.163.com
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #开启sql日志
 
 # knife4j 配置
 knife4j:

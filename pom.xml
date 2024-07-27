@@ -29,6 +29,8 @@
         <springcloudalibaba.verson>2023.0.1.0</springcloudalibaba.verson>
         <minio.version>8.5.11</minio.version>
         <commons-fileupload.version>2.0.0-M2</commons-fileupload.version>
+        <hutool.version>5.8.29</hutool.version>
+        <TinyPinyin.version>2.0.3.RELEASE</TinyPinyin.version>
     </properties>
 
     <!-- springboot 版本 -->
@@ -129,6 +131,18 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-fileupload2-jakarta-servlet6</artifactId>
                 <version>${commons-fileupload.version}</version>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/cn.hutool/hutool-all -->
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.biezhi</groupId>
+                <artifactId>TinyPinyin</artifactId>
+                <version>${TinyPinyin.version}</version>
             </dependency>
 
 

@@ -1,10 +1,10 @@
 package com.cat.auth.service;
 
-import com.cat.common.entity.LoginInfo;
-import com.cat.common.entity.LoginUser;
-import com.cat.common.entity.Role;
-import com.cat.common.entity.User;
+import com.cat.common.entity.*;
+import freemarker.template.TemplateException;
+import jakarta.mail.MessagingException;
 
+import java.io.IOException;
 import java.util.List;
 
 /***
@@ -50,5 +50,33 @@ public interface UserService {
      * @return 用户角色
      */
     List<Role> getRoleByUserId(String userId);
+
+
+    /**
+     * 获取登录信息
+     * @return 用户登录信息
+     */
+    UserInfo getUserInfo();
+
+
+    /**
+     * 发送验证码
+     * @param mail 邮箱地址
+     */
+    void code(String mail) throws TemplateException, MessagingException, IOException;
+
+    DTO<?> register(RegisterUserInfo registerUserInfo);
+
+    Page<User> queryPage(UserPageParam pageParam);
+
+    DTO<?> delete(String userId);
+
+    User getUserInfo(String userId);
+
+    DTO<?> addRole(String userId, String roleId);
+
+    DTO<?> deleteRole(String userId, String roleId);
+
+    DTO<?> resetPassword(String userId);
 
 }

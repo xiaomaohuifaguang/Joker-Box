@@ -1,6 +1,5 @@
 package com.cat.common.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,10 +24,21 @@ import java.util.List;
 @Schema(name = "Page", description = "分页")
 public class Page<T> implements IPage<T> {
 
+    @Schema(description = "记录")
     private List<T> records;
+    @Schema(description = "总数")
     private long total;
+    @Schema(description = "页大小")
     private long size;
+    @Schema(description = "页码")
     private long current;
+//    @Schema(description = "总页数")
+//    private long totalPage;
+
+    public Page(PageParam pageParam) {
+        this.setSize(pageParam.getSize() > 5 ? pageParam.getSize() : 10L);
+        this.setCurrent(pageParam.getCurrent() > 0 ? pageParam.getCurrent() : 1L);
+    }
 
     @Override
     public List<OrderItem> orders() {
@@ -54,7 +64,7 @@ public class Page<T> implements IPage<T> {
     @Override
     public IPage<T> setTotal(long total) {
         this.total = total;
-        return null;
+        return this;
     }
 
     @Override
@@ -78,4 +88,8 @@ public class Page<T> implements IPage<T> {
         this.current = current;
         return this;
     }
+
+//    public long getTotalPage() {
+//        return this.getPages();
+//    }
 }

@@ -1,9 +1,7 @@
 package com.cat.common.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -36,11 +34,11 @@ public class User implements Serializable {
     private Integer id;
 
     @Schema(description = "用户类型 0 用户 1系统")
-    private String type;
+    private String type = "0";
 
     @Schema(description = "删除标识 0 否 1是")
     @TableLogic // 逻辑删除
-    private String deleted;
+    private String deleted = "0";
 
     @Schema(description = "用户名")
     private String username;
@@ -53,13 +51,22 @@ public class User implements Serializable {
 
     @Schema(description = "创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone ="GMT+8")
-    private LocalDateTime createTime;
+    private LocalDateTime createTime = LocalDateTime.now();
 
     @Schema(description = "更新时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone ="GMT+8")
     private LocalDateTime updateTime;
 
-    public String getId(){
+    public String getIdStr(){
         return String.format("%010d", this.id);
     }
+
+    public Integer getId(){
+        return this.id;
+    }
+
+    @Schema(description = "用户扩展信息")
+    @TableField(exist = false)
+    private UserExtend userExtend;
+
 }

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  * @author xiaomaohuifaguang
  * @create 2024/6/26 21:04
  **/
-@FeignClient(value = "auth-server", path = "/auth", contextId = "AuthServiceClient")
+@FeignClient(value = "auth-server", path = "/auth-server", contextId = "AuthServiceClient")
 @Component
 public interface AuthServiceClient {
 

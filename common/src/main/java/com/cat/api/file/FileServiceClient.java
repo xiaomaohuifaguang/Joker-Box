@@ -25,7 +25,10 @@ import org.springframework.web.multipart.MultipartFile;
 public interface FileServiceClient {
 
     @RequestMapping(value = "/file/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, method = RequestMethod.POST)
-    HttpResult<FileInfo> upload(@RequestPart(value = "uploadFile") MultipartFile uploadFile);
+    HttpResult<FileInfo> upload(@RequestPart(value = "uploadFile") MultipartFile uploadFile,@RequestPart("parentId") String parentId);
+
+    @RequestMapping(value = "/file/createFolder", method = RequestMethod.POST)
+    HttpResult<FileInfo> createFolder(@RequestParam(value = "fileName") String fileName,@RequestParam("parentId") String parentId);
 
     @RequestMapping(value = "/file/download", method = RequestMethod.GET)
     Response download(@RequestParam(value = "fileId") String fileId);

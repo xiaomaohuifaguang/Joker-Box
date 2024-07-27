@@ -1,18 +1,32 @@
 package com.cat.auth.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.auth.config.redis.RedisService;
+import com.cat.auth.config.security.SecurityUtils;
 import com.cat.auth.mapper.RoleMapper;
+import com.cat.auth.mapper.UserExtendMapper;
 import com.cat.auth.mapper.UserMapper;
+import com.cat.auth.service.MailService;
 import com.cat.auth.service.UserService;
 import com.cat.common.entity.*;
 import com.cat.common.utils.CryptoUtils;
 import com.cat.common.utils.JwtUtils;
+import com.cat.common.utils.RegexUtils;
+import freemarker.template.TemplateException;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /***
@@ -31,9 +45,13 @@ public class UserServiceImpl implements UserService {
     @Resource
     private UserMapper userMapper;
     @Resource
+    private UserExtendMapper userExtendMapper;
+    @Resource
     private RoleMapper roleMapper;
     @Resource
     private RedisService redisService;
+    @Resource
+    private MailService mailService;
 
     @Override
     public String getToken(LoginInfo loginInfo) {
@@ -49,7 +67,7 @@ public class UserServiceImpl implements UserService {
 
         // 数据库读取
         User user = this.getUserByUsername(username); // 获取用户通过username
-        List<Role> roles = roleMapper.getRolesByUserId(user.getId()); // 获取角色通过userId
+        List<Role> roles = roleMapper.getRolesByUserId(user.getIdStr()); // 获取角色通过userId
         loginUser = new LoginUser(user, roles);
         redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + loginUser.getUsername(), loginUser, tokenExpire); // 存储缓存redis
         return loginUser;
@@ -78,6 +96,135 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<Role> getRoleByUserId(String userId) {
         return roleMapper.getRolesByUserId(userId);
+    }
+
+    @Override
+    public UserInfo getUserInfo() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        UserInfo userInfo = new UserInfo();
+        BeanUtils.copyProperties(loginUser, userInfo);
+        return userInfo;
+    }
+
+    @Override
+    public void code(String mail) throws TemplateException, MessagingException, IOException {
+        mailService.sendCode(mail);
+    }
+
+    @Override
+    @Transactional
+    public DTO<?> register(RegisterUserInfo registerUserInfo) {
+        if(!RegexUtils.validate(registerUserInfo.getUsername(), RegexUtils.ACCOUNT_REGEX)
+                || !RegexUtils.validate(registerUserInfo.getPassword(), RegexUtils.PASSWORD_REGEX)
+                || !RegexUtils.validate(registerUserInfo.getMail(), RegexUtils.EMAIL_REGEX) ){
+            return DTO.error("格式错误");
+        }
+
+        User userByUsername = getUserByUsername(registerUserInfo.getUsername());
+        if(!ObjectUtils.isEmpty(userByUsername)){
+            return DTO.error("用户名已存在");
+        }
+
+        String codeCache = redisService.get(CONSTANTS.REDIS_PARENT_MAIL_CODE + registerUserInfo.getMail(), String.class);
+        if(!StringUtils.hasText(codeCache) || !codeCache.equals(registerUserInfo.getCode())){
+            return DTO.error("验证码不正确");
+        }
+
+        User user = new User();
+        BeanUtils.copyProperties(registerUserInfo,user);
+        user.setPassword(CryptoUtils.encrypt(user.getPassword()));
+        userMapper.insert(user);
+
+        userByUsername = getUserByUsername(registerUserInfo.getUsername());
+        UserExtend userExtend = new UserExtend().setUserId(userByUsername.getId());
+        BeanUtils.copyProperties(registerUserInfo,userExtend);
+        userExtend.setSex(StringUtils.hasText(userExtend.getSex()) && (userExtend.getSex().equals("男")||userExtend.getSex().equals("女")) ? userExtend.getSex() : "未知");
+        userExtendMapper.insert(userExtend);
+        roleMapper.defaultRole(userByUsername.getId());
+        return DTO.success();
+    }
+
+    @Override
+    public Page<User> queryPage(UserPageParam pageParam) {
+        Page<User> page = new Page<>(pageParam);
+        page = userMapper.selectPage(page,pageParam);
+        page.getRecords().forEach(u->{
+            UserExtend userExtend = userExtendMapper.selectById(u.getId());
+            u.setUserExtend(userExtend);
+        });
+        return page;
+    }
+
+    @Override
+    public DTO<?> delete(String userId) {
+        if(!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId,userId))){
+            return DTO.error("用户不存在");
+        }
+
+        List<Role> roles = roleMapper.getRolesByUserId(userId);
+        List<Integer> roleIds = roles.stream().map(Role::getId).toList();
+        if(roleIds.contains(CONSTANTS.ROLE_ADMIN_CODE)){
+            return DTO.error("大胆,该用户为管理员");
+        }
+        userMapper.deleteById(userId);
+        return DTO.success();
+    }
+
+    @Override
+    public User getUserInfo(String userId) {
+        User user = userMapper.selectById(userId);
+        if(!ObjectUtils.isEmpty(user)){
+            UserExtend userExtend = userExtendMapper.selectById(userId);
+            user.setUserExtend(ObjectUtils.isEmpty(userExtend) ? new UserExtend() : userExtend);
+        }
+        return user;
+    }
+
+    @Override
+    @Transactional
+    public DTO<?> addRole(String userId, String roleId) {
+
+
+        if(!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId,userId))){
+            return DTO.error("用户不存在");
+        }
+
+        if(!roleMapper.exists(new LambdaQueryWrapper<Role>().eq(Role::getId,roleId))){
+            return DTO.error("角色不存在");
+        }
+
+        List<Integer> list = getRoleByUserId(userId).stream().map(Role::getId).toList();
+        if(list.contains(Integer.parseInt(roleId))){
+            return DTO.error("角色已绑定,无需重复绑定");
+        }
+
+        userMapper.insertUserAndRole(userId,roleId, LocalDateTime.now());
+
+        return DTO.success();
+    }
+
+    @Override
+    public DTO<?> deleteRole(String userId, String roleId) {
+        if(roleId.equals(String.valueOf(CONSTANTS.ROLE_ADMIN_CODE)) &&  userId.equals("1")){
+            return DTO.error("大傻春，你要干什么");
+        }
+        if(roleId.equals(String.valueOf(CONSTANTS.ROLE_EVERYONE_CODE))){
+            return DTO.error("默认角色不建议修改");
+        }
+        int del = userMapper.removeUserAndRole(userId, roleId);
+        return DTO.success();
+    }
+
+    @Override
+    @Transactional
+    public DTO<?> resetPassword(String userId) {
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getId, userId));
+        if(ObjectUtils.isEmpty(user)){
+            return DTO.error("用户不存在");
+        }
+        userMapper.update(new LambdaUpdateWrapper<User>().set(User::getPassword,CryptoUtils.encrypt("12345678")).eq(User::getId,userId));
+
+        return DTO.success();
     }
 
     private String makeToken(LoginUser loginUser) {

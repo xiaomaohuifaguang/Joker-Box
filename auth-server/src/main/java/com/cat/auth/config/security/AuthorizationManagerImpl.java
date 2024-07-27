@@ -1,8 +1,11 @@
 package com.cat.auth.config.security;
 
+import com.cat.auth.service.RoleService;
 import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.HttpResultStatus;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -12,7 +15,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 
 /***
@@ -24,6 +29,12 @@ import java.util.function.Supplier;
  **/
 @Component
 public class AuthorizationManagerImpl implements AuthorizationManager<RequestAuthorizationContext> {
+
+    @Value("${spring.application.name}")
+    private String server;
+    @Resource
+    private RoleService roleService;
+
     @Override
     public void verify(Supplier<Authentication> authentication, RequestAuthorizationContext object) {
         AuthorizationManager.super.verify(authentication, object);
@@ -33,10 +44,17 @@ public class AuthorizationManagerImpl implements AuthorizationManager<RequestAut
         HttpServletRequest request = object.getRequest();
         String path = request.getServletPath();
         Collection<? extends GrantedAuthority> authorities = authentication.get().getAuthorities();
-        if(authorities.contains(new SimpleGrantedAuthority(CONSTANTS.ANONYMOUS_ROLE))){
+        List<String> userRoleIds = new ArrayList<>();
+        for (GrantedAuthority authority : authorities) {
+            userRoleIds.add(authority.getAuthority());
+        }
+
+        // 过滤所有匿名用户
+        if(userRoleIds.contains(CONSTANTS.ANONYMOUS_ROLE)){
             throw new AccessDeniedException(HttpResultStatus.UNAUTHORIZED.msg());
         }
+
         // 这里要对 path 和当前用户的角色做匹配 true 通过 false 不通过
-        return new AuthorizationDecision(true);
+        return new AuthorizationDecision(roleService.allow(userRoleIds, server, path));
     }
 }

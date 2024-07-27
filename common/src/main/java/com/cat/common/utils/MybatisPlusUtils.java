@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  **/
 public class MybatisPlusUtils {
 
-    final static private String url = "jdbc:mysql://127.0.0.1:3306/joker-box?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8";
+    final static private String url = "jdbc:mysql://192.168.3.12:3306/joker-box-dev?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8";
     final static private String username = "root";
     final static private String password = "six6";
 
@@ -57,8 +57,8 @@ public class MybatisPlusUtils {
     }
 
     public static void main(String[] args) {
-        String packageName = "com.cat.file";
-        String tableName = "cat_file_info";
+        String packageName = "com.cat.auth";
+        String tableName = "cat_api_path";
         String outDir = "D:\\todo\\mybatis-plus\\joker-box";
         String author = "xiaomaohuifaguang";
 

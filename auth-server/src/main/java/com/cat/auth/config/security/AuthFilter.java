@@ -6,7 +6,6 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,10 +36,6 @@ public class AuthFilter extends OncePerRequestFilter {
 
         String token = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        HttpSession session = request.getSession();
-        Object test = session.getAttribute("test");
-        System.out.println(test);
-        session.setAttribute("test","666");
 
         if( StringUtils.hasText(token) && token.startsWith("Bearer ") ){
             LoginUser loginUser = userService.getLoginUserByToken(token);

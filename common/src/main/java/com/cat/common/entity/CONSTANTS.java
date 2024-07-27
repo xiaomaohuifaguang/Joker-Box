@@ -9,8 +9,12 @@ package com.cat.common.entity;
  **/
 public class CONSTANTS {
 
+    public static final Integer ROLE_ADMIN_CODE = 1;
+    public static final Integer ROLE_EVERYONE_CODE = 2;
 
     public static final String REDIS_PARENT_TOKEN = "token:";
+
+    public static final String REDIS_PARENT_MAIL_CODE = "mail:code:";
 
     /**
      * Security 匿名用户 角色
@@ -31,6 +35,18 @@ public class CONSTANTS {
      * 用户类型 服务
      */
     public static final String USER_TYPE_SERVER = "1";
+
+
+    /**
+     * 文件类型
+     */
+    public static final String FILE_TYPE_1 = "file";
+    public static final String FILE_TYPE_2 = "folder";
+
+    /**
+     * 根目录
+     */
+    public static final String FILE_ALL_PARENT = "0";
 
 
 

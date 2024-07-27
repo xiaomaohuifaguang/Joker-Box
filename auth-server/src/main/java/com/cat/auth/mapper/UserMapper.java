@@ -1,8 +1,14 @@
 package com.cat.auth.mapper;
 
+import com.cat.common.entity.Page;
 import com.cat.common.entity.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cat.common.entity.UserPageParam;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.time.LocalDateTime;
+
 /**
  * <p>
  * 用户表 Mapper 接口
@@ -13,5 +19,11 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
+
+    Page<User> selectPage(@Param("page") Page<User> page, @Param("param") UserPageParam param);
+
+    int insertUserAndRole(@Param("userId") String userId, @Param("roleId") String roleId, @Param("createTime") LocalDateTime createTime);
+
+    int removeUserAndRole(@Param("userId") String userId, @Param("roleId") String roleId);
 
 }

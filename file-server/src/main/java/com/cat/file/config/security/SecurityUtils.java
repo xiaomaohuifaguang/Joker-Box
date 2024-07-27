@@ -1,9 +1,13 @@
 package com.cat.file.config.security;
 
+import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.LoginUser;
+import com.cat.common.entity.Role;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
 
 /***
  * <TODO description class purpose>
@@ -18,6 +22,17 @@ public class SecurityUtils {
         SecurityContext context = SecurityContextHolder.getContext();
         Authentication authentication = context.getAuthentication();
         return ((UserDetailsImpl) authentication.getPrincipal()).loginUser();
+    }
+
+    public static boolean isNormal(){
+        LoginUser loginUser = getLoginUser();
+        List<Role> roles = loginUser.getRoles();
+        return roles.size()==1 && roles.get(0).getId().equals(CONSTANTS.ROLE_EVERYONE_CODE);
+    }
+
+    public static String getUserId(){
+        LoginUser loginUser = getLoginUser();
+        return loginUser.getUserId();
     }
 
 }

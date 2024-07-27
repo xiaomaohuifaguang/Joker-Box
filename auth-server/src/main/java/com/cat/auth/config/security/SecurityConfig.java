@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -35,6 +36,17 @@ import java.util.UUID;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    public static List<String> WHITE_LIST = Arrays.asList(
+            "/doc.html",
+            "/webjars/**",
+            "/favicon.ico",
+            "/v3/api-docs/**",
+            "/info/version",
+            "/auth/getToken",
+            "/auth/mailCode",
+            "/auth/register"
+    );
 
     /**
      * 认证过滤器
@@ -70,13 +82,10 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(authorize -> {
                             // 白名单
-                            authorize.requestMatchers("/doc.html").permitAll();
-                            authorize.requestMatchers("/webjars/**").permitAll();
-                            authorize.requestMatchers("/favicon.ico").permitAll();
-                            authorize.requestMatchers("/v3/api-docs/**").permitAll();
-                            authorize.requestMatchers("/info/version").permitAll();
-                            authorize.requestMatchers("/auth/getToken").permitAll();
-                            authorize.requestMatchers("/auth/test1").permitAll();
+                            WHITE_LIST.forEach(p->{
+                                authorize.requestMatchers(p).permitAll();
+                            });
+
 //                            authorize.anyRequest().authenticated();
                             authorize.anyRequest().access(authorizationManager);
                         }
@@ -112,19 +121,19 @@ public class SecurityConfig {
     }
 
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration configuration = new CorsConfiguration();
 //        configuration.addAllowedOrigin("*");
-        configuration.addAllowedOrigin("http://127.0.0.1");
-        configuration.addAllowedOrigin("http://192.168.3.10 ");
-        configuration.addAllowedOrigin("http://localhost:5173");
-        configuration.addAllowedMethod("*");
-        configuration.addAllowedHeader("*");
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+//        configuration.addAllowedOrigin("http://127.0.0.1");
+//        configuration.addAllowedOrigin("http://192.168.3.10 ");
+//        configuration.addAllowedOrigin("http://localhost:5173");
+//        configuration.addAllowedMethod("*");
+//        configuration.addAllowedHeader("*");
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", configuration);
+//        return source;
+//    }
 
 
 }

@@ -53,7 +53,7 @@ public class LoginUser {
 
 
     public LoginUser(User user, List<Role> roles) {
-        setUserId(user.getId());
+        setUserId(user.getIdStr());
         setUsername(user.getUsername());
         setPassword(user.getPassword());
         setNickname(user.getNickname());

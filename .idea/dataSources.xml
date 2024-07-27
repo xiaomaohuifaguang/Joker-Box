@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="joker-box@localhost" uuid="8cc84b30-55f6-41ce-9b3e-4095ba5834aa">
+    <data-source source="LOCAL" name="joker-box-dev@192.168.3.12" uuid="378f98f6-3bb2-4ecf-8593-35d4c0002817">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://localhost:3306/joker-box</jdbc-url>
+      <jdbc-url>jdbc:mysql://192.168.3.12:3306/joker-box-dev</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
