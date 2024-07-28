@@ -3,6 +3,8 @@ custom:
   info:
     version: 1.0
   host: 192.168.3.12
+  username: admin
+  password: 12345678
   # knife4j doc.html 账号/密码
   knife4j:
     username: knife4j

@@ -5,6 +5,7 @@ import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.LoginInfo;
 import feign.RequestInterceptor;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,6 +19,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FeignConfig {
 
+    @Value("${custom.username}")
+    private String username;
+    @Value("${custom.password}")
+    private String password;
     @Resource
     private UserService userService;
 
@@ -25,7 +30,7 @@ public class FeignConfig {
     public RequestInterceptor requestInterceptor() {
         return template -> {
             if(!template.url().equals("/auth/getToken")){
-                String token = userService.getToken(new LoginInfo("admin", "admin", null));
+                String token = userService.getToken(new LoginInfo(username, password, null));
                 // 添加请求头
                 template.header("Authorization", CONSTANTS.TOKEN_TYPE+" "+token);
             }

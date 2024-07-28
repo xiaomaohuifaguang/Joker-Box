@@ -2,10 +2,8 @@ package com.cat.file.config.security;
 
 
 import com.cat.api.auth.AuthServiceClient;
-import com.cat.common.entity.HttpResult;
-import com.cat.common.entity.HttpResultStatus;
-import com.cat.common.entity.LoginInfo;
-import com.cat.common.entity.LoginUser;
+import com.cat.common.entity.*;
+import com.cat.file.config.feign.AuthUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,7 +26,7 @@ import java.io.IOException;
 /***
  * 登录过滤器
  * @title AuthFilter
- * @description <TODO description class purpose>
+ * @description 登录过滤器
  * @author xiaomaohuifaguang
  * @create 2024/6/20 0:48
  **/
@@ -37,13 +35,15 @@ public class AuthFilter extends OncePerRequestFilter {
 
     @Resource
     private AuthServiceClient authServiceClient;
+    @Resource
+    private AuthUtils authUtils;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException {
 
         String token = request.getHeader(HttpHeaders.AUTHORIZATION);
         if( StringUtils.hasText(token) && token.startsWith("Bearer ") ){
-            HttpResult<LoginUser> loginUserByToken = authServiceClient.getLoginUserByToken(new LoginInfo().setToken(token));
+            HttpResult<LoginUser> loginUserByToken = authServiceClient.getLoginUserByToken(CONSTANTS.TOKEN_TYPE+" "+authUtils.getToken() ,new LoginInfo().setToken(token));
             if(loginUserByToken.getCode() == HttpResultStatus.SUCCESS.code() && !ObjectUtils.isEmpty(loginUserByToken.getData())){
                 UserDetailsImpl userDetails = new UserDetailsImpl(loginUserByToken.getData());
                 // 保存用户信息 到SecurityContextHolder

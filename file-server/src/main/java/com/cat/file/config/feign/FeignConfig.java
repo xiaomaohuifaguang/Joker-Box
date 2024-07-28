@@ -1,28 +1,34 @@
 package com.cat.file.config.feign;
 
 import com.cat.common.entity.CONSTANTS;
+import com.cat.common.entity.HttpResult;
+import com.cat.common.entity.LoginInfo;
 import feign.RequestInterceptor;
-import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /***
- * <TODO description class purpose>
+ * Feign拦截
  * @title FeignConfig
- * @description <TODO description class purpose>
+ * @description Feign拦截
  * @author xiaomaohuifaguang
  * @create 2024/6/26 21:34
  **/
 @Configuration
 public class FeignConfig {
 
-    @Value("${custom.token}")
-    private String token;
+
+    @Resource
+    private AuthUtils authUtils;
 
     @Bean
     public RequestInterceptor requestInterceptor() {
         return template -> {
-            template.header("Authorization", CONSTANTS.TOKEN_TYPE+" "+token);
+            if(!template.url().equals("/auth/getToken")){
+                // 添加请求头
+                template.header("Authorization", CONSTANTS.TOKEN_TYPE+" "+authUtils.getToken());
+            }
         };
     }
 }
