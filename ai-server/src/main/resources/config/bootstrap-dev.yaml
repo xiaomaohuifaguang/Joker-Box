@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: ai-server
+  cloud:
+    nacos:
+      server-addr: 192.168.3.12:8848
+      username: nacos
+      password: nacos
+      discovery:
+        register-enabled: true
+      config:
+        file-extension: yaml
+    loadbalancer:
+      nacos:
+        enabled: true
+    openfeign:
+      httpclient:
+        enabled: true
+        connection-timeout: 5000
+        ok-http:
+          read-timeout: 120s
