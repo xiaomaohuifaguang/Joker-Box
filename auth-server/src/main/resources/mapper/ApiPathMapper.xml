@@ -2,18 +2,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cat.auth.mapper.ApiPathMapper">
 
-    <select id="servers" resultType="com.cat.common.entity.ApiPathServer">
+    <select id="servers" resultType="com.cat.common.entity.auth.ApiPathServer">
         SELECT DISTINCT IFNULL(server, '未命名服务') AS server
         FROM cat_api_path
         ORDER BY IFNULL(server, '未命名服务')
     </select>
-    <select id="groups" resultType="com.cat.common.entity.ApiPathGroup" parameterType="java.lang.String">
+    <select id="groups" resultType="com.cat.common.entity.auth.ApiPathGroup" parameterType="java.lang.String">
         SELECT DISTINCT IFNULL(group_name, '未命名分组') AS groupName
         FROM cat_api_path
         where server = #{server}
         ORDER BY IFNULL(group_name, '未命名分组')
     </select>
-    <select id="selectListByRoleId" resultType="com.cat.common.entity.ApiPath">
+    <select id="selectListByRoleId" resultType="com.cat.common.entity.auth.ApiPath">
         SELECT cpp.path,
                cpp.server,
                cpp.white_list,
@@ -28,7 +28,7 @@
         WHERE cpp.server = #{server}
           AND cpp.group_name = #{groupName}
     </select>
-    <select id="selectPage" resultType="com.cat.common.entity.ApiPath">
+    <select id="selectPage" resultType="com.cat.common.entity.auth.ApiPath">
         SELECT
         DISTINCT
         cap.path, cap.server, cap.white_list, cap.name, cap.group_name, cap.create_time, cap.update_time

@@ -3,7 +3,7 @@ package com.cat.auth.config.mapping;
 
 import com.cat.auth.config.security.SecurityConfig;
 import com.cat.auth.service.ApiPathService;
-import com.cat.common.entity.ApiPath;
+import com.cat.common.entity.auth.ApiPath;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;

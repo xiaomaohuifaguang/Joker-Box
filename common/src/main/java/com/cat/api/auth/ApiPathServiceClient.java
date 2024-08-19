@@ -1,6 +1,6 @@
 package com.cat.api.auth;
 
-import com.cat.common.entity.ApiPath;
+import com.cat.common.entity.auth.ApiPath;
 import com.cat.common.entity.HttpResult;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.stereotype.Component;

@@ -1,6 +1,6 @@
 package com.cat.api.file;
 
-import com.cat.common.entity.FileInfo;
+import com.cat.common.entity.file.FileInfo;
 import com.cat.common.entity.HttpResult;
 import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;

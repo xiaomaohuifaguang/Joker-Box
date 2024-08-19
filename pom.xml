@@ -12,6 +12,8 @@
         <module>common</module>
         <module>auth-server</module>
         <module>file-server</module>
+        <module>ai-server</module>
+        <module>demo-server</module>
     </modules>
 
     <properties>
@@ -31,6 +33,7 @@
         <commons-fileupload.version>2.0.0-M2</commons-fileupload.version>
         <hutool.version>5.8.29</hutool.version>
         <TinyPinyin.version>2.0.3.RELEASE</TinyPinyin.version>
+        <httpclient5.version>5.3.1</httpclient5.version>
     </properties>
 
     <!-- springboot 版本 -->
@@ -145,6 +148,11 @@
                 <version>${TinyPinyin.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${httpclient5.version}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>

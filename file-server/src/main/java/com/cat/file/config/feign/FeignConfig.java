@@ -1,8 +1,6 @@
 package com.cat.file.config.feign;
 
 import com.cat.common.entity.CONSTANTS;
-import com.cat.common.entity.HttpResult;
-import com.cat.common.entity.LoginInfo;
 import feign.RequestInterceptor;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;

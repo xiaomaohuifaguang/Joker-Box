@@ -2,6 +2,9 @@ package com.cat.auth.controller;
 
 import com.cat.auth.service.UserService;
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.Role;
+import com.cat.common.entity.auth.User;
+import com.cat.common.entity.auth.UserPageParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;

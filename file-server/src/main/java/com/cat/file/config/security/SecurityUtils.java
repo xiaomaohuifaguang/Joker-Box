@@ -1,8 +1,8 @@
 package com.cat.file.config.security;
 
 import com.cat.common.entity.CONSTANTS;
-import com.cat.common.entity.LoginUser;
-import com.cat.common.entity.Role;
+import com.cat.common.entity.auth.LoginUser;
+import com.cat.common.entity.auth.Role;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;

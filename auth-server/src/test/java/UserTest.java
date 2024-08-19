@@ -1,6 +1,6 @@
 import com.cat.auth.AuthServerApplication;
 import com.cat.auth.mapper.UserMapper;
-import com.cat.common.entity.User;
+import com.cat.common.entity.auth.User;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

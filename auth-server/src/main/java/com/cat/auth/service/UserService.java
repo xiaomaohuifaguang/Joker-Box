@@ -1,6 +1,7 @@
 package com.cat.auth.service;
 
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.*;
 import freemarker.template.TemplateException;
 import jakarta.mail.MessagingException;
 

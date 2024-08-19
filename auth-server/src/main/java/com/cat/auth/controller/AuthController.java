@@ -2,6 +2,10 @@ package com.cat.auth.controller;
 
 import com.cat.auth.service.UserService;
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.LoginInfo;
+import com.cat.common.entity.auth.LoginUser;
+import com.cat.common.entity.auth.RegisterUserInfo;
+import com.cat.common.entity.auth.UserInfo;
 import freemarker.template.TemplateException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

@@ -11,11 +11,11 @@ import com.cat.auth.mapper.UserMapper;
 import com.cat.auth.service.MailService;
 import com.cat.auth.service.UserService;
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.*;
 import com.cat.common.utils.CryptoUtils;
 import com.cat.common.utils.JwtUtils;
 import com.cat.common.utils.RegexUtils;
 import freemarker.template.TemplateException;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
@@ -184,6 +184,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public DTO<?> addRole(String userId, String roleId) {
 
+        if(userMapper.userCountByRole(String.valueOf(CONSTANTS.ROLE_ADMIN_CODE)) > 0){
+            return DTO.error("超级管理员仅限一个用户");
+        }
 
         if(!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId,userId))){
             return DTO.error("用户不存在");

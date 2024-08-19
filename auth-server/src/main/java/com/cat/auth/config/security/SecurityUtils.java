@@ -1,6 +1,6 @@
 package com.cat.auth.config.security;
 
-import com.cat.common.entity.LoginUser;
+import com.cat.common.entity.auth.LoginUser;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;

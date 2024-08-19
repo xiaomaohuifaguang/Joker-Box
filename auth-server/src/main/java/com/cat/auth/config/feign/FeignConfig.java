@@ -2,7 +2,7 @@ package com.cat.auth.config.feign;
 
 import com.cat.auth.service.UserService;
 import com.cat.common.entity.CONSTANTS;
-import com.cat.common.entity.LoginInfo;
+import com.cat.common.entity.auth.LoginInfo;
 import feign.RequestInterceptor;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;

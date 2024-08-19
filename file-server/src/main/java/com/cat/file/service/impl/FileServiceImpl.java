@@ -3,6 +3,7 @@ package com.cat.file.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.*;
+import com.cat.common.entity.file.FileInfo;
 import com.cat.common.utils.CatUUID;
 import com.cat.common.utils.IOUtils;
 import com.cat.common.utils.ServletUtils;
@@ -23,7 +24,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

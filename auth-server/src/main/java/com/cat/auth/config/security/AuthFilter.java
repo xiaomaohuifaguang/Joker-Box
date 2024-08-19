@@ -1,7 +1,7 @@
 package com.cat.auth.config.security;
 
 import com.cat.auth.service.UserService;
-import com.cat.common.entity.LoginUser;
+import com.cat.common.entity.auth.LoginUser;
 import jakarta.annotation.Resource;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;

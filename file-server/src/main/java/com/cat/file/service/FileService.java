@@ -1,7 +1,7 @@
 package com.cat.file.service;
 
 import com.cat.common.entity.DTO;
-import com.cat.common.entity.FileInfo;
+import com.cat.common.entity.file.FileInfo;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;

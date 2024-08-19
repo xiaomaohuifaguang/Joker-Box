@@ -1,6 +1,6 @@
 package com.cat.file.controller;
 
-import com.cat.common.entity.FileInfo;
+import com.cat.common.entity.file.FileInfo;
 import com.cat.common.entity.HttpResult;
 import com.cat.file.service.FileService;
 import io.swagger.v3.oas.annotations.Operation;

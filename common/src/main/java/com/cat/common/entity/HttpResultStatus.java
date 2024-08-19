@@ -14,7 +14,9 @@ public enum HttpResultStatus {
     ERROR(-1,"请求失败"),
     NOT_FOUND(HttpStatus.NOT_FOUND.value(), "请求不存在"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED.value(), "鉴权失败"),
-    FORBIDDEN(HttpStatus.FORBIDDEN.value(), "权限不足")
+    FORBIDDEN(HttpStatus.FORBIDDEN.value(), "权限不足"),
+
+    AI_STREAM_STOP(-200 , "ai流式响应终止")
     ;
 
     HttpResultStatus(long code, String msg) {

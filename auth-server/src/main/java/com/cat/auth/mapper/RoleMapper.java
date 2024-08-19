@@ -1,9 +1,9 @@
 package com.cat.auth.mapper;
 
 import com.cat.common.entity.Page;
-import com.cat.common.entity.Role;
+import com.cat.common.entity.auth.Role;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cat.common.entity.RolePageParam;
+import com.cat.common.entity.auth.RolePageParam;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

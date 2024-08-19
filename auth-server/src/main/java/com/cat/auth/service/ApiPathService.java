@@ -1,7 +1,7 @@
 package com.cat.auth.service;
 
-import com.cat.common.entity.ApiPath;
-import com.cat.common.entity.ApiPathPageParam;
+import com.cat.common.entity.auth.ApiPath;
+import com.cat.common.entity.auth.ApiPathPageParam;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.SelectOption;
 

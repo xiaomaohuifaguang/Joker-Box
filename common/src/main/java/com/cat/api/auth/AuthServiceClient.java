@@ -1,8 +1,8 @@
 package com.cat.api.auth;
 
 import com.cat.common.entity.HttpResult;
-import com.cat.common.entity.LoginInfo;
-import com.cat.common.entity.LoginUser;
+import com.cat.common.entity.auth.LoginInfo;
+import com.cat.common.entity.auth.LoginUser;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PostMapping;

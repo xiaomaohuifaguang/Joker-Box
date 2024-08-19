@@ -5,7 +5,7 @@ import com.cat.auth.config.redis.RedisService;
 import com.cat.auth.service.UserService;
 import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.DTO;
-import com.cat.common.entity.RegisterUserInfo;
+import com.cat.common.entity.auth.RegisterUserInfo;
 import com.cat.common.utils.who.WhoUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

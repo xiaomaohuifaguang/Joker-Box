@@ -2,6 +2,10 @@ package com.cat.auth.controller;
 
 import com.cat.auth.service.RoleService;
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.ApiPathServer;
+import com.cat.common.entity.auth.Role;
+import com.cat.common.entity.auth.RoleAndApiPath;
+import com.cat.common.entity.auth.RolePageParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;

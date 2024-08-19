@@ -1,6 +1,10 @@
 package com.cat.auth.service;
 
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.ApiPathServer;
+import com.cat.common.entity.auth.Role;
+import com.cat.common.entity.auth.RoleAndApiPath;
+import com.cat.common.entity.auth.RolePageParam;
 
 import java.util.List;
 
@@ -19,7 +23,7 @@ public interface RoleService {
      * @param path api路径
      * @return 角色集合
      */
-    List<Role> getRoleByPath(String server,String path);
+    List<Role> getRoleByPath(String server, String path);
 
     /**
      * 路径与角色匹配

@@ -3,8 +3,6 @@ package com.cat.file.controller;
 import com.cat.api.auth.AuthServiceClient;
 import com.cat.common.entity.HttpResult;
 import com.cat.common.entity.HttpResultStatus;
-import com.cat.common.entity.LoginInfo;
-import com.cat.common.entity.LoginUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;

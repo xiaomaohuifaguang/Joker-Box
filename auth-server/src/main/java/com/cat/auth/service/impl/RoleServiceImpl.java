@@ -6,6 +6,7 @@ import com.cat.auth.mapper.ApiPathMapper;
 import com.cat.auth.mapper.RoleMapper;
 import com.cat.auth.service.RoleService;
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.*;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

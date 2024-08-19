@@ -1,9 +1,9 @@
 package com.cat.auth.mapper;
 
 import com.cat.common.entity.Page;
-import com.cat.common.entity.User;
+import com.cat.common.entity.auth.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cat.common.entity.UserPageParam;
+import com.cat.common.entity.auth.UserPageParam;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -25,5 +25,7 @@ public interface UserMapper extends BaseMapper<User> {
     int insertUserAndRole(@Param("userId") String userId, @Param("roleId") String roleId, @Param("createTime") LocalDateTime createTime);
 
     int removeUserAndRole(@Param("userId") String userId, @Param("roleId") String roleId);
+
+    int userCountByRole(@Param("roleId") String roleId);
 
 }

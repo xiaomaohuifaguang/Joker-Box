@@ -1,7 +1,7 @@
 package com.cat.file.config.feign;
 
 import com.cat.api.auth.AuthServiceClient;
-import com.cat.common.entity.LoginInfo;
+import com.cat.common.entity.auth.LoginInfo;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

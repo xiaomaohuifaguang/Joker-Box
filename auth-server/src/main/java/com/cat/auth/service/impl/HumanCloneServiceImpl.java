@@ -3,7 +3,6 @@ package com.cat.auth.service.impl;
 import cn.hutool.extra.pinyin.PinyinUtil;
 import com.cat.auth.service.HumanCloneService;
 import com.cat.common.entity.HumanClone;
-import com.cat.common.entity.RegisterUserInfo;
 import com.cat.common.utils.who.WhoUtils;
 import org.springframework.stereotype.Service;
 

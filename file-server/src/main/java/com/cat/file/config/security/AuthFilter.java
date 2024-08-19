@@ -3,6 +3,8 @@ package com.cat.file.config.security;
 
 import com.cat.api.auth.AuthServiceClient;
 import com.cat.common.entity.*;
+import com.cat.common.entity.auth.LoginInfo;
+import com.cat.common.entity.auth.LoginUser;
 import com.cat.file.config.feign.AuthUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;

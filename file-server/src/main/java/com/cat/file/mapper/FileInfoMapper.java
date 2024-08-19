@@ -1,6 +1,6 @@
 package com.cat.file.mapper;
 
-import com.cat.common.entity.FileInfo;
+import com.cat.common.entity.file.FileInfo;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 /**

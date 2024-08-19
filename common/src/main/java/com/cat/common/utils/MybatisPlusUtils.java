@@ -30,7 +30,7 @@ public class MybatisPlusUtils {
                 .globalConfig(builder -> builder
                                 .author(author)
                                 .outputDir(outDir)
-                                .disableOpenDir() // 禁止打开输出目录
+//                                .disableOpenDir() // 禁止打开输出目录
                                 .commentDate("yyyy-MM-dd")
                                 .enableSpringdoc()
 //                        .enableSwagger()
@@ -38,7 +38,7 @@ public class MybatisPlusUtils {
                 .packageConfig(builder -> builder
                         .parent(packageName)
                                 .controller("controller")
-                                .entity("entity")
+                                .entity("entity.ai.chat")
                                 .mapper("mapper")
                                 .service("service")
                                 .serviceImpl("service.impl")
@@ -57,8 +57,8 @@ public class MybatisPlusUtils {
     }
 
     public static void main(String[] args) {
-        String packageName = "com.cat.auth";
-        String tableName = "cat_api_path";
+        String packageName = "com.cat.ai";
+        String tableName = "cat_ai_message";
         String outDir = "D:\\todo\\mybatis-plus\\joker-box";
         String author = "xiaomaohuifaguang";
 

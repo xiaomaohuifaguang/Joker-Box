@@ -1,6 +1,6 @@
 package com.cat.auth.mapper;
 
-import com.cat.common.entity.UserExtend;
+import com.cat.common.entity.auth.UserExtend;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 /**
