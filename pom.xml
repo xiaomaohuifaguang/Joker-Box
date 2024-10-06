@@ -10,10 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>common</module>
-        <module>auth-server</module>
-        <module>file-server</module>
-        <module>ai-server</module>
-        <module>demo-server</module>
+        <module>simple</module>
     </modules>
 
     <properties>

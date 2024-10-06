@@ -29,6 +29,7 @@ public class User implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @Getter
     @Schema(description = "用户id")
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
@@ -59,10 +60,6 @@ public class User implements Serializable {
 
     public String getIdStr(){
         return String.format("%010d", this.id);
-    }
-
-    public Integer getId(){
-        return this.id;
     }
 
     @Schema(description = "用户扩展信息")

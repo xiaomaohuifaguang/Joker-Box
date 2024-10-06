@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.ApiPathMapper">
+
+    <select id="servers" resultType="com.cat.common.entity.auth.ApiPathServer">
+        SELECT DISTINCT IFNULL(server, '未命名服务') AS server
+        FROM cat_api_path
+        ORDER BY IFNULL(server, '未命名服务')
+    </select>
+    <select id="groups" resultType="com.cat.common.entity.auth.ApiPathGroup" parameterType="java.lang.String">
+        SELECT DISTINCT IFNULL(group_name, '未命名分组') AS groupName
+        FROM cat_api_path
+        where server = #{server}
+        ORDER BY IFNULL(group_name, '未命名分组')
+    </select>
+    <select id="selectListByRoleId" resultType="com.cat.common.entity.auth.ApiPath">
+        SELECT cpp.path,
+               cpp.server,
+               cpp.white_list,
+               IFNULL(cpp.name, cpp.path) AS                        name,
+               cpp.group_name,
+               cpp.create_time,
+               cpp.update_time,
+               IF(IF(#{roleId} = 1, 1, crp.api_path) IS NULL, 0, 1) roleBind
+        FROM cat_api_path cpp
+                 LEFT JOIN (SELECT * FROM cat_role_api WHERE role_id = #{roleId} AND server = #{server}) crp
+                           ON cpp.path = crp.api_path
+        WHERE cpp.server = #{server}
+          AND cpp.group_name = #{groupName}
+    </select>
+    <select id="selectPage" resultType="com.cat.common.entity.auth.ApiPath">
+        SELECT
+        DISTINCT
+        cap.path, cap.server, cap.white_list, cap.name, cap.group_name, cap.create_time, cap.update_time
+        FROM
+        cat_api_path cap
+        LEFT JOIN cat_role_api cra on cap.server = cra.server AND cap.path = cra.api_path
+        <where>
+            <if test='param.search != null and param.search != ""'>
+                AND (
+                cap.server LIKE CONCAT('%',#{param.search},'%')
+                OR
+                cap.group_name LIKE CONCAT('%',#{param.search},'%')
+                OR
+                cap.name LIKE CONCAT('%',#{param.search},'%')
+                OR
+                cap.path LIKE CONCAT('%',#{param.search},'%')
+                )
+            </if>
+            <if test='param.roleId != null and param.roleId != "" and param.roleId != "1"'>
+                AND ( cra.role_id = #{param.roleId} OR cap.white_list = '1')
+            </if>
+            <if test='param.server != null and param.server != ""'>
+                AND cap.server = #{param.server}
+            </if>
+            <if test='param.groupName != null and param.groupName != ""'>
+                AND cap.group_name = #{param.groupName}
+            </if>
+        </where>
+        ORDER BY  cap.server,cap.group_name,cap.name,cap.path
+    </select>
+</mapper>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.RoleMapper">
+    <select id="getRolesByUserId" resultType="com.cat.common.entity.auth.Role" parameterType="java.lang.String">
+        SELECT R.* FROM cat_role R INNER JOIN cat_user_and_role UR on R.id = UR.role_id WHERE user_id = #{userId}
+    </select>
+
+    <select id="getRoleByPath" resultType="com.cat.common.entity.auth.Role">
+        SELECT role.*
+        FROM cat_role role
+        INNER JOIN cat_role_api re on role.id = re.role_id
+        INNER JOIN cat_api_path api on re.api_path = api.path and re.server = api.server
+        <where>
+            api.server = #{server}
+            and api.path = #{apiPath}
+        </where>
+
+    </select>
+    <select id="selectPage" resultType="com.cat.common.entity.auth.Role">
+        SELECT *
+        FROM cat_role
+        <where>
+            deleted = '0'
+            <if test='param.search != null and param.search !=""'>
+                AND name like CONCAT('%',#{param.search},'%')
+            </if>
+        </where>
+    </select>
+    <select id="withUser" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM
+        cat_user_and_role
+        where role_id = #{roleId}
+    </select>
+    <select id="withApi" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM
+            cat_role_api
+        where role_id = #{roleId}
+    </select>
+
+    <delete id="delete">
+        <choose>
+            <when test='server != null and server != "" and apiPaths!=null and apiPaths.size() > 0'>
+                DELETE FROM cat_role_api
+                where
+                    server = #{server}
+                    <foreach collection="apiPaths" item="apiPath" open="AND api_path not in ( " close=" ) " separator=",">
+                        #{apiPath}
+                    </foreach>
+            </when>
+            <otherwise>
+                SELECT 0
+            </otherwise>
+        </choose>
+    </delete>
+    <delete id="deleteWithUserByRoleId" parameterType="java.lang.Integer">
+        DELETE FROM cat_user_and_role
+        WHERE role_id = #{roleId}
+    </delete>
+    <delete id="deleteRoleApiRelation" parameterType="java.lang.Integer">
+        DELETE FROM cat_role_api
+        WHERE role_id = #{roleId}
+    </delete>
+
+    <insert id="defaultRole" parameterType="java.lang.Integer">
+        INSERT cat_user_and_role
+        SELECT id,2,NOW()
+        FROM cat_user
+        WHERE id = #{userId}
+    </insert>
+    <insert id="insertRoleApiRelation">
+        INSERT cat_role_api
+        SELECT *
+        FROM
+        (
+                SELECT #{roleId},path,server,#{updateTime}
+            FROM
+            cat_api_path
+            WHERE
+            white_list = '0'
+            <foreach collection="relations" item="relation" open=" AND (" close=")" separator="OR">
+                ( server = #{relation.server}
+            AND path = #{relation.apiPath} )
+            </foreach>
+        ) insertTmp
+    </insert>
+
+</mapper>
