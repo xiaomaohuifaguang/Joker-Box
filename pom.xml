@@ -22,6 +22,7 @@
         <knife4j.version>4.4.0</knife4j.version>
         <jjwt.version>0.12.5</jjwt.version>
         <mybatis-plus.verson>3.5.7</mybatis-plus.verson>
+        <mybatis-plus-join.verson>1.4.13</mybatis-plus-join.verson>
         <mysql-connector.version>8.4.0</mysql-connector.version>
         <lombok.version>1.18.32</lombok.version>
         <springcloud.verson>2023.0.2</springcloud.verson>
@@ -112,6 +113,12 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-core</artifactId>
                 <version>${mybatis-plus.verson}</version>
+            </dependency>
+            <!-- https://mvnrepository.com/artifact/com.github.yulichang/mybatis-plus-join -->
+            <dependency>
+                <groupId>com.github.yulichang</groupId>
+                <artifactId>mybatis-plus-join</artifactId>
+                <version>${mybatis-plus-join.verson}</version>
             </dependency>
             <!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
             <dependency>

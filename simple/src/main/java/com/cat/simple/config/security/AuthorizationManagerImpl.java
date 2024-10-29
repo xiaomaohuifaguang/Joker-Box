@@ -49,9 +49,9 @@ public class AuthorizationManagerImpl implements AuthorizationManager<RequestAut
         }
 
 //         过滤所有匿名用户
-        if(userRoleIds.contains(CONSTANTS.ANONYMOUS_ROLE)){
-            throw new AccessDeniedException(HttpResultStatus.UNAUTHORIZED.msg());
-        }
+//        if(userRoleIds.contains(CONSTANTS.ANONYMOUS_ROLE)){
+//            throw new AccessDeniedException(HttpResultStatus.UNAUTHORIZED.msg());
+//        }
 
         // 这里要对 path 和当前用户的角色做匹配 true 通过 false 不通过
         return new AuthorizationDecision(roleService.allow(userRoleIds, server, path));

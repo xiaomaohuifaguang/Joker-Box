@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -39,7 +40,7 @@ public class EndpointMappingConfiguration {
     private ApiPathService apiPathService;
 
     @Bean
-    public CommandLineRunner commandLineRunner(RequestMappingHandlerMapping handlerMapping) {
+    public CommandLineRunner commandLineRunner(@Qualifier("requestMappingHandlerMapping") RequestMappingHandlerMapping handlerMapping) {
         return args -> {
             long startTime = System.currentTimeMillis();
             log.info("apiPath录入开始...");

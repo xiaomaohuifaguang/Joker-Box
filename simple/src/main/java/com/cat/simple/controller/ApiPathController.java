@@ -1,10 +1,7 @@
 package com.cat.simple.controller;
 
+import com.cat.common.entity.*;
 import com.cat.simple.service.ApiPathService;
-import com.cat.common.entity.HttpResult;
-import com.cat.common.entity.HttpResultStatus;
-import com.cat.common.entity.Page;
-import com.cat.common.entity.SelectOption;
 import com.cat.common.entity.auth.ApiPath;
 import com.cat.common.entity.auth.ApiPathPageParam;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,10 +39,27 @@ public class ApiPathController {
         return HttpResult.back(flag ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
+    @Operation(summary = "api更新")
+    @RequestMapping(value = "/update", method = RequestMethod.POST)
+    public HttpResult<?> save(@RequestBody ApiPath apiPath) {
+        boolean flag = apiPathService.update(apiPath);
+        return HttpResult.back(flag ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
+    }
+
     @Operation(summary = "api列表")
     @RequestMapping(value = "/queryPage", method = RequestMethod.POST)
     public HttpResult<Page<ApiPath>> queryPage(@RequestBody ApiPathPageParam pageParam) {
         return HttpResult.back(apiPathService.queryPage(pageParam));
+    }
+
+    @Operation(summary = "api信息")
+    @Parameters({
+            @Parameter(name = "server", description = "服务名称:application.name", required = true),
+            @Parameter(name = "path", description = "api路径", required = true)
+    })
+    @RequestMapping(value = "/info", method = RequestMethod.POST)
+    public HttpResult<ApiPath> info(@RequestParam("server") String server, @RequestParam("path") String path) {
+        return HttpResult.back(apiPathService.info(server, path));
     }
 
     @Operation(summary = "api选择器")
@@ -57,5 +71,10 @@ public class ApiPathController {
         return HttpResult.back(apiPathService.selector(server));
     }
 
+    @Operation(summary = "apiPath级联到分组")
+    @RequestMapping(value = "/cascadeServerGroup", method = RequestMethod.POST)
+    public HttpResult<List<Cascade>> cascadeServerGroup() {
+        return HttpResult.back(apiPathService.cascadeServerGroup());
+    }
 
 }

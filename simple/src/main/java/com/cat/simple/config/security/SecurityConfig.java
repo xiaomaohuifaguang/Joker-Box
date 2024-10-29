@@ -42,7 +42,8 @@ public class SecurityConfig {
             "/info/version",
             "/auth/getToken",
             "/auth/mailCode",
-            "/auth/register"
+            "/auth/register",
+            "/auth/avatar/**"
     );
 
     /**

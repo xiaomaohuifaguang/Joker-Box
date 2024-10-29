@@ -17,10 +17,7 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /***
@@ -47,6 +44,10 @@ public class RoleServiceImpl implements RoleService {
     public boolean allow(List<String> roleIds, String server, String path) {
         // 管理员权限 强制返回
         if(roleIds.contains("1")) return true;
+        ApiPath apiPath = apiPathMapper.selectOne(new LambdaQueryWrapper<ApiPath>().eq(ApiPath::getServer, server).eq(ApiPath::getPath, path));
+        if(!Objects.isNull(apiPath) && apiPath.getWhiteList().equals("1")){
+            return true;
+        }
         List<Role> roleByPath = getRoleByPath(server, path);
         for (Role role : roleByPath) {
             if(roleIds.contains(String.valueOf(role.getId()))){
@@ -95,7 +96,7 @@ public class RoleServiceImpl implements RoleService {
     public DTO<Role> add(String roleName) {
         if(!StringUtils.hasText(roleName)) return DTO.error("不可以",null);
         List<Role> roles = roleMapper.selectList(new LambdaQueryWrapper<Role>().eq(Role::getName, roleName));
-        if(roles.size()>0){
+        if(!roles.isEmpty()){
             return DTO.error("不建议使用同名角色",null);
         }
         Role role = new Role().setName(roleName).setCreateTime(LocalDateTime.now());
@@ -133,7 +134,7 @@ public class RoleServiceImpl implements RoleService {
         Role roleBase = roleMapper.selectById(role.getId());
         if(StringUtils.hasText(role.getName()) && !roleBase.getName().equals(role.getName())){
             List<Role> roles = roleMapper.selectList(new LambdaQueryWrapper<Role>().eq(Role::getName, role.getName()));
-            if(roles.size()>0){
+            if(!roles.isEmpty()){
                 return DTO.error("不建议使用同名角色",null);
             }
             roleMapper.update(new LambdaUpdateWrapper<Role>().set(Role::getName,role.getName()).set(Role::getUpdateTime,LocalDateTime.now()).eq(Role::getId,roleBase.getId()));
@@ -162,7 +163,7 @@ public class RoleServiceImpl implements RoleService {
         }
 
         roleMapper.deleteRoleApiRelation(roleBase.getId());
-        if(roleApiRelation.size()>0){
+        if(!roleApiRelation.isEmpty()){
             roleMapper.insertRoleApiRelation(roleBase.getId(),roleApiRelation,LocalDateTime.now());
             roleMapper.update(new LambdaUpdateWrapper<Role>().set(Role::getUpdateTime,LocalDateTime.now()).eq(Role::getId,roleBase.getId()));
         }

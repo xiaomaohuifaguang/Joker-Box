@@ -28,6 +28,8 @@ public class HttpResult<T> {
     private String msg = HttpResultStatus.SUCCESS.msg();
     @Schema(description = "时间戳")
     private long timestamp = System.currentTimeMillis();
+    @Schema(description = "续签")
+    private String newToken;
 
     /**
      * 响应方法

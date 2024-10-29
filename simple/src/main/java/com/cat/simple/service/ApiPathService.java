@@ -1,5 +1,6 @@
 package com.cat.simple.service;
 
+import com.cat.common.entity.Cascade;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.SelectOption;
 import com.cat.common.entity.auth.ApiPath;
@@ -22,6 +23,8 @@ public interface ApiPathService {
      * @return 操作情况
      */
     boolean save(ApiPath apiPath);
+
+    boolean update(ApiPath apiPath);
 
     /**
      * 全量写入
@@ -46,6 +49,18 @@ public interface ApiPathService {
      */
     List<SelectOption> selector(String server);
 
+    /**
+     * 所有服务及其向下所有分组所有api路径
+     * @param server 服务名称 application.name
+     * @param path 路径 api路径
+     * @return 服务详细apiPath信息
+     */
+    ApiPath info(String server, String path);
 
+    /**
+     * api级联到分组
+     * @return api级联到分组信息
+     */
+    List<Cascade> cascadeServerGroup();
 
 }

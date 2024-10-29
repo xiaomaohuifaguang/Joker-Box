@@ -75,7 +75,7 @@ public interface RoleService {
     /**
      * 所有服务及其向下所有分组所有api路径
      * @param roleId 角色id
-     * @return 服务详细apiPath信息
+     * @return 服务详细role信息
      */
     Role info(String roleId);
 

@@ -9,6 +9,8 @@ package com.cat.common.entity;
  **/
 public class CONSTANTS {
 
+    public static final String DEFAULT_PASSWORD = "12345678";
+
     public static final Integer ROLE_ADMIN_CODE = 1;
     public static final Integer ROLE_EVERYONE_CODE = 2;
 
@@ -42,6 +44,7 @@ public class CONSTANTS {
      */
     public static final String FILE_TYPE_1 = "file";
     public static final String FILE_TYPE_2 = "folder";
+    public static final String FILE_TYPE_3 = "avatar";
 
     /**
      * 根目录

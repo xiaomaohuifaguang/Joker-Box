@@ -69,6 +69,7 @@ public class JwtUtils {
             builder.header().add("custom-header", UUID.randomUUID().toString());
 //        builder.subject("");
             builder.id(UUID.randomUUID().toString());
+            
             builder.issuedAt(new Date());
             builder.expiration(new Date(System.currentTimeMillis() + (seconds * 1000)));
         }

@@ -2,6 +2,7 @@ package com.cat.simple.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.cat.common.entity.Cascade;
 import com.cat.simple.mapper.ApiPathMapper;
 import com.cat.simple.mapper.RoleMapper;
 import com.cat.simple.service.ApiPathService;
@@ -19,6 +20,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /***
  * api路径业务层实现
@@ -39,13 +41,31 @@ public class ApiPathServiceImpl implements ApiPathService {
     @Override
     public boolean save(ApiPath apiPath) {
         int flag;
-        boolean exists = apiPathMapper.exists(new LambdaQueryWrapper<ApiPath>().eq(ApiPath::getPath, apiPath.getPath()).eq(ApiPath::getServer, apiPath.getServer()));
-        if (!exists) {
+        ApiPath apiPathOrigin = apiPathMapper.selectOne(new LambdaQueryWrapper<ApiPath>().eq(ApiPath::getPath, apiPath.getPath()).eq(ApiPath::getServer, apiPath.getServer()));
+        if (Objects.isNull(apiPathOrigin)) {
             flag = apiPathMapper.insert(apiPath);
         } else {
             flag = apiPathMapper.update(new LambdaUpdateWrapper<ApiPath>()
                     .set(ApiPath::getName, apiPath.getName())
                     .set(ApiPath::getGroupName, apiPath.getGroupName())
+                    .set(ApiPath::getWhiteList, apiPath.getWhiteList().equals("1") ? apiPath.getWhiteList() : apiPathOrigin.getWhiteList())
+                    .set(ApiPath::getUpdateTime, LocalDateTime.now())
+                    .eq(ApiPath::getPath, apiPath.getPath())
+                    .eq(ApiPath::getServer, apiPath.getServer()));
+        }
+        return flag==1;
+    }
+
+    @Override
+    public boolean update(ApiPath apiPath) {
+        int flag;
+        ApiPath apiPathOrigin = apiPathMapper.selectOne(new LambdaQueryWrapper<ApiPath>().eq(ApiPath::getPath, apiPath.getPath()).eq(ApiPath::getServer, apiPath.getServer()));
+        if (Objects.isNull(apiPathOrigin)) {
+            return false;
+        } else {
+            flag = apiPathMapper.update(new LambdaUpdateWrapper<ApiPath>()
+//                    .set(ApiPath::getName, apiPath.getName())
+//                    .set(ApiPath::getGroupName, apiPath.getGroupName())
                     .set(ApiPath::getWhiteList, apiPath.getWhiteList())
                     .set(ApiPath::getUpdateTime, LocalDateTime.now())
                     .eq(ApiPath::getPath, apiPath.getPath())
@@ -90,5 +110,28 @@ public class ApiPathServiceImpl implements ApiPathService {
             List<ApiPathGroup> groups = apiPathMapper.groups(server);
             return groups.stream().map(apiPathServer -> new SelectOption(apiPathServer.getGroupName(), apiPathServer.getGroupName())).toList();
         }
+    }
+
+    @Override
+    public ApiPath info(String server, String path) {
+        return apiPathMapper.selectOne(new LambdaQueryWrapper<ApiPath>().eq(ApiPath::getServer, server).eq(ApiPath::getPath, path));
+    }
+
+    @Override
+    public List<Cascade> cascadeServerGroup() {
+        List<Cascade> list = new ArrayList<>();
+        List<ApiPathServer> servers = apiPathMapper.servers();
+        servers.forEach(s->{
+            Cascade cascade = new Cascade().setValue(s.getServer()).setLabel(s.getServer());
+            List<ApiPathGroup> groups = apiPathMapper.groups(s.getServer());
+            List<Cascade> list_2 = new ArrayList<>();
+            groups.forEach(g->{
+                Cascade cascade_2 = new Cascade().setValue(g.getGroupName()).setLabel(g.getGroupName());
+                list_2.add(cascade_2);
+            });
+            cascade.setChildren(list_2);
+            list.add(cascade);
+        });
+        return list;
     }
 }

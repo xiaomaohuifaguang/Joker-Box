@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.util.List;
+
 
 /***
  * <TODO description class purpose>
@@ -27,6 +29,20 @@ public class UserInfo {
     @Schema(description = "用户昵称")
     private String nickname;
 
+    @Schema(description = "角色")
+    private List<Role> roles;
+
+    @Schema(description = "管理员")
+    private boolean admin;
+
+    @Schema(description = "性别")
+    private String sex = "未知";
+
+    @Schema(description = "邮箱")
+    private String mail;
+
+    @Schema(description = "手机号")
+    private Long phone;
 
 
 }

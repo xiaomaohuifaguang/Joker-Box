@@ -3,11 +3,13 @@ package com.cat.simple.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.cat.common.entity.file.FileInfo;
 import com.cat.simple.config.redis.RedisService;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.mapper.RoleMapper;
 import com.cat.simple.mapper.UserExtendMapper;
 import com.cat.simple.mapper.UserMapper;
+import com.cat.simple.service.FileService;
 import com.cat.simple.service.MailService;
 import com.cat.simple.service.UserService;
 import com.cat.common.entity.CONSTANTS;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -54,6 +57,8 @@ public class UserServiceImpl implements UserService {
     private RedisService redisService;
     @Resource
     private MailService mailService;
+    @Resource
+    private FileService fileService;
 
     @Override
     public String getToken(LoginInfo loginInfo) {
@@ -105,6 +110,19 @@ public class UserServiceImpl implements UserService {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         UserInfo userInfo = new UserInfo();
         BeanUtils.copyProperties(loginUser, userInfo);
+        userInfo.getRoles().forEach(role -> {
+            if (Objects.equals(role.getId(), CONSTANTS.ROLE_ADMIN_CODE)) {
+                userInfo.setAdmin(true);
+            }
+        });
+        if (!ObjectUtils.isEmpty(userInfo)) {
+            UserExtend userExtend = userExtendMapper.selectById(loginUser.getUserId());
+            if (userExtend != null) {
+                userInfo.setSex(userExtend.getSex());
+                userInfo.setMail(userExtend.getMail());
+                userInfo.setPhone(userExtend.getPhone());
+            }
+        }
         return userInfo;
     }
 
@@ -116,31 +134,31 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public DTO<?> register(RegisterUserInfo registerUserInfo) {
-        if(!RegexUtils.validate(registerUserInfo.getUsername(), RegexUtils.ACCOUNT_REGEX)
+        if (!RegexUtils.validate(registerUserInfo.getUsername(), RegexUtils.ACCOUNT_REGEX)
                 || !RegexUtils.validate(registerUserInfo.getPassword(), RegexUtils.PASSWORD_REGEX)
-                || !RegexUtils.validate(registerUserInfo.getMail(), RegexUtils.EMAIL_REGEX) ){
+                || !RegexUtils.validate(registerUserInfo.getMail(), RegexUtils.EMAIL_REGEX)) {
             return DTO.error("格式错误");
         }
 
         User userByUsername = getUserByUsername(registerUserInfo.getUsername());
-        if(!ObjectUtils.isEmpty(userByUsername)){
+        if (!ObjectUtils.isEmpty(userByUsername)) {
             return DTO.error("用户名已存在");
         }
 
         String codeCache = redisService.get(CONSTANTS.REDIS_PARENT_MAIL_CODE + registerUserInfo.getMail(), String.class);
-        if(!StringUtils.hasText(codeCache) || !codeCache.equals(registerUserInfo.getCode())){
+        if (!StringUtils.hasText(codeCache) || !codeCache.equals(registerUserInfo.getCode())) {
             return DTO.error("验证码不正确");
         }
 
         User user = new User();
-        BeanUtils.copyProperties(registerUserInfo,user);
+        BeanUtils.copyProperties(registerUserInfo, user);
         user.setPassword(CryptoUtils.encrypt(user.getPassword()));
         userMapper.insert(user);
 
         userByUsername = getUserByUsername(registerUserInfo.getUsername());
         UserExtend userExtend = new UserExtend().setUserId(userByUsername.getId());
-        BeanUtils.copyProperties(registerUserInfo,userExtend);
-        userExtend.setSex(StringUtils.hasText(userExtend.getSex()) && (userExtend.getSex().equals("男")||userExtend.getSex().equals("女")) ? userExtend.getSex() : "未知");
+        BeanUtils.copyProperties(registerUserInfo, userExtend);
+        userExtend.setSex(StringUtils.hasText(userExtend.getSex()) && (userExtend.getSex().equals("男") || userExtend.getSex().equals("女")) ? userExtend.getSex() : "未知");
         userExtendMapper.insert(userExtend);
         roleMapper.defaultRole(userByUsername.getId());
         return DTO.success();
@@ -149,23 +167,24 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<User> queryPage(UserPageParam pageParam) {
         Page<User> page = new Page<>(pageParam);
-        page = userMapper.selectPage(page,pageParam);
-        page.getRecords().forEach(u->{
+        page = userMapper.selectPage(page, pageParam);
+        page.getRecords().forEach(u -> {
             UserExtend userExtend = userExtendMapper.selectById(u.getId());
             u.setUserExtend(userExtend);
+
         });
         return page;
     }
 
     @Override
     public DTO<?> delete(String userId) {
-        if(!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId,userId))){
+        if (!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId, userId))) {
             return DTO.error("用户不存在");
         }
 
         List<Role> roles = roleMapper.getRolesByUserId(userId);
         List<Integer> roleIds = roles.stream().map(Role::getId).toList();
-        if(roleIds.contains(CONSTANTS.ROLE_ADMIN_CODE)){
+        if (roleIds.contains(CONSTANTS.ROLE_ADMIN_CODE)) {
             return DTO.error("大胆,该用户为管理员");
         }
         userMapper.deleteById(userId);
@@ -175,7 +194,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserInfo(String userId) {
         User user = userMapper.selectById(userId);
-        if(!ObjectUtils.isEmpty(user)){
+        if (!ObjectUtils.isEmpty(user)) {
             UserExtend userExtend = userExtendMapper.selectById(userId);
             user.setUserExtend(ObjectUtils.isEmpty(userExtend) ? new UserExtend() : userExtend);
         }
@@ -186,37 +205,37 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public DTO<?> addRole(String userId, String roleId) {
 
-        if(userMapper.userCountByRole(String.valueOf(CONSTANTS.ROLE_ADMIN_CODE)) > 0){
-            return DTO.error("超级管理员仅限一个用户");
-        }
+//        if(userMapper.userCountByRole(String.valueOf(CONSTANTS.ROLE_ADMIN_CODE)) > 0){
+//            return DTO.error("超级管理员仅限一个用户");
+//        }
 
-        if(!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId,userId))){
+        if (!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId, userId))) {
             return DTO.error("用户不存在");
         }
 
-        if(!roleMapper.exists(new LambdaQueryWrapper<Role>().eq(Role::getId,roleId))){
+        if (!roleMapper.exists(new LambdaQueryWrapper<Role>().eq(Role::getId, roleId))) {
             return DTO.error("角色不存在");
         }
 
         List<Integer> list = getRoleByUserId(userId).stream().map(Role::getId).toList();
-        if(list.contains(Integer.parseInt(roleId))){
+        if (list.contains(Integer.parseInt(roleId))) {
             return DTO.error("角色已绑定,无需重复绑定");
         }
 
-        userMapper.insertUserAndRole(userId,roleId, LocalDateTime.now());
+        userMapper.insertUserAndRole(userId, roleId, LocalDateTime.now());
 
         return DTO.success();
     }
 
     @Override
     public DTO<?> deleteRole(String userId, String roleId) {
-        if(roleId.equals(String.valueOf(CONSTANTS.ROLE_ADMIN_CODE)) &&  userId.equals("1")){
+        if (roleId.equals(String.valueOf(CONSTANTS.ROLE_ADMIN_CODE)) && userId.equals("1")) {
             return DTO.error("大傻春，你要干什么");
         }
-        if(roleId.equals(String.valueOf(CONSTANTS.ROLE_EVERYONE_CODE))){
+        if (roleId.equals(String.valueOf(CONSTANTS.ROLE_EVERYONE_CODE))) {
             return DTO.error("默认角色不建议修改");
         }
-        int del = userMapper.removeUserAndRole(userId, roleId);
+        userMapper.removeUserAndRole(userId, roleId);
         return DTO.success();
     }
 
@@ -224,16 +243,57 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public DTO<?> resetPassword(String userId) {
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getId, userId));
-        if(ObjectUtils.isEmpty(user)){
+        if (ObjectUtils.isEmpty(user)) {
             return DTO.error("用户不存在");
         }
-        userMapper.update(new LambdaUpdateWrapper<User>().set(User::getPassword,CryptoUtils.encrypt("12345678")).eq(User::getId,userId));
-
+        int update = userMapper.update(new LambdaUpdateWrapper<User>().set(User::getPassword, CryptoUtils.encrypt(CONSTANTS.DEFAULT_PASSWORD)).eq(User::getId, userId));
+        if (update == 1) {
+            removeUserCache(SecurityUtils.getLoginUser().getUsername());
+        }
         return DTO.success();
     }
 
+    @Override
+    public boolean avatarUpload(MultipartFile file) throws IOException {
+        return fileService.uploadAvatar(file).flag;
+    }
+
+    @Override
+    public void avatar(String username) throws IOException {
+        fileService.downloadAvatar(username);
+    }
+
+    @Override
+    public DTO<?> changePassword(String oldPassword, String newPassword) throws IOException {
+
+        if (!CryptoUtils.verify(oldPassword, SecurityUtils.getLoginUser().getPassword())) {
+            return DTO.error("原密码错误");
+        }
+
+        if (!RegexUtils.validate(newPassword, RegexUtils.PASSWORD_REGEX)) {
+            return DTO.error("新密码格式错误");
+        }
+
+        if (oldPassword.equals(newPassword)) {
+            return DTO.error("新密码不能与旧密码相同");
+        }
+
+        int update = userMapper.update(new LambdaUpdateWrapper<User>().set(User::getPassword, CryptoUtils.encrypt(newPassword)).eq(User::getId, SecurityUtils.getLoginUser().getUserId()));
+        if (update == 1) {
+            removeUserCache(SecurityUtils.getLoginUser().getUsername());
+        }
+
+        return update == 1 ? DTO.success() : DTO.error("更新失败");
+    }
+
+    @Override
+    public void removeUserCache(String username) {
+        redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + username, null, 1); // 存储缓存redis
+    }
+
+
     private String makeToken(LoginUser loginUser) {
-        if(loginUser.getType().equals(CONSTANTS.USER_TYPE_SERVER)){
+        if (loginUser.getType().equals(CONSTANTS.USER_TYPE_SERVER)) {
             return JwtUtils.encrypt(new HashMap<>() {{
                 put("userId", loginUser.getUserId());
                 put("username", loginUser.getUsername());

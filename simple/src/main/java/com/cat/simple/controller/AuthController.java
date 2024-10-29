@@ -1,5 +1,7 @@
 package com.cat.simple.controller;
 
+import com.cat.common.entity.file.FileInfo;
+import com.cat.common.utils.RegexUtils;
 import com.cat.simple.service.UserService;
 import com.cat.common.entity.DTO;
 import com.cat.common.entity.HttpResult;
@@ -12,12 +14,15 @@ import freemarker.template.TemplateException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
@@ -41,7 +46,7 @@ public class AuthController {
     @RequestMapping(value = "/getToken", method = RequestMethod.POST)
     public HttpResult<String> getToken(@RequestBody LoginInfo loginInfo){
         String token = userService.getToken(loginInfo);
-        return HttpResult.back(StringUtils.hasText(token) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR, token);
+        return HttpResult.back(StringUtils.hasText(token) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR_USERNAME_OR_PASSWORD, token);
     }
 
     @Operation(summary = "令牌鉴权")
@@ -64,8 +69,13 @@ public class AuthController {
     })
     @RequestMapping(value = "/mailCode", method = RequestMethod.POST)
     public HttpResult<?> mailCode(@RequestParam("mail") String mail) throws TemplateException, MessagingException, IOException {
-        userService.code(mail);
-        return HttpResult.back(HttpResultStatus.SUCCESS);
+        if( RegexUtils.validate(mail, RegexUtils.EMAIL_REGEX)){
+            userService.code(mail);
+            return HttpResult.back( HttpResultStatus.SUCCESS);
+        }else {
+            return HttpResult.back( HttpResultStatus.ERROR).setMsg("邮箱格式不正确");
+        }
+
     }
 
     @Operation(summary = "注册")
@@ -75,7 +85,34 @@ public class AuthController {
         return HttpResult.back(register.flag ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR).setMsg(register.msg);
     }
 
+    @Operation(summary = "上传文件")
+    @Parameters({
+            @Parameter(name = "uploadFile", schema = @Schema(format = "binary"), description = "文件",required = true),
+    })
+    @RequestMapping(value = "/avatarUpload", method = RequestMethod.POST)
+    public HttpResult<?> upload(@RequestPart(value = "uploadFile") MultipartFile uploadFile) throws IOException {
+        return HttpResult.back(userService.avatarUpload(uploadFile) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
+    }
 
+
+    @Operation(summary = "头像")
+    @Parameters({
+            @Parameter(name = "username", description = "用户名", required = true, in = ParameterIn.PATH)
+    })
+    @RequestMapping(value = "/avatar/{username}", method = RequestMethod.GET)
+    public void avatar( @PathVariable String username) throws IOException {
+        userService.avatar(username);
+    }
+
+    @Operation(summary = "修改密码")
+    @Parameters({
+            @Parameter(name = "oldPassword", description = "原密码", required = true),
+            @Parameter(name = "newPassword", description = "新密码", required = true)
+    })
+    @RequestMapping(value = "/changePassword", method = RequestMethod.POST)
+    public HttpResult<?> changePassword( @RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword) throws IOException {
+        return HttpResult.back(userService.changePassword(oldPassword, newPassword));
+    }
 
 
 }

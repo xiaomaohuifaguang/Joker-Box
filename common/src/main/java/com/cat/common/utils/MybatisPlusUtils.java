@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  **/
 public class MybatisPlusUtils {
 
-    final static private String url = "jdbc:mysql://192.168.3.12:3306/joker-box-dev?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8";
+    final static private String url = "jdbc:mysql://192.168.1.4:3306/joker-box-dev?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8";
     final static private String username = "root";
     final static private String password = "six6";
 
@@ -38,7 +38,7 @@ public class MybatisPlusUtils {
                 .packageConfig(builder -> builder
                         .parent(packageName)
                                 .controller("controller")
-                                .entity("entity.ai.chat")
+                                .entity("entity.website")
                                 .mapper("mapper")
                                 .service("service")
                                 .serviceImpl("service.impl")
@@ -57,9 +57,9 @@ public class MybatisPlusUtils {
     }
 
     public static void main(String[] args) {
-        String packageName = "com.cat.ai";
-        String tableName = "cat_ai_message";
-        String outDir = "D:\\todo\\mybatis-plus\\joker-box";
+        String packageName = "com.cat.simple";
+        String tableName = "cat_website";
+        String outDir = "C:\\Users\\six6\\todo\\projects\\mybatis-plus-out\\joker-box";
         String author = "xiaomaohuifaguang";
 
         MybatisPlusUtils.make(packageName, tableName,outDir,author);

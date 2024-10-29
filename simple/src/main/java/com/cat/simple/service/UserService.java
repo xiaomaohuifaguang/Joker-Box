@@ -5,6 +5,7 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.*;
 import freemarker.template.TemplateException;
 import jakarta.mail.MessagingException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -80,5 +81,15 @@ public interface UserService {
     DTO<?> deleteRole(String userId, String roleId);
 
     DTO<?> resetPassword(String userId);
+
+    boolean avatarUpload(MultipartFile file) throws IOException;
+
+    void avatar(String username) throws IOException;
+
+    DTO<?> changePassword(String oldPassword, String newPassword) throws IOException;
+
+    void removeUserCache(String username);
+
+
 
 }
