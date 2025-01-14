@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.RapidDevelopmentMapper">
+    <select id="queryAllFields" resultType="com.cat.common.entity.rapidDevelopment.FieldInfo">
+        SHOW FULL COLUMNS FROM  ${tableName};
+    </select>
+    <select id="tableNameList" resultType="java.lang.String">
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_name LIKE 'cat\_%';
+    </select>
+</mapper>

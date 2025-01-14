@@ -37,6 +37,9 @@ public class Role implements Serializable {
     @Schema(description = "角色名称")
     private String name;
 
+    @Schema(description = "后台管理权限 0 否 1 是")
+    private String admin;
+
     @Schema(description = "删除标识 0 否 1 是")
     @TableLogic
     private String deleted;

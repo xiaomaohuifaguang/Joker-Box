@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.MenuMapper">
+    <insert id="insertMenuApiRelation">
+        INSERT cat_menu_api
+        SELECT *
+        FROM
+        (
+        SELECT #{menuId},path,server,#{updateTime}
+        FROM
+        cat_api_path
+        WHERE
+        white_list = '0'
+        <foreach collection="relations" item="relation" open=" AND (" close=")" separator="OR">
+            ( server = #{relation.server}
+            AND path = #{relation.apiPath} )
+        </foreach>
+        ) insertTmp
+    </insert>
+    <delete id="deleteMenuApiRelation">
+        DELETE FROM cat_menu_api WHERE menu_id = #{menuId}
+    </delete>
+
+    <select id="selectPage" resultType="com.cat.common.entity.menu.Menu">
+        SELECT * FROM cat_menu
+    </select>
+    <select id="queryAllByAuth" resultType="com.cat.common.entity.menu.Menu">
+        SELECT
+            cm.*
+        FROM
+            cat_menu cm
+        <if test="!idAdmin">
+            INNER JOIN cat_role_menu crm ON cm.id = crm.menu_id
+            <where>
+                <choose>
+                    <when test="roleIds != null and roleIds.size() > 0 ">
+                        <foreach collection="roleIds" item="roleId" open="AND crm.role_id in ( " close=" ) " separator=",">
+                            #{roleId}
+                        </foreach>
+                    </when>
+                    <otherwise>
+                        1 = 2
+                    </otherwise>
+                </choose>
+            </where>
+        </if>
+        ORDER BY cm.sort
+    </select>
+</mapper>

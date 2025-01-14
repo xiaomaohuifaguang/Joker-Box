@@ -3,9 +3,9 @@ package com.cat.simple.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.cat.common.entity.file.FileInfo;
 import com.cat.simple.config.redis.RedisService;
 import com.cat.simple.config.security.SecurityUtils;
+import com.cat.simple.mapper.OrgMapper;
 import com.cat.simple.mapper.RoleMapper;
 import com.cat.simple.mapper.UserExtendMapper;
 import com.cat.simple.mapper.UserMapper;
@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +34,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+
+import static com.cat.common.entity.CONSTANTS.NIUBI_ORG_NAME;
+import static com.cat.common.entity.CONSTANTS.ORG_PARENT;
 
 /***
  * 鉴权服务业务层实现
@@ -54,6 +58,8 @@ public class UserServiceImpl implements UserService {
     @Resource
     private RoleMapper roleMapper;
     @Resource
+    private OrgMapper  orgMapper;
+    @Resource
     private RedisService redisService;
     @Resource
     private MailService mailService;
@@ -68,14 +74,30 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginUser getLoginUser(String username) {
+        LoginUser loginUser;
         // 缓存读取
-        LoginUser loginUser = redisService.get(CONSTANTS.REDIS_PARENT_TOKEN + username, LoginUser.class);
+        loginUser = redisService.get(CONSTANTS.REDIS_PARENT_TOKEN + username, LoginUser.class);
         if (!ObjectUtils.isEmpty(loginUser)) return loginUser;
 
         // 数据库读取
         User user = this.getUserByUsername(username); // 获取用户通过username
         List<Role> roles = roleMapper.getRolesByUserId(user.getIdStr()); // 获取角色通过userId
-        loginUser = new LoginUser(user, roles);
+//        List<Org> orgs = orgMapper.getOrgsByUserId(user.getIdStr());
+        List<Integer> orgIds = orgMapper.getOrgIdsByUserId(user.getIdStr());
+        List<Org> orgs = new ArrayList<>();
+        orgIds.forEach(id->{
+            Org orgInfo = orgMapper.selectById(id);
+            if(ObjectUtils.isEmpty(orgInfo)){
+                if(id.equals(ORG_PARENT)){
+                    orgInfo = new Org().setId(ORG_PARENT).setName(NIUBI_ORG_NAME);
+                }
+            }
+            if(!ObjectUtils.isEmpty(orgInfo)){
+                orgs.add(orgInfo);
+            }
+        });
+
+        loginUser = new LoginUser(user, roles, orgs);
         redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + loginUser.getUsername(), loginUser, tokenExpire); // 存储缓存redis
         return loginUser;
     }
@@ -112,6 +134,9 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(loginUser, userInfo);
         userInfo.getRoles().forEach(role -> {
             if (Objects.equals(role.getId(), CONSTANTS.ROLE_ADMIN_CODE)) {
+                userInfo.setAdmin(true);
+            }
+            if(role.getAdmin().equals("1")){
                 userInfo.setAdmin(true);
             }
         });
@@ -171,14 +196,14 @@ public class UserServiceImpl implements UserService {
         page.getRecords().forEach(u -> {
             UserExtend userExtend = userExtendMapper.selectById(u.getId());
             u.setUserExtend(userExtend);
-
         });
         return page;
     }
 
     @Override
     public DTO<?> delete(String userId) {
-        if (!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId, userId))) {
+        User user = userMapper.selectById(userId);
+        if (ObjectUtils.isEmpty(user)) {
             return DTO.error("用户不存在");
         }
 
@@ -188,6 +213,7 @@ public class UserServiceImpl implements UserService {
             return DTO.error("大胆,该用户为管理员");
         }
         userMapper.deleteById(userId);
+        clearUserCacheByUsername(user.getUsername());
         return DTO.success();
     }
 
@@ -209,7 +235,8 @@ public class UserServiceImpl implements UserService {
 //            return DTO.error("超级管理员仅限一个用户");
 //        }
 
-        if (!userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getId, userId))) {
+        User user = userMapper.selectById(userId);
+        if (ObjectUtils.isEmpty(user)) {
             return DTO.error("用户不存在");
         }
 
@@ -223,7 +250,7 @@ public class UserServiceImpl implements UserService {
         }
 
         userMapper.insertUserAndRole(userId, roleId, LocalDateTime.now());
-
+        clearUserCacheByUsername(user.getUsername());
         return DTO.success();
     }
 
@@ -247,9 +274,10 @@ public class UserServiceImpl implements UserService {
             return DTO.error("用户不存在");
         }
         int update = userMapper.update(new LambdaUpdateWrapper<User>().set(User::getPassword, CryptoUtils.encrypt(CONSTANTS.DEFAULT_PASSWORD)).eq(User::getId, userId));
-        if (update == 1) {
-            removeUserCache(SecurityUtils.getLoginUser().getUsername());
-        }
+//        if (update == 1) {
+//            removeUserCache(user.getUsername());
+//        }
+        clearUserCacheByUsername(user.getUsername());
         return DTO.success();
     }
 
@@ -279,16 +307,31 @@ public class UserServiceImpl implements UserService {
         }
 
         int update = userMapper.update(new LambdaUpdateWrapper<User>().set(User::getPassword, CryptoUtils.encrypt(newPassword)).eq(User::getId, SecurityUtils.getLoginUser().getUserId()));
-        if (update == 1) {
-            removeUserCache(SecurityUtils.getLoginUser().getUsername());
-        }
-
+//        if (update == 1) {
+//            removeUserCache(SecurityUtils.getLoginUser().getUsername());
+//        }
+        clearUserCacheByUsername(SecurityUtils.getLoginUser().getUsername());
         return update == 1 ? DTO.success() : DTO.error("更新失败");
     }
 
     @Override
     public void removeUserCache(String username) {
-        redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + username, null, 1); // 存储缓存redis
+        redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + username, "", 1); // 存储缓存redis
+    }
+
+    @Override
+    public void clearUserCacheByUsername(String username) {
+        redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + username, "", 1);
+    }
+
+    @Override
+    public void clearUserCacheByRoleId(Integer roleId) {
+        List<User> users = userMapper.selectListByRole(roleId);
+        if(!CollectionUtils.isEmpty(users)){
+            for (User user : users) {
+                clearUserCacheByUsername(user.getUsername());
+            }
+        }
     }
 
 

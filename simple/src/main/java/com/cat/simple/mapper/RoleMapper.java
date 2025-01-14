@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +47,10 @@ public interface RoleMapper extends BaseMapper<Role> {
 
     int deleteRoleApiRelation(@Param("roleId") Integer roleId);
 
-    int insertRoleApiRelation(@Param("roleId") Integer roleId, @Param("relations") List<Map<String,String>> relations, @Param("updateTime")LocalDateTime updateTime);
+    int insertRoleApiRelation(@Param("roleId") Integer roleId, @Param("relations") List<HashMap<String,String>> relations, @Param("updateTime")LocalDateTime updateTime);
+
+    int deleteROleMenuRelation(@Param("roleId") Integer roleId);
+
+    int insetRoleMenuRelation(@Param("roleId") Integer roleId, @Param("relations") List<Integer> relations, @Param("updateTime")LocalDateTime updateTime);
 
 }

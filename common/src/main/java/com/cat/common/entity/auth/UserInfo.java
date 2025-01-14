@@ -32,6 +32,12 @@ public class UserInfo {
     @Schema(description = "角色")
     private List<Role> roles;
 
+    /**
+     * 组织机构
+     */
+    @Schema(description = "机构")
+    private List<Org> orgs;
+
     @Schema(description = "管理员")
     private boolean admin;
 
@@ -43,6 +49,7 @@ public class UserInfo {
 
     @Schema(description = "手机号")
     private Long phone;
+
 
 
 }

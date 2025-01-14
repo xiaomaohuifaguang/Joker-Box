@@ -59,4 +59,27 @@
         </where>
         ORDER BY  cap.server,cap.group_name,cap.name,cap.path
     </select>
+    <select id="selectAllByRoleId" resultType="java.util.HashMap">
+        SELECT capp.`server`, capp.path apiPath FROM cat_api_path capp
+        INNER JOIN cat_role_api cra ON capp.path = cra.api_path and capp.`server` = cra.`server`
+        <where>
+            and cra.role_id = #{roleId}
+        </where>
+    </select>
+    <select id="selectListByMenuId" resultType="com.cat.common.entity.auth.ApiPath">
+        SELECT cpp.path,
+               cpp.server,
+               cpp.white_list,
+               IFNULL(cpp.name, cpp.path) AS                        name,
+               cpp.group_name,
+               cpp.create_time,
+               cpp.update_time,
+               IF(crp.api_path IS NULL, 0, 1) roleBind
+        FROM cat_api_path cpp
+                 LEFT JOIN (SELECT * FROM cat_menu_api WHERE menu_Id = #{menuId} AND server = #{server}) crp
+                           ON cpp.path = crp.api_path
+        WHERE cpp.server = #{server}
+          AND cpp.group_name = #{groupName}
+    </select>
+
 </mapper>

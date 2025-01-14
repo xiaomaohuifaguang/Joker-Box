@@ -2,17 +2,19 @@
 custom:
   info:
     version: 1.0
-  host: 192.168.1.4
+  host:
+    default: ${CUSTOM_HOST:127.0.0.1}
+    minio: ${MINIO_HOST:127.0.0.1}
   # knife4j doc.html 账号/密码
   knife4j:
     username: knife4j
     password: knife4j
   database:
-    url: jdbc:mysql://${custom.host}:3306/joker-box?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    url: jdbc:mysql://${custom.host.default}:3306/joker-box-dev?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&nullCatalogMeansCurrent=true&zeroDateTimeBehavior=CONVERT_TO_NULL&useSSL=false&autoReconnect=true&useUnicode=true
     username: root
     password: six6
   redis:
-    host: ${custom.host}
+    host: ${custom.host.default}
     port: 6379
     password: six6
     database: 0
@@ -20,7 +22,7 @@ custom:
     username: xiaomaohuifaguang@163.com
     password: OCFCJALGZHBXHARC
   minio:
-    endpoint: http://${custom.host}:9000
+    endpoint: http://${custom.host.minio}:9000
     accessKey: eDPzkWM3yBDMPIXaAmB5
     secretKey: 2kdejARSTWr9UEbNfpKrsQo1fOSGWbjuUENzmiT0
     bucketName: joker-box
@@ -91,5 +93,4 @@ knife4j:
     home-custom-path: classpath:doc/home.md
     # 开启动态请求参数，true-开启，false-关闭
     enable-dynamic-parameter: true
-
 

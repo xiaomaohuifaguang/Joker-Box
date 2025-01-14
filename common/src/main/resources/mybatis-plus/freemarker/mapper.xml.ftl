@@ -36,4 +36,7 @@
     </sql>
 
 </#if>
+    <select id="selectPage" resultType="${package.Entity}.${entity}">
+        SELECT * FROM ${table.name}
+    </select>
 </mapper>

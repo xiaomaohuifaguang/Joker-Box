@@ -3,6 +3,8 @@ package com.cat.common.utils;
 import org.springframework.http.MediaType;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 
 /***
@@ -51,5 +53,17 @@ public class IOUtils {
         in.close();
         out.close();
     }
+
+
+    public static String readTextByPath(String path) throws IOException {
+        File file = new File(path);
+        if(!file.exists()){
+            return null;
+        }
+        return new String(Files.readAllBytes(Paths.get(path)));
+
+    }
+
+
 
 }

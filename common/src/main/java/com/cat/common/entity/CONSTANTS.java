@@ -9,10 +9,15 @@ package com.cat.common.entity;
  **/
 public class CONSTANTS {
 
+
     public static final String DEFAULT_PASSWORD = "12345678";
 
     public static final Integer ROLE_ADMIN_CODE = 1;
     public static final Integer ROLE_EVERYONE_CODE = 2;
+
+    public static final Integer ORG_PARENT = -1;
+
+    public static final String NIUBI_ORG_NAME = "全部";
 
     public static final String REDIS_PARENT_TOKEN = "token:";
 

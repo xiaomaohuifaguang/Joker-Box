@@ -12,9 +12,10 @@ ADD target/simple-1.0-SNAPSHOT.jar /app/app.jar
 
 # 添加配置文件到容器中
 ADD src/main/resources/config /app/config
+
 # 在容器启动时运行jar包
-ENTRYPOINT ["java", "-jar", "/app/app.jar", "--server.port=8080", "-Dfile.encoding=UTF-8", "-Dspring.config.import=file:/app/config/", "--spring.profiles.active=prod"]
+# 定义容器启动时执行的命令，允许传递参数
+ENTRYPOINT ["sh", "-c", "java -jar /app/app.jar --server.port=8080 -Dfile.encoding=UTF-8 -Dspring.config.import=file:/app/config/ --spring.profiles.active=prod $*"]
 
-
-# docker build -t 192.168.1.4:7002/joker-box/simple:1.0.0-beta .
-# docker push 192.168.1.4:7002/joker-box/simple:1.0.0-beta
+# docker build -t 192.168.1.3:7002/joker-box/simple:1.0.0-beta .
+# docker push 192.168.1.3:7002/joker-box/simple:1.0.0-beta

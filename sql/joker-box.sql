@@ -1,7 +1,7 @@
 /*
  Navicat Premium Dump SQL
 
- Source Server         : dell-mysql-joker-box
+ Source Server         : 192.168.1.4
  Source Server Type    : MySQL
  Source Server Version : 80039 (8.0.39)
  Source Host           : 192.168.1.4:3306
@@ -11,7 +11,7 @@
  Target Server Version : 80039 (8.0.39)
  File Encoding         : 65001
 
- Date: 27/10/2024 17:11:57
+ Date: 04/12/2024 16:36:21
 */
 
 SET NAMES utf8mb4;
@@ -30,7 +30,7 @@ CREATE TABLE `cat_api_path`  (
   `create_time` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`path`, `server`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'api接口表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for cat_file_info
@@ -47,7 +47,32 @@ CREATE TABLE `cat_file_info`  (
   `create_time` datetime NOT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '文件信息' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '文件信息' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for cat_org
+-- ----------------------------
+DROP TABLE IF EXISTS `cat_org`;
+CREATE TABLE `cat_org`  (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '组织id',
+  `parent_id` int NOT NULL COMMENT '父级机构id',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '机构名称',
+  `deleted` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '0' COMMENT '逻辑删除',
+  `create_time` datetime NOT NULL COMMENT '创建时间',
+  `update_time` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组织机构表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for cat_org_user
+-- ----------------------------
+DROP TABLE IF EXISTS `cat_org_user`;
+CREATE TABLE `cat_org_user`  (
+  `org_id` int NOT NULL COMMENT '组织机构id',
+  `user_id` int NOT NULL COMMENT '用户id',
+  `create_time` datetime NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`org_id`, `user_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '组织机构与用户关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for cat_role
@@ -60,7 +85,7 @@ CREATE TABLE `cat_role`  (
   `create_time` datetime NOT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for cat_role_api
@@ -72,7 +97,7 @@ CREATE TABLE `cat_role_api`  (
   `server` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '服务application.name',
   `update_time` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`role_id`, `api_path`, `server`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '角色与api关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for cat_user
@@ -88,18 +113,18 @@ CREATE TABLE `cat_user`  (
   `create_time` datetime NOT NULL COMMENT '创建时间',
   `update_time` datetime NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for cat_user_and_role
+-- Table structure for cat_user_role
 -- ----------------------------
-DROP TABLE IF EXISTS `cat_user_and_role`;
-CREATE TABLE `cat_user_and_role`  (
+DROP TABLE IF EXISTS `cat_user_role`;
+CREATE TABLE `cat_user_role`  (
   `user_id` int NOT NULL COMMENT '用户id',
   `role_id` int NOT NULL COMMENT '角色id',
   `create_time` datetime NOT NULL COMMENT '创建时间',
   PRIMARY KEY (`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户角色关系表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户角色关系表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for cat_user_extend
@@ -111,7 +136,7 @@ CREATE TABLE `cat_user_extend`  (
   `mail` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '邮箱',
   `phone` int NULL DEFAULT NULL COMMENT '手机号',
   PRIMARY KEY (`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户拓展表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户拓展表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for cat_website

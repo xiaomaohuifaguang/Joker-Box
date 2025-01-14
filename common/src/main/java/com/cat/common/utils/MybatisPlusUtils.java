@@ -2,8 +2,6 @@ package com.cat.common.utils;
 
 import com.baomidou.mybatisplus.generator.FastAutoGenerator;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /***
@@ -30,39 +28,40 @@ public class MybatisPlusUtils {
                 .globalConfig(builder -> builder
                                 .author(author)
                                 .outputDir(outDir)
-//                                .disableOpenDir() // 禁止打开输出目录
+                                .disableOpenDir() // 禁止打开输出目录
                                 .commentDate("yyyy-MM-dd")
                                 .enableSpringdoc()
 //                        .enableSwagger()
                 )
                 .packageConfig(builder -> builder
                         .parent(packageName)
-                                .controller("controller")
-                                .entity("entity.website")
-                                .mapper("mapper")
-                                .service("service")
-                                .serviceImpl("service.impl")
-                                .xml("mapper.xml")
+                                .controller("simple.controller")
+                                .entity("common.entity")
+                                .mapper("simple.mapper")
+                                .service("simple.service")
+                                .serviceImpl("simple.service.impl")
+                                .xml("simple.mapper.xml")
                 )
                 .strategyConfig(builder -> builder
                         .addInclude(tableName)
                         .addTablePrefix("cat_") // 表名前缀
                         .controllerBuilder().disable()
                         .serviceBuilder().disableService().disableServiceImpl()
-                        .mapperBuilder().mapperTemplate("/mybatis-plus/freemarker/mapper.java").mapperXmlTemplate("/mybatis-plus/freemarker/mapper.xml").enableFileOverride()
+                        .mapperBuilder().mapperTemplate("/mybatis-plus/freemarker/mapper.java")
+                        .mapperXmlTemplate("/mybatis-plus/freemarker/mapper.xml").enableFileOverride()
                         .entityBuilder().javaTemplate("/mybatis-plus/freemarker/entity.java").enableFileOverride().enableLombok()
                 )
                 .templateEngine(new FreemarkerTemplateEngine())
                 .execute();
     }
-
-    public static void main(String[] args) {
-        String packageName = "com.cat.simple";
-        String tableName = "cat_website";
-        String outDir = "C:\\Users\\six6\\todo\\projects\\mybatis-plus-out\\joker-box";
-        String author = "xiaomaohuifaguang";
-
-        MybatisPlusUtils.make(packageName, tableName,outDir,author);
-    }
+//
+//    public static void main(String[] args) {
+//        String packageName = "com.cat.simple";
+//        String tableName = "cat_org";
+//        String outDir = "C:\\Users\\six6\\todo\\projects\\mybatis-plus-out\\joker-box";
+//        String author = "xiaomaohuifaguang";
+//
+//        MybatisPlusUtils.make(packageName, "auth", tableName,outDir,author);
+//    }
 
 }

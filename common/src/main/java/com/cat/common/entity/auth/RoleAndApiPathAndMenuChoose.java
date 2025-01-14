@@ -19,14 +19,17 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-@Schema(name = "RoleAndApiPath", description = "角色详细信息")
-public class RoleAndApiPath {
+@Schema(name = "RoleAndApiPathAndMenuChoose", description = "角色详细信息")
+public class RoleAndApiPathAndMenuChoose {
 
     @Schema(description = "角色信息")
     private Role role;
 
     @Schema(description = "api路径关系树")
     private List<ApiPathServer> apiPathTree;
+
+    @Schema(description = "菜单配置")
+    private List<Integer> menuChoose;
 
 
 }

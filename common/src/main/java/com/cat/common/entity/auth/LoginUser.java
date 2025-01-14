@@ -52,12 +52,19 @@ public class LoginUser {
     private List<Role> roles;
 
 
-    public LoginUser(User user, List<Role> roles) {
+    /**
+     * 组织机构
+     */
+    private List<Org> orgs;
+
+
+    public LoginUser(User user, List<Role> roles, List<Org> orgs) {
         setUserId(user.getIdStr());
         setUsername(user.getUsername());
         setPassword(user.getPassword());
         setNickname(user.getNickname());
         setType(user.getType());
         setRoles(roles);
+        setOrgs(orgs);
     }
 }

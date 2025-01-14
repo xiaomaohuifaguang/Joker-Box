@@ -29,6 +29,9 @@ public class UserPageParam extends PageParam {
     @Schema(description = "角色id")
     private String roleId;
 
+    @Schema(description = "机构id")
+    private String orgId;
+
     @Schema(description = "账号类型")
     private String type;
 

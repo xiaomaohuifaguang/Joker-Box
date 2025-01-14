@@ -31,6 +31,7 @@ public class SecurityUtils {
         List<Role> roles = loginUser.getRoles();
         for (Role role : roles) {
             if(role.getId().equals(CONSTANTS.ROLE_ADMIN_CODE)) return true;
+            if(role.getAdmin().equals("1")) return true;
         }
         return false;
     }

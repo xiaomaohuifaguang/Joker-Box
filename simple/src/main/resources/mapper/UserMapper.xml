@@ -2,14 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cat.simple.mapper.UserMapper">
     <insert id="insertUserAndRole">
-        INSERT cat_user_and_role
+        INSERT cat_user_role
         SELECT
             (SELECT id FROM cat_user WHERE deleted='0' AND id=#{userId}) AS userId,
             (SELECT id FROM cat_role WHERE deleted='0' AND id=#{roleId}) AS role_id,
             #{createTime} AS createTime
     </insert>
     <delete id="removeUserAndRole">
-        DELETE FROM cat_user_and_role
+        DELETE FROM cat_user_role
         WHERE
             user_id = #{userId}
             AND role_id = #{roleId}
@@ -21,7 +21,12 @@
         cu.id, cu.type, cu.deleted, cu.username, cu.nickname, cu.create_time, cu.update_time
         FROM
         cat_user cu
-        LEFT JOIN cat_user_and_role cuar ON cu.id = cuar.user_id
+        <if test='param.roleId != null and param.roleId != ""'>
+            LEFT JOIN cat_user_role cur ON cu.id = cur.user_id
+        </if>
+        <if test='param.orgId != null and param.orgId != ""'>
+            LEFT JOIN cat_org_user cou  ON cu.id = cou.org_id
+        </if>
         where cu.deleted = '0'
         <if test='param.search != null and param.search != ""'>
             AND (
@@ -33,7 +38,10 @@
             )
         </if>
         <if test='param.roleId != null and param.roleId != ""'>
-            AND cuar.role_id = #{param.roleId}
+            AND cur.role_id = #{param.roleId}
+        </if>
+        <if test='param.orgId != null and param.orgId != ""'>
+            AND cou.org_id = #{param.orgId}
         </if>
         <if test='param.type != null and param.type != ""'>
             AND cu.type = #{param.type}
@@ -41,7 +49,16 @@
     </select>
     <select id="userCountByRole" resultType="java.lang.Integer" parameterType="java.lang.String">
         SELECT COUNT(1)
-        FROM cat_user_and_role
+        FROM cat_user_role
         where role_id = #{roleId}
+    </select>
+    <select id="selectListByRole" resultType="com.cat.common.entity.auth.User">
+        SELECT cu.*
+        FROM cat_user cu
+        INNER JOIN cat_user_role cur ON cu.id = cur.user_id
+        <where>
+            cu.deleted = 0
+        and cur.role_id = #{roleId}
+        </where>
     </select>
 </mapper>

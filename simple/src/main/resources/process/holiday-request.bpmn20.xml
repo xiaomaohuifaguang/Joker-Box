@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:flowable="http://flowable.org/bpmn"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://www.flowable.org/processdef">
+
+    <process id="holidayRequest" name="请假申请" isExecutable="true">
+        <documentation>
+            这是一个请假申请流程，用于员工提交请假请求并由上级审批。
+        </documentation>
+
+        <startEvent id="startEvent"/>
+        <sequenceFlow sourceRef="startEvent" targetRef="approveTask"/>
+
+        <userTask id="approveTask" name="批准或拒绝请求"/>
+        <sequenceFlow sourceRef="approveTask" targetRef="decision"/>
+
+        <exclusiveGateway id="decision"/>
+        <sequenceFlow sourceRef="decision" targetRef="holidayApprovedTask">
+            <conditionExpression xsi:type="tFormalExpression">
+                <![CDATA[${approved}]]>
+            </conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow sourceRef="decision" targetRef="sendRejectionMail">
+            <conditionExpression xsi:type="tFormalExpression">
+                <![CDATA[${!approved}]]>
+            </conditionExpression>
+        </sequenceFlow>
+
+        <userTask id="holidayApprovedTask" name="批准"/>
+        <sequenceFlow sourceRef="holidayApprovedTask" targetRef="approveEnd"/>
+
+        <serviceTask id="sendRejectionMail" name="拒绝->发送邮件"
+                     flowable:class="org.flowable.SendRejectionMail"/>
+        <sequenceFlow sourceRef="sendRejectionMail" targetRef="rejectEnd"/>
+
+        <endEvent id="approveEnd" name="流程结束"/>
+
+        <endEvent id="rejectEnd" name="流程结束"/>
+
+    </process>
+
+</definitions>

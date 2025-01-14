@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.OrgMapper">
+
+    <select id="selectPage" resultType="com.cat.common.entity.auth.Org">
+        SELECT * FROM cat_org
+        <where>
+            <if test='param.search != null and param.search != ""'>
+                AND name = #{param.search}
+            </if>
+            <if test='param.parentId != null and param.parentId != ""'>
+                AND parent_id = #{param.parentId}
+            </if>
+        </where>
+    </select>
+    <select id="getOrgsByUserId" resultType="com.cat.common.entity.auth.Org">
+        SELECT co.* FROM cat_org co
+        INNER JOIN cat_org_user cou ON co.id = cou.org_id
+        <where>
+            cou.user_id = #{userId}
+        </where>
+    </select>
+    <select id="getOrgIdsByUserId" resultType="java.lang.Integer">
+        SELECT cou.org_id FROM cat_org_user cou
+        <where>
+            cou.user_id = #{userId}
+        </where>
+    </select>
+</mapper>

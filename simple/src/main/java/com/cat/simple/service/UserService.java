@@ -90,6 +90,11 @@ public interface UserService {
 
     void removeUserCache(String username);
 
+    void clearUserCacheByUsername(String username);
+
+    void clearUserCacheByRoleId(Integer roleId);
+
+
 
 
 }

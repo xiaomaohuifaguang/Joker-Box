@@ -38,7 +38,12 @@ public class RedisService {
 
     public <T> T get(String key, Class<T> objectClass){
         ValueOperations<String, Object> ops = redisTemplate.opsForValue();
-        return objectClass.cast(ops.get(makeKey(key)));
+        try {
+            return objectClass.cast(ops.get(makeKey(key)));
+
+        }catch (ClassCastException e){
+            return null;
+        }
     }
 
     private String makeKey(String key){

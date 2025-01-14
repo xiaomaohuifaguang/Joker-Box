@@ -4,7 +4,7 @@ import com.cat.simple.service.RoleService;
 import com.cat.common.entity.*;
 import com.cat.common.entity.auth.ApiPathServer;
 import com.cat.common.entity.auth.Role;
-import com.cat.common.entity.auth.RoleAndApiPath;
+import com.cat.common.entity.auth.RoleAndApiPathAndMenuChoose;
 import com.cat.common.entity.auth.RolePageParam;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -59,11 +59,12 @@ public class RoleController {
 
     @Operation(summary = "添加角色")
     @Parameters({
-            @Parameter(name = "roleName", description = "角色名称", required = true)
+            @Parameter(name = "roleName", description = "角色名称", required = true),
+            @Parameter(name = "withRole", description = "复制角色", required = false)
     })
     @RequestMapping(value = "/add", method = RequestMethod.POST)
-    public HttpResult<?> add(@RequestParam("roleName") String roleName){
-        return HttpResult.back(roleService.add(roleName));
+    public HttpResult<?> add(@RequestParam("roleName") String roleName, @RequestParam(value = "withRole",required = false) String withRole){
+        return HttpResult.back(roleService.add(roleName, withRole));
     }
 
     @Operation(summary = "api路径关系树")
@@ -93,7 +94,7 @@ public class RoleController {
 
     @Operation(summary = "角色保存")
     @RequestMapping(value = "/save", method = RequestMethod.POST)
-    public HttpResult<?> save(@RequestBody RoleAndApiPath roleAndApiPath){
+    public HttpResult<?> save(@RequestBody RoleAndApiPathAndMenuChoose roleAndApiPath){
         DTO<?> save = roleService.save(roleAndApiPath);
         return HttpResult.back(save);
     }

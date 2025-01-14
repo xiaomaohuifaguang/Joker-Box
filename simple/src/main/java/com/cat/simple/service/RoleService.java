@@ -5,7 +5,7 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.SelectOption;
 import com.cat.common.entity.auth.ApiPathServer;
 import com.cat.common.entity.auth.Role;
-import com.cat.common.entity.auth.RoleAndApiPath;
+import com.cat.common.entity.auth.RoleAndApiPathAndMenuChoose;
 import com.cat.common.entity.auth.RolePageParam;
 
 import java.util.List;
@@ -63,7 +63,7 @@ public interface RoleService {
      * @param roleName 角色名称
      * @return 结果
      */
-    DTO<Role> add(String roleName);
+    DTO<Role> add(String roleName, String withRole);
 
     /**
      * 所有服务及其向下所有分组所有api路径
@@ -85,7 +85,7 @@ public interface RoleService {
      * @param roleAndApiPath 角色详细信息
      * @return 结果
      */
-    DTO<?> save(RoleAndApiPath roleAndApiPath);
+    DTO<?> save(RoleAndApiPathAndMenuChoose roleAndApiPath);
 
     List<SelectOption> selector();
 

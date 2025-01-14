@@ -19,7 +19,14 @@ public class JwtUtils {
     /**
      * 加解密 key
      */
-    private static final String JWT_KEY = "ZjQVqcmnsW/L+8gTXF2RY56kuvWeU3/NeCTSXyeJVWqi64YW3prnGsgDD0sDk8hpceF7DC+WX+Nzz7ERm/fQNh1lg7fEqDZ/AZ9dTY/B3FkzluF2FBdYkT3hHhtZpvedOZrX+kKrupbT9cILoyOBvPE0AwmqcxBWGqn6yjqhKYBEuBN20bPlrI+4O1c0SAdEbe0lGmbGh4Sjb79BCfaNnpgmS5XAHLvE53QQW0ax0YDUaBESSDAbKNWjm3t+3fB1";
+    private static final String JWT_KEY;
+
+    // 这里默认单机 如果不是单机请不要这么做
+    static {
+        JWT_KEY = generateJwtKey(64);
+    }
+
+
 
     /**
      * @param length 长度

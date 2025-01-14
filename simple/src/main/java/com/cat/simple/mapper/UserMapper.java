@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -27,6 +28,9 @@ public interface UserMapper extends BaseMapper<User> {
     int removeUserAndRole(@Param("userId") String userId, @Param("roleId") String roleId);
 
     int userCountByRole(@Param("roleId") String roleId);
+
+
+    List<User> selectListByRole(@Param("roleId") Integer roleId);
 
 
 }

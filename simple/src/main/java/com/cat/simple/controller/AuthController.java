@@ -85,7 +85,7 @@ public class AuthController {
         return HttpResult.back(register.flag ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR).setMsg(register.msg);
     }
 
-    @Operation(summary = "上传文件")
+    @Operation(summary = "上传头像")
     @Parameters({
             @Parameter(name = "uploadFile", schema = @Schema(format = "binary"), description = "文件",required = true),
     })

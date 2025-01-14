@@ -28,7 +28,8 @@ public class ErrorControllerAdvice {
             error = HttpResultStatus.NOT_FOUND;
 
         }else {
-            error.setMsg(e.getMessage());
+//            error.setMsg(e.getMessage());
+            error.setMsg("不行，不可以");
         }
         httpServletResponse.setStatus(error.code() == -1 ? 500 : (int) error.code());
         return HttpResult.back(error);

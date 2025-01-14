@@ -7,6 +7,12 @@ import ${superMapperClassPackage};
 import ${mapperAnnotationClass.name};
 </#if>
 import org.apache.ibatis.annotations.Mapper;
+
+import com.cat.common.entity.Page;
+import com.cat.common.entity.PageParam;
+import org.apache.ibatis.annotations.Param;
+
+
 /**
  * <p>
  * ${table.comment!} Mapper 接口
@@ -23,6 +29,6 @@ interface ${table.mapperName} : ${superMapperClass}<${entity}>
 <#else>
 @Mapper
 public interface ${table.mapperName} extends ${superMapperClass}<${entity}> {
-
+   Page<${entity}> selectPage(@Param("page") Page<${entity}> page);
 }
 </#if>
