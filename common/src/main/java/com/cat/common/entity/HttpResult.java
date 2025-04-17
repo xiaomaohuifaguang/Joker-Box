@@ -29,7 +29,7 @@ public class HttpResult<T> {
     @Schema(description = "时间戳")
     private long timestamp = System.currentTimeMillis();
     @Schema(description = "续签")
-    private String newToken;
+    private String refreshToken;
 
     /**
      * 响应方法

@@ -32,5 +32,12 @@ public interface UserMapper extends BaseMapper<User> {
 
     List<User> selectListByRole(@Param("roleId") Integer roleId);
 
+    List<User> selectListByRoles(@Param("roleIds") List<String> roleIds);
+
+
+    int insertUserAndOrg(@Param("userId") String userId, @Param("orgId") String orgId, @Param("createTime") LocalDateTime createTime);
+
+    int removeUserAndOrg(@Param("userId") String userId, @Param("orgId") String orgId);
+
 
 }

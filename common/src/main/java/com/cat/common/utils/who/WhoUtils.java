@@ -47,6 +47,10 @@ public class WhoUtils {
         return Long.parseLong("1" + phoneTwoNum.charAt(phoneTwoRandomIndex) + (100000000 + RANDOM.nextInt(899999999)));
     }
 
+    public static String getRandomCount(String name){
+        return  PinyinUtil.getPinyin(name,"");
+    }
+
     /**
      * 获取随机邮箱
      */

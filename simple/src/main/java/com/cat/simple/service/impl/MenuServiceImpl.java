@@ -5,6 +5,7 @@ import com.cat.common.entity.PageParam;
 import com.cat.common.entity.auth.*;
 import com.cat.common.entity.menu.Menu;
 import com.cat.common.entity.menu.MenuAndApiPath;
+import com.cat.common.entity.menu.MenuPageParam;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.mapper.ApiPathMapper;
 import com.cat.simple.mapper.MenuMapper;
@@ -12,6 +13,7 @@ import com.cat.simple.service.MenuService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -83,17 +85,20 @@ public class MenuServiceImpl implements MenuService {
     }
 
     @Override
-    public Page<Menu> queryPage(PageParam pageParam){
+    public Page<Menu> queryPage(MenuPageParam pageParam){
         Page<Menu> page = new Page<>(pageParam);
-        page = menuMapper.selectPage(page);
+        page = menuMapper.selectPage(page, pageParam);
         return page;
     }
 
     @Override
     public List<Menu> queryAllByAuth(Integer menuType) {
         LoginUser loginUser = SecurityUtils.getLoginUser();
-        List<Role> roles = loginUser.getRoles();
-        List<Integer> roleIds = roles.stream().map(Role::getId).toList();
+        List<Integer> roleIds = new ArrayList<>();
+        if(!ObjectUtils.isEmpty(loginUser)){
+            List<Role> roles = loginUser.getRoles();
+            roleIds = roles.stream().map(Role::getId).toList();
+        }
 
         // 获取全部有权限的菜单
         List<Menu> menus = menuMapper.queryAllByAuth(roleIds,  roleIds.contains(ROLE_ADMIN_CODE));
@@ -135,6 +140,18 @@ public class MenuServiceImpl implements MenuService {
             s.setGroups(groups);
         });
         return servers;
+    }
+
+    @Override
+    public List<String> queryAllPathByAuth() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        List<Role> roles = loginUser.getRoles();
+        List<Integer> roleIds = roles.stream().map(Role::getId).toList();
+
+        // 获取全部有权限的菜单
+        List<Menu> menus = menuMapper.queryAllByAuth(roleIds,  roleIds.contains(ROLE_ADMIN_CODE));
+
+        return menus.stream().map(Menu::getPath).toList();
     }
 
 

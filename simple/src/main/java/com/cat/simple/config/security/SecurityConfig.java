@@ -1,7 +1,9 @@
 package com.cat.simple.config.security;
 
+import com.cat.common.entity.HttpResult;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.auth.Role;
+import com.cat.common.utils.ServletUtils;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,11 +14,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.endpoint.DefaultAuthorizationCodeTokenResponseClient;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -53,7 +57,9 @@ public class SecurityConfig {
             "/auth/getToken",
             "/auth/mailCode",
             "/auth/register",
-            "/auth/avatar/**"
+            "/auth/avatar/**",
+            "/sso/**",
+            "auth/getTokenSSO"
     );
 
 //    @Value("${spring.security.oauth2.resourceserver.jwt.public-key-location}")
@@ -81,6 +87,15 @@ public class SecurityConfig {
      */
     @Resource
     private AccessDeniedHandlerImpl accessDeniedHandler;
+
+    @Resource
+    private CustomOAuth2UserService customOAuth2UserService;
+
+    @Resource
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
+    @Resource
+    private OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     // OAuth2 资源服务器的 JWK Set URI
 //    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
@@ -113,7 +128,39 @@ public class SecurityConfig {
                 // 屏蔽原有登录
                 .formLogin(AbstractHttpConfigurer::disable)
                 // 屏蔽原有登出
-                .logout(AbstractHttpConfigurer::disable);
+//                .logout(AbstractHttpConfigurer::disable)
+                .oauth2Login(oauth2Login -> oauth2Login
+                        .authorizationEndpoint(authorization -> authorization
+                                .baseUri("/sso/oauth2/authorization")
+                        )
+                        .tokenEndpoint(token -> token
+                                .accessTokenResponseClient(new DefaultAuthorizationCodeTokenResponseClient())
+                        )
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2LoginSuccessHandler).failureHandler(oAuth2LoginFailureHandler)
+                        .loginProcessingUrl("/sso/oauth2/code/*")
+//                        .loginPage("/login")
+                );
+//                .logout(logout -> logout
+//                        .logoutUrl("/auth/logout")
+//                        .clearAuthentication(true)
+//                        .invalidateHttpSession(true)
+//                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+//                        .addLogoutHandler((request, response, authentication) -> {
+//                            // 可以加入一些自定义处理逻辑，例如通过 OAuth2 提供者撤销访问令牌
+//                            // 例如 GitHub 登出逻辑
+//                            // 清除 OAuth2 令牌（如果有的话）
+//                            SecurityContextHolder.clearContext();
+//                        })
+////                        .logoutSuccessUrl("/login?logout")
+//                        .logoutSuccessHandler((request, response, authentication) -> {
+//                            // 清除 OAuth2 token 或其他操作
+////                            response.sendRedirect("/login?logout");
+//                            ServletUtils.back(HttpResult.back("").setMsg("退出成功"),response);
+//                          })
+//                );
         return http.build();
     }
 

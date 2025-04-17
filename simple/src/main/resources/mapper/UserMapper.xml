@@ -8,17 +8,30 @@
             (SELECT id FROM cat_role WHERE deleted='0' AND id=#{roleId}) AS role_id,
             #{createTime} AS createTime
     </insert>
+    <insert id="insertUserAndOrg">
+        INSERT cat_org_user
+        SELECT
+                IF(#{orgId} = '-1','-1',(SELECT id FROM cat_org WHERE deleted='0' AND id=#{orgId})) AS org_id,
+                (SELECT id FROM cat_user WHERE deleted='0' AND id=#{userId}) AS user_id,
+                #{createTime} AS createTime
+    </insert>
     <delete id="removeUserAndRole">
         DELETE FROM cat_user_role
         WHERE
             user_id = #{userId}
             AND role_id = #{roleId}
     </delete>
+    <delete id="removeUserAndOrg">
+        DELETE FROM cat_org_user
+        WHERE
+            user_id = #{userId}
+          AND org_id = #{orgId}
+    </delete>
 
     <select id="selectPage" resultType="com.cat.common.entity.auth.User">
         SELECT
         DISTINCT
-        cu.id, cu.type, cu.deleted, cu.username, cu.nickname, cu.create_time, cu.update_time
+        cu.*
         FROM
         cat_user cu
         <if test='param.roleId != null and param.roleId != ""'>
@@ -59,6 +72,17 @@
         <where>
             cu.deleted = 0
         and cur.role_id = #{roleId}
+        </where>
+    </select>
+    <select id="selectListByRoles" resultType="com.cat.common.entity.auth.User">
+        SELECT cu.*
+        FROM cat_user cu
+        INNER JOIN cat_user_role cur ON cu.id = cur.user_id
+        <where>
+            cu.deleted = 0
+            <foreach collection="roleIds" item="roleId" open="AND (" close=")" separator="OR">
+                cur.role_id = #{roleId}
+            </foreach>
         </where>
     </select>
 </mapper>

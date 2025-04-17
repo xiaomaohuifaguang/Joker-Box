@@ -80,7 +80,7 @@
         FROM cat_role_api
         WHERE role_id = #{roleId}
     </delete>
-    <delete id="deleteROleMenuRelation">
+    <delete id="deleteRoleMenuRelation">
         DELETE
         FROM cat_role_menu
         WHERE role_id = #{roleId}

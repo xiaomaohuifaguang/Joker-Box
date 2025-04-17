@@ -25,6 +25,7 @@ public interface RoleMapper extends BaseMapper<Role> {
 
     List<Role> getRolesByUserId(@Param("userId") String userId);
 
+
     int delete(@Param("server") String server, @Param("apiPaths") List<String> apiPaths);
 
 
@@ -49,7 +50,7 @@ public interface RoleMapper extends BaseMapper<Role> {
 
     int insertRoleApiRelation(@Param("roleId") Integer roleId, @Param("relations") List<HashMap<String,String>> relations, @Param("updateTime")LocalDateTime updateTime);
 
-    int deleteROleMenuRelation(@Param("roleId") Integer roleId);
+    int deleteRoleMenuRelation(@Param("roleId") Integer roleId);
 
     int insetRoleMenuRelation(@Param("roleId") Integer roleId, @Param("relations") List<Integer> relations, @Param("updateTime")LocalDateTime updateTime);
 

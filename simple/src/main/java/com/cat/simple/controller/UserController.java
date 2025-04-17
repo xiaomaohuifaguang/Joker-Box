@@ -1,5 +1,6 @@
 package com.cat.simple.controller;
 
+import com.cat.common.entity.auth.Org;
 import com.cat.simple.service.UserService;
 import com.cat.common.entity.HttpResult;
 import com.cat.common.entity.Page;
@@ -93,5 +94,54 @@ public class UserController {
     public HttpResult<?> resetPassword(@RequestParam("userId") String userId){
         return HttpResult.back(userService.resetPassword(userId));
     }
+
+
+    @Operation(summary = "用户已绑定机构")
+    @Parameters({
+            @Parameter(name = "userId",description = "用户id",required = true)
+    })
+    @RequestMapping(value = "/orgs",method = RequestMethod.POST)
+    public HttpResult<List<Org>> orgId(@RequestParam("userId") String userId){
+        return HttpResult.back(userService.getOrgByUserId(userId));
+    }
+
+    @Operation(summary = "添加绑定机构")
+    @Parameters({
+            @Parameter(name = "userId",description = "用户id",required = true),
+            @Parameter(name = "orgId",description = "机构id",required = true)
+    })
+    @RequestMapping(value = "/addOrg",method = RequestMethod.POST)
+    public HttpResult<?> addOrg(@RequestParam("userId") String userId,@RequestParam("orgId") String orgId){
+        return HttpResult.back(userService.addOrg(userId,orgId));
+    }
+
+    @Operation(summary = "删除绑定机构")
+    @Parameters({
+            @Parameter(name = "userId",description = "用户id",required = true),
+            @Parameter(name = "orgId",description = "机构id",required = true)
+    })
+    @RequestMapping(value = "/deleteOrg",method = RequestMethod.POST)
+    public HttpResult<?> deleteOrg(@RequestParam("userId") String userId,@RequestParam("orgId") String orgId){
+        return HttpResult.back(userService.deleteOrg(userId,orgId));
+    }
+
+
+    @Operation(summary = "动态人员选择器")
+    @Parameters({
+            @Parameter(name = "search",description = "搜索",required = true)
+    })
+    @RequestMapping(value = "/selectorUserWithInfo",method = RequestMethod.POST)
+    public HttpResult<List<User>> selectorUserWithInfo(@RequestParam("search") String search){
+        return HttpResult.back(userService.selectorUserWithInfo(search));
+    }
+
+    @Operation(summary = "动态人员选择器初始化")
+    @RequestMapping(value = "/selectorInitByIds",method = RequestMethod.POST)
+    public HttpResult<List<User>> selectorInitByIds(@RequestBody List<Integer> ids){
+        return HttpResult.back(userService.selectorInitByIds(ids));
+    }
+
+
+
 
 }

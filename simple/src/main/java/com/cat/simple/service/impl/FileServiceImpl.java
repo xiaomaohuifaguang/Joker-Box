@@ -69,7 +69,7 @@ public class FileServiceImpl implements FileService {
     @Override
     @Transactional
     public DTO<FileInfo> upload(MultipartFile uploadFile, String parentId) throws IOException {
-        return upload(uploadFile, parentId, UPLOAD_PATH+SecurityUtils.getLoginUser().getUsername()+"/");
+        return upload(uploadFile, parentId, UPLOAD_PATH+SecurityUtils.getLoginUser().getUserId()+"/");
     }
 
     @Override
@@ -80,7 +80,23 @@ public class FileServiceImpl implements FileService {
         }
 
         String filename = CatUUID.randomUUID();
-        String realFilename = "/头像/"+SecurityUtils.getLoginUser().getUsername();
+        String realFilename = "/头像/"+SecurityUtils.getLoginUser().getUserId();
+        new Thread(()->{
+            try {
+                minioService.putObject(BUCKET_NAME, realFilename, uploadFile.getInputStream(), uploadFile.getContentType());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+        return DTO.success();
+    }
+
+    @Override
+    public DTO<?> uploadAvatar(MultipartFile uploadFile, String userId) throws IOException {
+
+        String filename = CatUUID.randomUUID();
+
+        String realFilename = "/头像/"+userId;
         new Thread(()->{
             try {
                 minioService.putObject(BUCKET_NAME, realFilename, uploadFile.getInputStream(), uploadFile.getContentType());
@@ -148,23 +164,23 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public void download(String fileId) throws IOException {
-        download(fileId, UPLOAD_PATH+userMapper.selectById(fileInfoMapper.selectById(fileId).getUserId()).getUsername()+"/");
+        download(fileId, UPLOAD_PATH+userMapper.selectById(fileInfoMapper.selectById(fileId).getUserId()).getIdStr()+"/");
 
     }
 
     @Override
-    public void downloadAvatar(String username) throws IOException {
+    public void downloadAvatar(String userId) throws IOException {
         HttpServletResponse response = ServletUtils.getHttpServletResponse();
         HttpServletRequest request = ServletUtils.getHttpServletRequest();
         InputStream inputStream = null;
         try {
             // 设置响应头
             response.setContentType("application/octet-stream");
-            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + URLEncoder.encode(username, StandardCharsets.UTF_8) + "\"");
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + URLEncoder.encode(userId, StandardCharsets.UTF_8) + "\"");
             // 获取 Range 头部信息
             String rangeHeader = request.getHeader(HttpHeaders.RANGE);
             // 如果没有 Range 头部，则直接返回整个文件内容
-            inputStream = minioService.getObject(BUCKET_NAME, "/头像/"+username);
+            inputStream = minioService.getObject(BUCKET_NAME, "/头像/"+userId);
             OutputStream outputStream = response.getOutputStream();
             byte[] buffer = new byte[1024];
             int bytesRead;

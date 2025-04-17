@@ -4,6 +4,7 @@ import com.cat.common.entity.*;
 import com.cat.common.entity.auth.ApiPathServer;
 import com.cat.common.entity.menu.Menu;
 import com.cat.common.entity.menu.MenuAndApiPath;
+import com.cat.common.entity.menu.MenuPageParam;
 import com.cat.simple.service.MenuService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -63,7 +64,7 @@ private MenuService menuService;
 
     @Operation(summary = "分页")
     @RequestMapping(value = "/queryPage",method = RequestMethod.POST)
-    public HttpResult<Page<Menu>> queryPage(@RequestBody PageParam pageParam) {
+    public HttpResult<Page<Menu>> queryPage(@RequestBody MenuPageParam pageParam) {
         return HttpResult.back(menuService.queryPage(pageParam));
     }
 

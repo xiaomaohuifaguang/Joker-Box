@@ -23,14 +23,23 @@
 
     <select id="selectPage" resultType="com.cat.common.entity.menu.Menu">
         SELECT * FROM cat_menu
+        <where>
+            <if test='param.search != null and param.search != ""'>
+                AND ( path LIKE CONCAT('%',#{param.search},'%') OR sdname LIKE CONCAT('%',#{param.search},'%') )
+            </if>
+            <if test='param.menuType != null and param.menuType != ""'>
+                AND menu_type = #{param.menuType}
+            </if>
+        </where>
+        ORDER BY sort DESC
     </select>
     <select id="queryAllByAuth" resultType="com.cat.common.entity.menu.Menu">
         SELECT
-            cm.*
+            distinct cm.*
         FROM
             cat_menu cm
         <if test="!idAdmin">
-            INNER JOIN cat_role_menu crm ON cm.id = crm.menu_id
+            LEFT JOIN cat_role_menu crm ON cm.id = crm.menu_id
             <where>
                 <choose>
                     <when test="roleIds != null and roleIds.size() > 0 ">
@@ -38,12 +47,10 @@
                             #{roleId}
                         </foreach>
                     </when>
-                    <otherwise>
-                        1 = 2
-                    </otherwise>
                 </choose>
+                OR cm.white_list = '1'
             </where>
         </if>
-        ORDER BY cm.sort
+        ORDER BY cm.sort DESC
     </select>
 </mapper>

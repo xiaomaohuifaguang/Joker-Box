@@ -9,6 +9,12 @@ package com.cat.common.entity;
  **/
 public class CONSTANTS {
 
+    // token过期时间
+    public static final long tokenExpire = 14 * 24 * 60 * 60;
+
+    // 最大登录
+    public static final int MAX_LOGIN = 3;
+
 
     public static final String DEFAULT_PASSWORD = "12345678";
 
@@ -20,6 +26,8 @@ public class CONSTANTS {
     public static final String NIUBI_ORG_NAME = "全部";
 
     public static final String REDIS_PARENT_TOKEN = "token:";
+
+    public static final String REDIS_PARENT_ROLE = "role:";
 
     public static final String REDIS_PARENT_MAIL_CODE = "mail:code:";
 
@@ -55,6 +63,12 @@ public class CONSTANTS {
      * 根目录
      */
     public static final String FILE_ALL_PARENT = "0";
+
+
+    /**
+     * 单点登录key
+     */
+    public static final String REDIS_SSO = "SSO:";
 
 
 

@@ -29,4 +29,5 @@ public interface OrgMapper extends BaseMapper<Org> {
     List<Integer> getOrgIdsByUserId(@Param("userId") String userId);
 
 
+
 }

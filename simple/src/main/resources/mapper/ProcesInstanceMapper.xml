@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.ProcessInstanceMapper">
+
+    <select id="selectPage" resultType="com.cat.common.entity.process.ProcessInstance">
+        SELECT
+            cpi.*,task.ID_ AS task_id
+        FROM cat_process_instance cpi
+        <choose>
+            <!-- 待办任务 -->
+            <when test='param.type != null and param.type == "1"'>
+                INNER JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ and task.ASSIGNEE_ = #{param.userId}
+            </when>
+            <otherwise>
+                LEFT JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ and task.ASSIGNEE_ = #{param.userId}
+            </otherwise>
+        </choose>
+    </select>
+
+
+</mapper>

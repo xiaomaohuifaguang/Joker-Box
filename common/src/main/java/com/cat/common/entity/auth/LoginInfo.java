@@ -38,4 +38,7 @@ public class LoginInfo {
     @Schema(description = "令牌")
     private String token;
 
+//    @Schema(description = "是否单点登录")
+//    private boolean isSSO;
+
 }

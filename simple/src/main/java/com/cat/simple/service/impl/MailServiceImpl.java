@@ -1,6 +1,9 @@
 package com.cat.simple.service.impl;
 
+import com.alibaba.fastjson2.JSON;
+import com.cat.common.entity.mail.MailInfo;
 import com.cat.simple.config.redis.RedisService;
+import com.cat.simple.service.MailInfoService;
 import com.cat.simple.service.MailService;
 import com.cat.common.entity.CONSTANTS;
 import com.cat.common.utils.UUIDUtils;
@@ -17,6 +20,8 @@ import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
 /***
@@ -37,27 +42,66 @@ public class MailServiceImpl implements MailService {
     private FreeMarkerConfigurer freeMarkerConfigurer;
     @Resource
     private RedisService redisService;
+    @Resource
+    private MailInfoService mailInfoService;
 
 
     @Override
     public String sendCode(String email) throws IOException, TemplateException, MessagingException {
+
         String code = UUIDUtils.code(6);
-        Template template;
-        String htmlText;
-        template = freeMarkerConfigurer.getConfiguration().getTemplate("code.ftl");
         HashMap<String, Object> map = new HashMap<>();
         map.put("code", code);
-        htmlText = FreeMarkerTemplateUtils.processTemplateIntoString(template, map);
-        MimeMessage message = javaMailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-        helper.setFrom("Joker-Box<"+username+">");
-        helper.setTo(email);
-        helper.setSubject("验证码");
-        helper.setText(htmlText, true);//不加参数默认是文本，加上true之后支持html格式文件、
-        new Thread(()->{
-            javaMailSender.send(helper.getMimeMessage());
-        }).start();
+        sendMail("code.ftl", map, email, "验证码" );
+
         redisService.set(CONSTANTS.REDIS_PARENT_MAIL_CODE+email , code, 5 * 60);
         return code;
     }
+
+    @Override
+    public void notification(String email, String nickname, String content) throws MessagingException, IOException, TemplateException {
+
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("nickname", nickname);
+        map.put("content", content);
+
+        sendMail("notification.ftl", map, email, "通知" );
+
+    }
+
+
+
+    private void sendMail(String templateName,HashMap<String, Object> map, String to, String subject) throws IOException, TemplateException, MessagingException {
+
+        Template template = freeMarkerConfigurer.getConfiguration().getTemplate(templateName);
+
+        map.put("nowYear", LocalDate.now().getYear());
+        String  htmlText = FreeMarkerTemplateUtils.processTemplateIntoString(template, map);
+
+        MimeMessage message = javaMailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message);
+        helper.setFrom("Joker-Box<"+username+">");
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlText, true);//不加参数默认是文本，加上true之后支持html格式文件
+        new Thread(()->{
+            javaMailSender.send(helper.getMimeMessage());
+
+            MailInfo mailInfo = new MailInfo();
+            mailInfo.setToMail(to);
+            mailInfo.setSubject(subject);
+            mailInfo.setContent(htmlText);
+            mailInfo.setVariable(JSON.toJSONString(map));
+            mailInfo.setSendTime(LocalDateTime.now());
+            mailInfoService.add(mailInfo);
+
+
+        }).start();
+
+    }
+
+
+
+
+
 }

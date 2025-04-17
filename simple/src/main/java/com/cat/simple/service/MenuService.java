@@ -6,6 +6,7 @@ import com.cat.common.entity.PageParam;
 import com.cat.common.entity.auth.ApiPathServer;
 import com.cat.common.entity.menu.Menu;
 import com.cat.common.entity.menu.MenuAndApiPath;
+import com.cat.common.entity.menu.MenuPageParam;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public interface MenuService {
 
     Menu info(Menu menu);
 
-    Page<Menu> queryPage(PageParam pageParam);
+    Page<Menu> queryPage(MenuPageParam pageParam);
 
 
     List<Menu> queryAllByAuth(Integer menuType);
@@ -31,5 +32,7 @@ public interface MenuService {
     List<Menu> queryAll(Integer menuType);
 
     List<ApiPathServer> apiPathTree(String menuId);
+
+    List<String> queryAllPathByAuth();
 
 }

@@ -89,7 +89,7 @@ public class RoleServiceImpl implements RoleService {
         int withApi = roleMapper.withApi(roleId);
         if(withApi>0) return DTO.error("角色仍有关联api，请先解除关联");
         int delete = roleMapper.deleteById(roleId);
-        userService.clearUserCacheByRoleId(roleId);
+        userService.clearUserCache();
         return delete > 0 ? DTO.success() : DTO.error("删除失败");
     }
 
@@ -100,7 +100,7 @@ public class RoleServiceImpl implements RoleService {
             return false;
         }
         int delete = roleMapper.deleteById(roleId);
-        userService.clearUserCacheByRoleId(roleId);
+        userService.clearUserCache();
         return delete > 0 ;
     }
 
@@ -214,11 +214,11 @@ public class RoleServiceImpl implements RoleService {
         List<Integer> menuChoose = roleAndApiPath.getMenuChoose();
 
 
-        roleMapper.deleteROleMenuRelation(roleBase.getId());
+        roleMapper.deleteRoleMenuRelation(roleBase.getId());
         if(!menuChoose.isEmpty()){
             roleMapper.insetRoleMenuRelation(roleBase.getId(),menuChoose,LocalDateTime.now());
         }
-        userService.clearUserCacheByRoleId(roleAndApiPath.getRole().getId());
+        userService.clearUserCache();
         return DTO.success();
     }
 

@@ -26,5 +26,8 @@ public class PageParam {
     @Schema(description = "页码")
     protected long current;
 
+    @Schema(description = "搜索")
+    protected String search;
+
 
 }

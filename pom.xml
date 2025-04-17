@@ -22,7 +22,6 @@
         <knife4j.version>4.4.0</knife4j.version>
         <jjwt.version>0.12.5</jjwt.version>
         <mybatis-plus.verson>3.5.7</mybatis-plus.verson>
-        <mybatis-plus-join.verson>1.4.13</mybatis-plus-join.verson>
         <mysql-connector.version>9.0.0</mysql-connector.version>
         <lombok.version>1.18.32</lombok.version>
         <springcloud.verson>2023.0.2</springcloud.verson>
@@ -34,6 +33,8 @@
         <httpclient5.version>5.3.1</httpclient5.version>
         <flowable.version>7.0.0</flowable.version>
         <fastjson2.version>2.0.53</fastjson2.version>
+        <googleauth.version>1.5.0</googleauth.version>
+        <zxing.version>3.5.3</zxing.version>
     </properties>
 
     <!-- springboot 版本 -->
@@ -116,12 +117,6 @@
                 <artifactId>mybatis-plus-core</artifactId>
                 <version>${mybatis-plus.verson}</version>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/com.github.yulichang/mybatis-plus-join -->
-            <dependency>
-                <groupId>com.github.yulichang</groupId>
-                <artifactId>mybatis-plus-join</artifactId>
-                <version>${mybatis-plus-join.verson}</version>
-            </dependency>
             <!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
             <dependency>
                 <groupId>com.mysql</groupId>
@@ -172,6 +167,19 @@
                 <artifactId>fastjson2</artifactId>
                 <version>${fastjson2.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.warrenstrange</groupId>
+                <artifactId>googleauth</artifactId>
+                <version>${googleauth.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.zxing</groupId>
+                <artifactId>core</artifactId>
+                <version>${zxing.version}</version>
+            </dependency>
+
 
         </dependencies>
     </dependencyManagement>

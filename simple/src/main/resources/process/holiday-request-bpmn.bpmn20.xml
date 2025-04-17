@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:flowable="http://flowable.org/bpmn" id="sample-diagram" targetNamespace="http://bpmn.io/schema/bpmn" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+    <bpmn2:process id="holidayRequest" name="请假申请" isExecutable="true">
+        <bpmn2:documentation>这是一个请假申请流程，用于员工提交请假请求并由上级审批。</bpmn2:documentation>
+        <bpmn2:laneSet id="LaneSet_1ryq4l9" />
+        <bpmn2:startEvent id="Event_0q5fbzv">
+            <bpmn2:outgoing>Flow_1usu00w</bpmn2:outgoing>
+        </bpmn2:startEvent>
+        <bpmn2:endEvent id="Event_1jbej4k">
+            <bpmn2:incoming>Flow_0dmwte8</bpmn2:incoming>
+            <bpmn2:incoming>Flow_04jx08a</bpmn2:incoming>
+        </bpmn2:endEvent>
+        <bpmn2:sequenceFlow id="Flow_1usu00w" sourceRef="Event_0q5fbzv" targetRef="Activity_0brlt88" />
+        <bpmn2:sequenceFlow id="Flow_021zmdb" sourceRef="Activity_0brlt88" targetRef="Gateway_0rr2q8l" />
+        <bpmn2:exclusiveGateway id="Gateway_0rr2q8l">
+            <bpmn2:incoming>Flow_021zmdb</bpmn2:incoming>
+            <bpmn2:outgoing>Flow_1dbwzr1</bpmn2:outgoing>
+            <bpmn2:outgoing>Flow_0m049kj</bpmn2:outgoing>
+        </bpmn2:exclusiveGateway>
+        <bpmn2:sequenceFlow id="Flow_1dbwzr1" sourceRef="Gateway_0rr2q8l" targetRef="Activity_1gtccc9" />
+        <bpmn2:sequenceFlow id="Flow_0m049kj" sourceRef="Gateway_0rr2q8l" targetRef="Activity_0e0q3ns" />
+        <bpmn2:sequenceFlow id="Flow_0dmwte8" sourceRef="Activity_0e0q3ns" targetRef="Event_1jbej4k" />
+        <bpmn2:sequenceFlow id="Flow_04jx08a" sourceRef="Activity_1gtccc9" targetRef="Event_1jbej4k" />
+        <bpmn2:userTask id="Activity_1gtccc9">
+            <bpmn2:incoming>Flow_1dbwzr1</bpmn2:incoming>
+            <bpmn2:outgoing>Flow_04jx08a</bpmn2:outgoing>
+        </bpmn2:userTask>
+        <bpmn2:serviceTask id="Activity_0e0q3ns" flowable:class="com.cat.simple.task.FlowableTest">
+            <bpmn2:incoming>Flow_0m049kj</bpmn2:incoming>
+            <bpmn2:outgoing>Flow_0dmwte8</bpmn2:outgoing>
+        </bpmn2:serviceTask>
+        <bpmn2:userTask id="Activity_0brlt88">
+            <bpmn2:incoming>Flow_1usu00w</bpmn2:incoming>
+            <bpmn2:outgoing>Flow_021zmdb</bpmn2:outgoing>
+        </bpmn2:userTask>
+    </bpmn2:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="holidayRequest">
+            <bpmndi:BPMNShape id="Event_0q5fbzv_di" bpmnElement="Event_0q5fbzv">
+                <dc:Bounds x="482" y="82" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_1jbej4k_di" bpmnElement="Event_1jbej4k">
+                <dc:Bounds x="482" y="482" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Gateway_0rr2q8l_di" bpmnElement="Gateway_0rr2q8l" isMarkerVisible="true">
+                <dc:Bounds x="475" y="275" width="50" height="50" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_1b44rau_di" bpmnElement="Activity_1gtccc9">
+                <dc:Bounds x="350" y="360" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_0wejezr_di" bpmnElement="Activity_0e0q3ns">
+                <dc:Bounds x="550" y="360" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_0xzl990_di" bpmnElement="Activity_0brlt88">
+                <dc:Bounds x="450" y="160" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="Flow_1usu00w_di" bpmnElement="Flow_1usu00w">
+                <di:waypoint x="500" y="118" />
+                <di:waypoint x="500" y="160" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_021zmdb_di" bpmnElement="Flow_021zmdb">
+                <di:waypoint x="500" y="240" />
+                <di:waypoint x="500" y="275" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1dbwzr1_di" bpmnElement="Flow_1dbwzr1">
+                <di:waypoint x="475" y="300" />
+                <di:waypoint x="400" y="300" />
+                <di:waypoint x="400" y="360" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_0m049kj_di" bpmnElement="Flow_0m049kj">
+                <di:waypoint x="525" y="300" />
+                <di:waypoint x="600" y="300" />
+                <di:waypoint x="600" y="360" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_0dmwte8_di" bpmnElement="Flow_0dmwte8">
+                <di:waypoint x="600" y="440" />
+                <di:waypoint x="600" y="500" />
+                <di:waypoint x="518" y="500" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_04jx08a_di" bpmnElement="Flow_04jx08a">
+                <di:waypoint x="400" y="440" />
+                <di:waypoint x="400" y="500" />
+                <di:waypoint x="482" y="500" />
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

@@ -1,8 +1,14 @@
 package com.cat.simple.service.impl;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.cat.common.entity.menu.Menu;
+import com.cat.common.utils.*;
+import com.cat.common.utils.base64.Base64Utils;
+import com.cat.common.utils.googleauth.GoogleAuthUtils;
 import com.cat.simple.config.redis.RedisService;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.mapper.OrgMapper;
@@ -11,19 +17,18 @@ import com.cat.simple.mapper.UserExtendMapper;
 import com.cat.simple.mapper.UserMapper;
 import com.cat.simple.service.FileService;
 import com.cat.simple.service.MailService;
+import com.cat.simple.service.MenuService;
 import com.cat.simple.service.UserService;
 import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.DTO;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.*;
-import com.cat.common.utils.CryptoUtils;
-import com.cat.common.utils.JwtUtils;
-import com.cat.common.utils.RegexUtils;
 import freemarker.template.TemplateException;
 import jakarta.annotation.Resource;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -35,8 +40,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.cat.common.entity.CONSTANTS.NIUBI_ORG_NAME;
-import static com.cat.common.entity.CONSTANTS.ORG_PARENT;
+import static com.cat.common.entity.CONSTANTS.*;
 
 /***
  * 鉴权服务业务层实现
@@ -49,7 +53,7 @@ import static com.cat.common.entity.CONSTANTS.ORG_PARENT;
 @Slf4j
 public class UserServiceImpl implements UserService {
 
-    private final long tokenExpire = 14 * 24 * 60 * 60;
+
 
     @Resource
     private UserMapper userMapper;
@@ -65,20 +69,50 @@ public class UserServiceImpl implements UserService {
     private MailService mailService;
     @Resource
     private FileService fileService;
+    @Resource
+    private MenuService menuService;
+
+    @Value("${spring.application.name}")
+    private String applicationName;
 
     @Override
     public String getToken(LoginInfo loginInfo) {
         LoginUser loginUser = this.getLoginUser(loginInfo.getUsername());
-        return CryptoUtils.verify(loginInfo.getPassword(), loginUser.getPassword()) ? this.makeToken(loginUser) : null;
+//        loginUser.setSSO(loginInfo.isSSO());
+//        if(loginInfo.isSSO()) {
+//            this.makeToken(loginUser);
+//        }
+        String token = null;
+        if(CryptoUtils.verify(loginInfo.getPassword(), loginUser.getPassword())){
+            token = this.makeToken(loginUser);
+            List<String> tokens;
+            String  tokensStr = redisService.get(REDIS_PARENT_TOKEN + loginUser.getUsername(), String.class);
+            if(StringUtils.hasText(tokensStr)){
+                tokens = JSONArray.parseArray(tokensStr, String.class);
+            }else {
+                tokens = new ArrayList<>();
+            }
+
+            if(tokens.size() == MAX_LOGIN){
+                tokens.remove(0);
+            }
+
+            tokens.add(token);
+            redisService.set(REDIS_PARENT_TOKEN + loginUser.getUsername(), JSONUtils.toJSONString(tokens), tokenExpire);
+
+        }
+        return  token;
+    }
+
+    @Override
+    public long getTokenExpirationTimeLeftMillis(String token) {
+        token = token.replace(CONSTANTS.TOKEN_TYPE + " ", "");
+        return JwtUtils.getExpirationTimeLeftMillis(token);
     }
 
     @Override
     public LoginUser getLoginUser(String username) {
         LoginUser loginUser;
-        // 缓存读取
-        loginUser = redisService.get(CONSTANTS.REDIS_PARENT_TOKEN + username, LoginUser.class);
-        if (!ObjectUtils.isEmpty(loginUser)) return loginUser;
-
         // 数据库读取
         User user = this.getUserByUsername(username); // 获取用户通过username
         List<Role> roles = roleMapper.getRolesByUserId(user.getIdStr()); // 获取角色通过userId
@@ -98,9 +132,19 @@ public class UserServiceImpl implements UserService {
         });
 
         loginUser = new LoginUser(user, roles, orgs);
-        redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + loginUser.getUsername(), loginUser, tokenExpire); // 存储缓存redis
         return loginUser;
     }
+
+    @Override
+    public LoginUser getLoginUser(String clientName, Integer clientId) {
+        User userByClient = getUserByClient(clientName, clientId);
+        if(ObjectUtils.isEmpty(userByClient)){
+            return null;
+        }
+        String username = userByClient.getUsername();
+        return getLoginUser(username);
+    }
+
 
     @Override
     public LoginUser getLoginUserByToken(String token) {
@@ -110,16 +154,31 @@ public class UserServiceImpl implements UserService {
         String userId = (String) decrypt.get("userId");
         String username = (String) decrypt.get("username");
         String password = (String) decrypt.get("password");
+
+        String  tokensStr = redisService.get(REDIS_PARENT_TOKEN + username, String.class);
+        if(StringUtils.hasText(tokensStr)){
+            List<String> tokens = JSONArray.parseArray(tokensStr, String.class);
+            if(!tokens.contains(token)) return null;
+        }else {
+            return null;
+        }
+
+//        boolean isSSO = (boolean) decrypt.get("isSSO");
         LoginUser loginUser = this.getLoginUser(username);
+
         return userId.equals(loginUser.getUserId()) && password.equals(loginUser.getPassword()) ? loginUser : null;
     }
 
+
+
     @Override
     public User getUserByUsername(String username) {
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("deleted", "0");
-        queryWrapper.eq("username", username);
-        return userMapper.selectOne(queryWrapper);
+        return userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+    }
+
+    @Override
+    public User getUserByClient(String clientName, Integer clientId) {
+        return userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getClientName, clientName).eq(User::getClientId, clientId));
     }
 
     @Override
@@ -131,7 +190,9 @@ public class UserServiceImpl implements UserService {
     public UserInfo getUserInfo() {
         LoginUser loginUser = SecurityUtils.getLoginUser();
         UserInfo userInfo = new UserInfo();
+        assert loginUser != null;
         BeanUtils.copyProperties(loginUser, userInfo);
+        userInfo.setUserId(loginUser.getUserId());
         userInfo.getRoles().forEach(role -> {
             if (Objects.equals(role.getId(), CONSTANTS.ROLE_ADMIN_CODE)) {
                 userInfo.setAdmin(true);
@@ -148,6 +209,9 @@ public class UserServiceImpl implements UserService {
                 userInfo.setPhone(userExtend.getPhone());
             }
         }
+
+        userInfo.setAuthPaths(menuService.queryAllPathByAuth());
+
         return userInfo;
     }
 
@@ -158,10 +222,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public DTO<?> register(RegisterUserInfo registerUserInfo) {
+    public DTO<?> register(RegisterUserInfo registerUserInfo, boolean verifyMainAndCode) {
         if (!RegexUtils.validate(registerUserInfo.getUsername(), RegexUtils.ACCOUNT_REGEX)
                 || !RegexUtils.validate(registerUserInfo.getPassword(), RegexUtils.PASSWORD_REGEX)
-                || !RegexUtils.validate(registerUserInfo.getMail(), RegexUtils.EMAIL_REGEX)) {
+                || (verifyMainAndCode && !RegexUtils.validate(registerUserInfo.getMail(), RegexUtils.EMAIL_REGEX))) {
             return DTO.error("格式错误");
         }
 
@@ -170,10 +234,13 @@ public class UserServiceImpl implements UserService {
             return DTO.error("用户名已存在");
         }
 
-        String codeCache = redisService.get(CONSTANTS.REDIS_PARENT_MAIL_CODE + registerUserInfo.getMail(), String.class);
-        if (!StringUtils.hasText(codeCache) || !codeCache.equals(registerUserInfo.getCode())) {
-            return DTO.error("验证码不正确");
+        if(verifyMainAndCode){
+            String codeCache = redisService.get(CONSTANTS.REDIS_PARENT_MAIL_CODE + registerUserInfo.getMail(), String.class);
+            if (!StringUtils.hasText(codeCache) || !codeCache.equals(registerUserInfo.getCode())) {
+                return DTO.error("验证码不正确");
+            }
         }
+
 
         User user = new User();
         BeanUtils.copyProperties(registerUserInfo, user);
@@ -213,7 +280,7 @@ public class UserServiceImpl implements UserService {
             return DTO.error("大胆,该用户为管理员");
         }
         userMapper.deleteById(userId);
-        clearUserCacheByUsername(user.getUsername());
+        clearUserCache();
         return DTO.success();
     }
 
@@ -250,7 +317,7 @@ public class UserServiceImpl implements UserService {
         }
 
         userMapper.insertUserAndRole(userId, roleId, LocalDateTime.now());
-        clearUserCacheByUsername(user.getUsername());
+        clearUserCache();
         return DTO.success();
     }
 
@@ -277,7 +344,7 @@ public class UserServiceImpl implements UserService {
 //        if (update == 1) {
 //            removeUserCache(user.getUsername());
 //        }
-        clearUserCacheByUsername(user.getUsername());
+        clearUserCache();
         return DTO.success();
     }
 
@@ -287,8 +354,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void avatar(String username) throws IOException {
-        fileService.downloadAvatar(username);
+    public void avatarUpload(String url, String userId) throws IOException {
+        MultipartFile multipartFile = IOUtils.downloadUrlToMultipartFile(url);
+        fileService.uploadAvatar(multipartFile, userId);
+    }
+
+    @Override
+    public void avatar(String userId) throws IOException {
+        fileService.downloadAvatar(userId);
     }
 
     @Override
@@ -310,37 +383,26 @@ public class UserServiceImpl implements UserService {
 //        if (update == 1) {
 //            removeUserCache(SecurityUtils.getLoginUser().getUsername());
 //        }
-        clearUserCacheByUsername(SecurityUtils.getLoginUser().getUsername());
+        clearUserCache();
         return update == 1 ? DTO.success() : DTO.error("更新失败");
     }
 
-    @Override
-    public void removeUserCache(String username) {
-        redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + username, "", 1); // 存储缓存redis
-    }
 
     @Override
-    public void clearUserCacheByUsername(String username) {
-        redisService.set(CONSTANTS.REDIS_PARENT_TOKEN + username, "", 1);
-    }
-
-    @Override
-    public void clearUserCacheByRoleId(Integer roleId) {
-        List<User> users = userMapper.selectListByRole(roleId);
-        if(!CollectionUtils.isEmpty(users)){
-            for (User user : users) {
-                clearUserCacheByUsername(user.getUsername());
-            }
-        }
+    public void clearUserCache() {
     }
 
 
-    private String makeToken(LoginUser loginUser) {
+
+
+    @Override
+    public String makeToken(LoginUser loginUser) {
         if (loginUser.getType().equals(CONSTANTS.USER_TYPE_SERVER)) {
             return JwtUtils.encrypt(new HashMap<>() {{
                 put("userId", loginUser.getUserId());
                 put("username", loginUser.getUsername());
                 put("password", loginUser.getPassword());
+//                put("isSSO", loginUser.isSSO());
             }}, 0);
         }
 
@@ -366,7 +428,154 @@ public class UserServiceImpl implements UserService {
             for (int start = 0; start < new Random().nextInt(2); start++) {
                 put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
             }
+            // 随机插入 随机字符串
+//            put("isSSO", loginUser.isSSO());
+            // 随机插入 随机字符串
+            for (int start = 0; start < new Random().nextInt(2); start++) {
+                put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+            }
         }}, tokenExpire);
+    }
+
+    @Override
+    public String getTokenBySSO(String clientName, String id) {
+        String token = redisService.get(REDIS_SSO + clientName + ":" + id, String.class);
+        redisService.set(REDIS_SSO + clientName + ":" + id, "", 1);
+        return token;
+    }
+
+    @Override
+    public boolean exist(String username) {
+        return userMapper.exists(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+    }
+
+    @Override
+    public Map<String, String> generateQRCodeImage() throws Exception {
+        Map<String,String> map = new HashMap<>();
+        String secret = GoogleAuthUtils.generateSecret();
+        map.put("secret", secret);
+        String base64 = Base64Utils.encodeImageToBase64(
+                GoogleAuthUtils
+                        .generateQRCodeImage(secret, SecurityUtils.getLoginUser().getUsername(), applicationName)
+        );
+        map.put("base64", base64);
+        return map;
+    }
+
+    @Override
+    public DTO<?> updateUserInfo(UserInfo userInfo) {
+        String userId = SecurityUtils.getLoginUser().getUserId();
+        User userByUsername = userMapper.selectById(userId);
+        if(ObjectUtils.isEmpty(userByUsername)) return DTO.error("账号不存在");
+        UserExtend userExtend = userExtendMapper.selectById(userId);
+
+        if(ObjectUtils.isEmpty(userExtend)){
+            userExtend = new UserExtend().setUserId(Integer.valueOf(userId));
+            userExtendMapper.insert(userExtend);
+
+        }
+
+        if(!userByUsername.getUsername().equals(userInfo.getUsername())){
+            if(!RegexUtils.validate(userInfo.getUsername(), RegexUtils.ACCOUNT_REGEX)){
+                return DTO.error("账号不符合规范");
+            }
+            if(exist(userInfo.getUsername())){
+                return DTO.error("账号已存在");
+            }
+            userByUsername.setUsername(userInfo.getUsername());
+
+        }
+
+        userByUsername.setNickname(userInfo.getNickname());
+        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
+        userUpdateWrapper.set("username",userByUsername.getUsername());
+        userUpdateWrapper.set("nickname",userByUsername.getNickname());
+        userUpdateWrapper.eq("id", userId);
+        userMapper.update(userUpdateWrapper);
+
+        userExtend.setPhone(userInfo.getPhone());
+        userExtend.setSex(userInfo.getSex());
+        UpdateWrapper<UserExtend> userExtendUpdateWrapper = new UpdateWrapper<>();
+        userExtendUpdateWrapper.set("phone",userExtend.getPhone());
+        userExtendUpdateWrapper.set("sex",userExtend.getSex());
+        userExtendUpdateWrapper.eq("user_id",userId);
+        userExtendMapper.update(userExtendUpdateWrapper);
+
+        clearUserCache();
+
+        return DTO.success();
+    }
+
+    @Override
+    public List<Org> getOrgByUserId(String userId) {
+        List<Integer> orgIds = orgMapper.getOrgIdsByUserId(userId);
+        List<Org> orgs = new ArrayList<>();
+        orgIds.forEach(id->{
+            Org orgInfo = orgMapper.selectById(id);
+            if(ObjectUtils.isEmpty(orgInfo)){
+                if(id.equals(ORG_PARENT)){
+                    orgInfo = new Org().setId(ORG_PARENT).setName(NIUBI_ORG_NAME);
+                }
+            }
+            if(!ObjectUtils.isEmpty(orgInfo)){
+                orgs.add(orgInfo);
+            }
+        });
+        return orgs;
+    }
+
+    @Override
+    public DTO<?> addOrg(String userId, String orgId) {
+        User user = userMapper.selectById(userId);
+        if (ObjectUtils.isEmpty(user)) {
+            return DTO.error("用户不存在");
+        }
+
+        if (!orgId.equals(String.valueOf(ORG_PARENT)) && !orgMapper.exists(new LambdaQueryWrapper<Org>().eq(Org::getId, orgId))) {
+            return DTO.error("机构不存在");
+        }
+
+//        List<Integer> list = getOrgByUserId(userId).stream().map(Org::getId).toList();
+        List<Integer> list = orgMapper.getOrgIdsByUserId(userId);
+        if (list.contains(Integer.parseInt(orgId))) {
+            return DTO.error("角色已绑定,无需重复绑定");
+        }
+
+        userMapper.insertUserAndOrg(userId, orgId, LocalDateTime.now());
+        clearUserCache();
+        return DTO.success();
+    }
+
+    @Override
+    public DTO<?> deleteOrg(String userId, String orgId) {
+
+        userMapper.removeUserAndOrg(userId, orgId);
+        return DTO.success();
+    }
+
+    @Override
+    public List<User> selectorUserWithInfo(String search) {
+
+        return userMapper.selectList(new LambdaQueryWrapper<User>()
+                .select(User::getId, User::getUsername, User::getNickname)
+                .like(User::getUsername, search)
+                .or()
+                .like(User::getNickname, search)
+                .last("limit 10")
+        );
+    }
+
+    @Override
+    public List<User> selectorInitByIds(List<Integer> ids) {
+
+        if(CollectionUtils.isEmpty(ids)){
+            return Collections.emptyList();
+        }
+
+        return userMapper.selectList(new LambdaQueryWrapper<User>()
+                .select(User::getId, User::getUsername, User::getNickname)
+                .in(User::getId, ids)
+        );
     }
 
 

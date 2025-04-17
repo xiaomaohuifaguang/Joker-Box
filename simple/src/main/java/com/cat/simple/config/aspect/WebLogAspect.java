@@ -17,6 +17,7 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Aspect
 @Component
+@Order(1)
 public class WebLogAspect {
 
     private static final ThreadLocal<WebLog> logThreadLocal = new ThreadLocal<>();

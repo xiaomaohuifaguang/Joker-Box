@@ -57,6 +57,8 @@ public class LoginUser {
      */
     private List<Org> orgs;
 
+//    private boolean isSSO;
+
 
     public LoginUser(User user, List<Role> roles, List<Org> orgs) {
         setUserId(user.getIdStr());
@@ -67,4 +69,5 @@ public class LoginUser {
         setRoles(roles);
         setOrgs(orgs);
     }
+
 }

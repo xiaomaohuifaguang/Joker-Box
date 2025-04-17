@@ -4,9 +4,13 @@ import com.cat.common.entity.HttpResult;
 import com.cat.common.entity.HttpResultStatus;
 import com.cat.common.utils.ServletUtils;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /***
  * 接口异常处理类
@@ -16,14 +20,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * @create 2024/6/19 23:50
  **/
 @RestControllerAdvice
+@Slf4j
 public class ErrorControllerAdvice {
 
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public HttpResult<?> error(Exception e){
         HttpServletResponse httpServletResponse = ServletUtils.getHttpServletResponse();
-        e.printStackTrace();
+        log.error("An error occurred", e);
         HttpResultStatus error = HttpResultStatus.ERROR;
+
         if(e instanceof org.springframework.web.servlet.NoHandlerFoundException){
             error = HttpResultStatus.NOT_FOUND;
 

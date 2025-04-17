@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.ProcessHandleInfoMapper">
+
+    <select id="selectPage" resultType="com.cat.common.entity.process.ProcessHandleInfo">
+        SELECT * FROM cat_process_handle_info
+    </select>
+    <select id="selectDetailListByProcessInstanceId" resultType="com.cat.common.entity.process.ProcessHandleInfo">
+        SELECT cphi.*, IFNULL(cu.nickname, cphi.handle_user) as handleUserName FROM cat_process_handle_info cphi
+        LEFT JOIN (SELECT * FROM cat_user WHERE deleted = '0') cu ON cphi.handle_user = cu.id
+        <where>
+            and cphi.process_instance_id = #{processInstanceId}
+        </where>
+    </select>
+</mapper>

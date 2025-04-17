@@ -44,6 +44,12 @@ public class RegisterUserInfo {
     @Schema(description = "手机号")
     private Long phone;
 
+    @Schema(description = "客户端名称")
+    private String clientName;
+
+    @Schema(description = "客户端ID")
+    private Integer clientId;
+
 
 
 

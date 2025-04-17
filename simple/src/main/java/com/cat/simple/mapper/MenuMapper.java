@@ -2,6 +2,7 @@ package com.cat.simple.mapper;
 
 import com.cat.common.entity.menu.Menu;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cat.common.entity.menu.MenuPageParam;
 import org.apache.ibatis.annotations.Mapper;
 
 import com.cat.common.entity.Page;
@@ -24,7 +25,7 @@ import java.util.List;
 public interface MenuMapper extends BaseMapper<Menu> {
 
 
-   Page<Menu> selectPage(@Param("page") Page<Menu> page);
+   Page<Menu> selectPage(@Param("page") Page<Menu> page, @Param("param")MenuPageParam param);
 
 
    List<Menu> queryAllByAuth(@Param("roleIds") List<Integer> roleIds, @Param("idAdmin") boolean idAdmin);

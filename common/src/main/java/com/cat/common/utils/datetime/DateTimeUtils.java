@@ -8,6 +8,7 @@ public class DateTimeUtils {
 
 
     public static final String DATE_FORMAT_Y_M_D = "yyyy-MM-dd";
+    public static final String DATE_FORMAT_YMD = "yyyyMMdd";
 
 
     public static LocalDate getLocalDateByDay(Integer day) {

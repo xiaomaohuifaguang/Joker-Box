@@ -51,5 +51,9 @@ public class RedisService {
         return StringUtils.hasText(applicationName) ? applicationName+":"+key : key;
     }
 
+    public void deleteKey(String key){
+        redisTemplate.delete(makeKey(key));
+    }
+
 
 }

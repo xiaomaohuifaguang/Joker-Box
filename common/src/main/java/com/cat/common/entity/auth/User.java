@@ -59,8 +59,15 @@ public class User implements Serializable {
     private LocalDateTime updateTime;
 
     public String getIdStr(){
-        return String.format("%010d", this.id);
+        return String.format("%d", this.id);
     }
+
+    @Schema(description = "客户端名称")
+    private String clientName;
+
+    @Schema(description = "客户端ID")
+    private Integer clientId;
+
 
     @Schema(description = "用户扩展信息")
     @TableField(exist = false)

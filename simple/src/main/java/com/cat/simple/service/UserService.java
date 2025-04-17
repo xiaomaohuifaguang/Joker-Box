@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /***
  * 鉴权服务业务层接口
@@ -27,11 +28,20 @@ public interface UserService {
     String getToken(LoginInfo loginInfo);
 
     /**
+     * 获取token令牌剩余时间
+     * @param token 令牌
+     * @return 剩余时间ms
+     */
+    long getTokenExpirationTimeLeftMillis(String token);
+
+    /**
      * 通过用户名获取登录用户信息
      * @param username 用户名
      * @return 登录用户信息
      */
     LoginUser getLoginUser(String username);
+
+    LoginUser getLoginUser(String clientName, Integer clientId);
 
     /**
      * 通过令牌获取登录用户信息
@@ -40,12 +50,24 @@ public interface UserService {
      */
     LoginUser getLoginUserByToken(String token);
 
+
+
+
+
     /**
      * 通过用户名获取用户
      * @param username 用户名
      * @return 用户
      */
     User getUserByUsername(String username);
+
+    /**
+     * 通过客户端信息获取用户
+     * @param clientName 客户端名称
+     * @param clientId 客户端ID
+     * @return 用户
+     */
+    User getUserByClient(String clientName, Integer clientId);
 
     /**
      * 通过userid获取用户角色
@@ -68,7 +90,7 @@ public interface UserService {
      */
     void code(String mail) throws TemplateException, MessagingException, IOException;
 
-    DTO<?> register(RegisterUserInfo registerUserInfo);
+    DTO<?> register(RegisterUserInfo registerUserInfo, boolean verifyMainAndCode);
 
     Page<User> queryPage(UserPageParam pageParam);
 
@@ -84,16 +106,37 @@ public interface UserService {
 
     boolean avatarUpload(MultipartFile file) throws IOException;
 
-    void avatar(String username) throws IOException;
+    void avatarUpload(String url, String username) throws IOException;
+
+    void avatar(String userId) throws IOException;
 
     DTO<?> changePassword(String oldPassword, String newPassword) throws IOException;
 
-    void removeUserCache(String username);
 
-    void clearUserCacheByUsername(String username);
+    void clearUserCache();
 
-    void clearUserCacheByRoleId(Integer roleId);
 
+    String makeToken(LoginUser loginUser);
+
+    String getTokenBySSO(String clientName, String id);
+
+    boolean exist(String username);
+
+
+    Map<String, String> generateQRCodeImage() throws Exception;
+
+    DTO<?> updateUserInfo(UserInfo userInfo);
+
+
+    List<Org> getOrgByUserId(String userId);
+
+    DTO<?> addOrg(String userId, String orgId);
+
+    DTO<?> deleteOrg(String userId, String orgId);
+
+    List<User> selectorUserWithInfo(String search);
+
+    List<User> selectorInitByIds(List<Integer> ids);
 
 
 

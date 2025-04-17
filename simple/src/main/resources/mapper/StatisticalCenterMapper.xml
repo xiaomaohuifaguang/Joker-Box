@@ -2,4 +2,24 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cat.simple.mapper.StatisticalCenterMapper">
 
+    <select id="registerCountByDate" resultType="java.util.HashMap">
+        SELECT
+            DATE_FORMAT( create_time, '%Y-%m-%d' ) day,
+            count( 1 ) count
+        FROM
+            cat_user
+        WHERE
+            deleted = 0
+          AND create_time > #{lastDate}
+        GROUP BY day
+        ORDER BY day;
+    </select>
+    <select id="apiReqTotal" resultType="java.util.HashMap">
+        SELECT CONCAT( cap.group_name,'-',cap.name) name,COUNT(1) count
+        FROM cat_api_path cap
+                 INNER JOIN cat_web_log cwl on cap.path = cwl.req_path
+        group by cap.group_name,cap.name
+        ORDER BY COUNT(1) DESC
+        LIMIT 10
+    </select>
 </mapper>

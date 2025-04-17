@@ -44,6 +44,10 @@ public class ServletUtils {
 
     public static void back(Object o) throws IOException {
         HttpServletResponse response = getHttpServletResponse();
+        back(o, response);
+    }
+
+    public static void back(Object o, HttpServletResponse response) throws IOException {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(String.valueOf(StandardCharsets.UTF_8));
         response.getWriter().write(JSONUtils.toJSONString(o));

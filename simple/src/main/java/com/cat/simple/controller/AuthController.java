@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 
 /***
  * <TODO description class purpose>
@@ -42,9 +43,11 @@ public class AuthController {
     private UserService userService;
 
 
+
     @Operation(summary = "获取token")
     @RequestMapping(value = "/getToken", method = RequestMethod.POST)
     public HttpResult<String> getToken(@RequestBody LoginInfo loginInfo){
+//        loginInfo.setSSO(false);
         String token = userService.getToken(loginInfo);
         return HttpResult.back(StringUtils.hasText(token) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR_USERNAME_OR_PASSWORD, token);
     }
@@ -81,7 +84,9 @@ public class AuthController {
     @Operation(summary = "注册")
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public HttpResult<?> register(@RequestBody RegisterUserInfo registerUserInfo){
-        DTO<?> register = userService.register(registerUserInfo);
+        registerUserInfo.setClientName(null);
+        registerUserInfo.setClientId(null);
+        DTO<?> register = userService.register(registerUserInfo, true);
         return HttpResult.back(register.flag ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR).setMsg(register.msg);
     }
 
@@ -99,9 +104,9 @@ public class AuthController {
     @Parameters({
             @Parameter(name = "username", description = "用户名", required = true, in = ParameterIn.PATH)
     })
-    @RequestMapping(value = "/avatar/{username}", method = RequestMethod.GET)
-    public void avatar( @PathVariable String username) throws IOException {
-        userService.avatar(username);
+    @RequestMapping(value = "/avatar/{userId}", method = RequestMethod.GET)
+    public void avatar( @PathVariable String userId) throws IOException {
+        userService.avatar(userId);
     }
 
     @Operation(summary = "修改密码")
@@ -114,5 +119,31 @@ public class AuthController {
         return HttpResult.back(userService.changePassword(oldPassword, newPassword));
     }
 
+
+    @Operation(summary = "获取token")
+    @RequestMapping(value = "/getTokenSSO", method = RequestMethod.POST)
+    @Parameters({
+            @Parameter(name = "clientName", description = "客户端", required = true),
+            @Parameter(name = "id", description = "id", required = true)
+    })
+    public HttpResult<String> getTokenSSO(@RequestParam("clientName") String clientName,
+                                          @RequestParam("id") String id){
+        String tokenBySSO = userService.getTokenBySSO(clientName, id);
+        return HttpResult.back(StringUtils.hasText(tokenBySSO) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR_SSO_AUTHORIZATION, tokenBySSO);
+    }
+
+
+    @Operation(summary = "双因子认证二维码生成器")
+    @RequestMapping(value = "/qrCodeImage", method = RequestMethod.POST)
+    public HttpResult<Map<String,String>> qrCodeImage() throws Exception {
+        return HttpResult.back(userService.generateQRCodeImage());
+    }
+
+    @Operation(summary = "更新用户信息")
+    @RequestMapping(value = "/updateUserInfo", method = RequestMethod.POST)
+    public HttpResult<?> updateUserInfo(@RequestBody UserInfo userInfo){
+        DTO<?> dto = userService.updateUserInfo(userInfo);
+        return HttpResult.back(dto);
+    }
 
 }

@@ -73,6 +73,9 @@ public class Menu implements Serializable {
     @Schema(description = "类型 -1 后台 -2 前台")
     private Integer menuType;
 
+    @Schema(description = "是否白名单 1是0否")
+    private String whiteList;
+
 
     public boolean verify(){
         return StringUtils.hasText(this.name) && StringUtils.hasText(this.path);

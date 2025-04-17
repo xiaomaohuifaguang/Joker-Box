@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -22,6 +23,9 @@ import java.util.List;
 @Accessors(chain = true)
 @Schema(name = "UserInfo", description = "用户登录信息")
 public class UserInfo {
+
+    @Schema(description = "用户id")
+    private String userId;
 
     @Schema(description = "用户名")
     private String username;
@@ -50,6 +54,8 @@ public class UserInfo {
     @Schema(description = "手机号")
     private Long phone;
 
+    @Schema(description = "权限路径")
+    private List<String> authPaths = new ArrayList<>();
 
 
 }

@@ -17,9 +17,15 @@ public interface MailService {
     /**
      * 发送验证码
      * @param email 邮箱
-     * @param code 验证码
      * @return 验证码
      */
     String sendCode(String email) throws IOException, TemplateException, MessagingException;
+
+
+    void notification(String email, String nickname, String content) throws MessagingException, IOException, TemplateException;
+
+
+
+
 
 }

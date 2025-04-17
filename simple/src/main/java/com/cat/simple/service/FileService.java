@@ -25,6 +25,8 @@ public interface FileService {
 
     DTO<?> uploadAvatar(MultipartFile uploadFile) throws IOException;
 
+    DTO<?> uploadAvatar(MultipartFile uploadFile, String userId) throws IOException;
+
     DTO<FileInfo> upload(MultipartFile uploadFile, String parentId, String realPath) throws IOException;
 
     /**
@@ -41,7 +43,7 @@ public interface FileService {
      */
     void download(String fileId) throws IOException;
 
-    void downloadAvatar(String username) throws IOException;
+    void downloadAvatar(String userId) throws IOException;
 
     void download(String fileId, String realPath) throws IOException;
 

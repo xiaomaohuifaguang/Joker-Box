@@ -13,9 +13,9 @@ import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
  **/
 public class MybatisPlusUtils {
 
-    final static private String url = "jdbc:mysql://192.168.1.4:3306/joker-box-dev?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8";
+    final static private String url = "jdbc:mysql://192.168.3.35:32001/joker-box-dev?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8";
     final static private String username = "root";
-    final static private String password = "six6";
+    final static private String password = "Dhgsm1025..";
 
     /**
      * 代码生成器 请在各服务的AuthMybatisPlusGenerator中引用

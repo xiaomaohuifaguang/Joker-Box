@@ -4,9 +4,12 @@ import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.auth.Role;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Collection;
 import java.util.List;
 
 /***
@@ -21,6 +24,10 @@ public class SecurityUtils {
     public static LoginUser getLoginUser(){
         SecurityContext context = SecurityContextHolder.getContext();
         Authentication authentication = context.getAuthentication();
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        if(authorities.contains(new SimpleGrantedAuthority(CONSTANTS.ANONYMOUS_ROLE))){
+            return null;
+        }
         return ((UserDetailsImpl) authentication.getPrincipal()).loginUser();
     }
 

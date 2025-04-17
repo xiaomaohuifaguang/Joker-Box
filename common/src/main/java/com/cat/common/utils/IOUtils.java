@@ -1,8 +1,12 @@
 package com.cat.common.utils;
 
+import com.cat.common.entity.utils.UrlToMultipartFile;
 import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -62,6 +66,33 @@ public class IOUtils {
         }
         return new String(Files.readAllBytes(Paths.get(path)));
 
+    }
+
+
+    public static MultipartFile downloadUrlToMultipartFile(String urlString) throws IOException {
+        URL url = new URL(urlString);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setDoOutput(true);
+        connection.connect();
+
+        // 读取URL内容
+        try (InputStream inputStream = connection.getInputStream();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+
+            // 将输出流转换为字节数组
+            byte[] bytes = outputStream.toByteArray();
+
+            // 创建MultipartFile对象
+            String fileName = urlString.substring(urlString.lastIndexOf('/') + 1);
+            String contentType = connection.getContentType();
+            return new UrlToMultipartFile(bytes, fileName, contentType);
+        }
     }
 
 
