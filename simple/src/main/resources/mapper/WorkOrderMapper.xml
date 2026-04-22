@@ -26,6 +26,7 @@
             </otherwise>
         </choose>
         <where>
+            AND cwo.deleted = '0'
             AND ( cwo.status = '1' OR ( cwo.status = '0' AND cwo.create_by = #{param.userId} ) )
             <if test='param.type != null and param.type == "11"'>
                 AND cwo.status = '1' AND cwo.create_by = #{param.userId}

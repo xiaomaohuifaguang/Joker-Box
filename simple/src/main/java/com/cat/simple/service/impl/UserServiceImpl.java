@@ -78,6 +78,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public String getToken(LoginInfo loginInfo) {
         LoginUser loginUser = this.getLoginUser(loginInfo.getUsername());
+        if(Objects.isNull(loginUser)) {
+            return null;
+        }
 //        loginUser.setSSO(loginInfo.isSSO());
 //        if(loginInfo.isSSO()) {
 //            this.makeToken(loginUser);
@@ -115,6 +118,9 @@ public class UserServiceImpl implements UserService {
         LoginUser loginUser;
         // 数据库读取
         User user = this.getUserByUsername(username); // 获取用户通过username
+        if(Objects.isNull(user)){
+            return null;
+        }
         List<Role> roles = roleMapper.getRolesByUserId(user.getIdStr()); // 获取角色通过userId
 //        List<Org> orgs = orgMapper.getOrgsByUserId(user.getIdStr());
         List<Integer> orgIds = orgMapper.getOrgIdsByUserId(user.getIdStr());

@@ -155,6 +155,13 @@
                 <version>${httpclient5.version}</version>
             </dependency>
 
+            <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.flowable</groupId>
                 <artifactId>flowable-spring-boot-starter</artifactId>
@@ -179,7 +186,6 @@
                 <artifactId>core</artifactId>
                 <version>${zxing.version}</version>
             </dependency>
-
 
         </dependencies>
     </dependencyManagement>

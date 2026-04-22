@@ -51,6 +51,6 @@
                 OR cm.white_list = '1'
             </where>
         </if>
-        ORDER BY cm.sort DESC
+        ORDER BY cm.sort DESC, cm.create_time ASC
     </select>
 </mapper>

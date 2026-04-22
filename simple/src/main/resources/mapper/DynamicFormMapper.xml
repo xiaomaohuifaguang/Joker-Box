@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.DynamicFormMapper">
+
+    <select id="selectPage" resultType="com.cat.common.entity.dynamicForm.DynamicForm">
+        SELECT * FROM cat_dynamic_form
+        <where>
+            and deleted = '0'
+        </where>
+    </select>
+</mapper>

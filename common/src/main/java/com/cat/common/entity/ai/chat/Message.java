@@ -45,6 +45,8 @@ public class Message implements Serializable {
     private String name;
 
 
-
-
+    public Message(String role, String content) {
+        this.role = role;
+        this.content = content;
+    }
 }

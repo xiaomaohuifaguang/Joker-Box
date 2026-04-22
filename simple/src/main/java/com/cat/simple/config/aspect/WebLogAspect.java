@@ -62,7 +62,7 @@ public class WebLogAspect {
                         arg -> arg instanceof MultipartFile ?
                                 Map.of("name", ((MultipartFile) arg).getOriginalFilename(), "size", ((MultipartFile) arg).getSize()) : arg
                 ));
-        String argsJson = JSON.toJSONString(argsMap, JSONWriter.Feature.WriteMapNullValue);
+        String argsJson = serializeLargeObject(argsMap);
         webLog.setReqArgs(argsJson);
 
         webLog.setClassName(joinPoint.getSignature().getDeclaringTypeName());
@@ -99,4 +99,37 @@ public class WebLogAspect {
         logThreadLocal.remove();
     }
 
+    public static String serializeLargeObject(Map<String, Object> argsMap) {
+        try {
+            return JSON.toJSONString(argsMap,
+                    JSONWriter.Feature.WriteMapNullValue,
+                    JSONWriter.Feature.LargeObject);
+        } catch (OutOfMemoryError e) {
+            // 如果仍然内存不足，尝试分批处理
+            return serializeInBatches(argsMap);
+        }
+    }
+
+    private static String serializeInBatches(Map<String, Object> argsMap) {
+        // 实现分批处理的逻辑
+        // 例如每次处理1000个条目
+        int batchSize = 1000;
+        StringBuilder sb = new StringBuilder("{");
+        int count = 0;
+
+        for (Map.Entry<String, Object> entry : argsMap.entrySet()) {
+            if (count > 0) {
+                sb.append(",");
+            }
+            sb.append("\"").append(entry.getKey()).append("\":")
+                    .append(JSON.toJSONString(entry.getValue()));
+
+            if (++count % batchSize == 0) {
+                // 定期清理内存
+                System.gc();
+            }
+        }
+        sb.append("}");
+        return sb.toString();
+    }
 }

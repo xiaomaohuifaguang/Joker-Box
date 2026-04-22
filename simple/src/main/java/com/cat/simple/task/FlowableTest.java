@@ -1,7 +1,6 @@
 package com.cat.simple.task;
 
 import com.cat.common.utils.UUIDUtils;
-import com.cat.simple.service.flowable.FlowableService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
@@ -50,8 +49,6 @@ public class FlowableTest {
     @Resource
     private TaskService taskService;
 
-    @Resource
-    FlowableService flowableService;
 
     @Resource
     HistoryService historyService;

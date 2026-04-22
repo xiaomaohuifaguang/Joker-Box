@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.GanDaShiCommentMapper">
+
+    <select id="selectPage" resultType="com.cat.common.entity.ganDaShi.GanDaShiComment">
+        SELECT
+            c.*,
+            <if test='param.parentId != null and param.parentId != ""'>
+                ( select IF(c.parent_id = c.replay_id, null, cup.nickname) FROM cat_gan_da_shi_comment p INNER JOIN cat_user cup ON c.create_by = cup.id and cup.deleted = '0' WHERE p.id = c.parent_id ) as replayName,
+            </if>
+            cu.nickname as createByName
+        FROM cat_gan_da_shi_comment c
+        INNER JOIN cat_user cu ON c.create_by = cu.id and cu.deleted = '0'
+        <where>
+            AND c.post_id = #{param.postId}
+            <choose>
+                <when test='param.parentId != null and param.parentId != ""'>
+                    AND c.parent_id = #{param.parentId}
+                </when>
+                <otherwise>
+                    AND c.parent_id IS NULL
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY c.create_time
+        <if test='param.parentId == null or param.parentId == ""'>
+            DESC
+        </if>
+    </select>
+</mapper>

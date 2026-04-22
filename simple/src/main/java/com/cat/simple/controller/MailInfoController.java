@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/mailInfo")
-@Tag(name = "mailInfo")
+@Tag(name = "邮件记录")
 public class MailInfoController {
 
 @Resource

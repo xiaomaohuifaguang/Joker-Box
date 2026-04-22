@@ -10,6 +10,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /***
  * <TODO description class purpose>
@@ -35,12 +36,20 @@ public class ChatParam implements Serializable {
     private List<Message> messages = new ArrayList<>();
 
     @Schema(description = "流式响应")
-    private Boolean stream = false;
+    private boolean stream = false;
 
 
-    public ChatParam setMessages(List<AiMessage> aiMessages) {
-        this.messages = new ArrayList<>();
-        aiMessages.forEach(m->this.messages.add(new Message().setRole(m.getRole()).setContent(m.getContent()).setName(m.getName())));
-        return this;
+//    public ChatParam setMessages(List<AiMessage> aiMessages) {
+//        this.messages = new ArrayList<>();
+//        aiMessages.forEach(m->this.messages.add(new Message().setRole(m.getRole()).setContent(m.getContent()).setName(m.getName())));
+//        return this;
+//    }
+
+
+    public void addMessage(Message message) {
+        if(Objects.isNull(this.messages)) {
+            this.messages = new ArrayList<>();
+        }
+        this.messages.add(message);
     }
 }

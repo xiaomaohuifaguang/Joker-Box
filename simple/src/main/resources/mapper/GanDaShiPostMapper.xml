@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.GanDaShiPostMapper">
+
+    <select id="selectPage" resultType="com.cat.common.entity.ganDaShi.GanDaShiPost">
+        SELECT
+            post.id,
+            post.title,
+            post.digest,
+            post.create_by,
+            post.create_time,
+            IFNULL(cu.username, '未知') as createUsername,
+            IFNULL(cu.nickname, '未知') as createByName,
+            post.view_count
+        FROM cat_gan_da_shi_post post
+        LEFT JOIN cat_user cu on post.create_by = cu.id and cu.deleted = '0'
+        <where>
+            and post.deleted = '0'
+            and (
+            post.title like concat('%',#{param.search},'%')
+            or
+            post.text like concat('%',#{param.search},'%')
+            )
+            <if test='param.userId != null and param.userId != ""'>
+                and cu.id = #{param.userId}
+            </if>
+        </where>
+        ORDER BY post.create_time DESC
+    </select>
+    <select id="selectById" resultType="com.cat.common.entity.ganDaShi.GanDaShiPost">
+        SELECT
+            post.id,
+            post.title,
+            post.content,
+            post.digest,
+            post.create_by,
+            post.create_time,
+            IFNULL(cu.username, 'anonymous') as createUsername,
+            IFNULL(cu.nickname, '未知') as createByName,
+            post.view_count
+        FROM cat_gan_da_shi_post post
+        LEFT JOIN cat_user cu on post.create_by = cu.id and cu.deleted = '0'
+        <where>
+            and post.deleted = '0'
+            and post.id = #{id}
+
+        </where>
+    </select>
+</mapper>

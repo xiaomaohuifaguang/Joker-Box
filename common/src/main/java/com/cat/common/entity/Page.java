@@ -36,7 +36,7 @@ public class Page<T> implements IPage<T> {
 //    private long totalPage;
 
     public Page(PageParam pageParam) {
-        this.setSize(pageParam.getSize() > 5 ? pageParam.getSize() : 10L);
+        this.setSize(pageParam.getSize() > 0 ? pageParam.getSize() : 10L);
         this.setCurrent(pageParam.getCurrent() > 0 ? pageParam.getCurrent() : 1L);
     }
 
