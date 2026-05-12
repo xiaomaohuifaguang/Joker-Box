@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.Map;
 
 
 @Data
@@ -29,7 +29,7 @@ public class FormData implements Serializable {
     private String formInstanceId;
 
     @Schema(description = "数据")
-    private HashMap<String, Object> data;
+    private Map<String, Object> data;
 
 
 

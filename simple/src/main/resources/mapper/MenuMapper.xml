@@ -53,4 +53,19 @@
         </if>
         ORDER BY cm.sort DESC, cm.create_time ASC
     </select>
+    <delete id="delete">
+        <choose>
+            <when test='server != null and server != "" and apiPaths!=null and apiPaths.size() > 0'>
+                DELETE FROM cat_menu_api
+                where
+                server = #{server}
+                <foreach collection="apiPaths" item="apiPath" open="AND api_path not in ( " close=" ) " separator=",">
+                    #{apiPath}
+                </foreach>
+            </when>
+            <otherwise>
+                SELECT 0
+            </otherwise>
+        </choose>
+    </delete>
 </mapper>

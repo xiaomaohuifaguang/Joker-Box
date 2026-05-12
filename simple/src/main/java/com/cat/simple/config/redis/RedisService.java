@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
+import java.util.Optional;
 
 /***
  * redis 具体实现方法
@@ -49,6 +50,10 @@ public class RedisService {
     private String makeKey(String key){
         String applicationName = env.getProperty("spring.application.name");
         return StringUtils.hasText(applicationName) ? applicationName+":"+key : key;
+    }
+
+    public long incr(String key){
+        return Optional.ofNullable(redisTemplate.opsForValue().increment(makeKey(key))).orElse(0L);
     }
 
     public void deleteKey(String key){

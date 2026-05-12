@@ -16,4 +16,7 @@ public interface AiModelService {
     AiModel info(AiModel aiModel);
 
     Page<AiModel> queryPage(PageParam pageParam);
+
+    AiModel getOneWithRealApiKeyById(String id);
+
 }

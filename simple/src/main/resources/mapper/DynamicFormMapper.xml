@@ -3,9 +3,10 @@
 <mapper namespace="com.cat.simple.mapper.DynamicFormMapper">
 
     <select id="selectPage" resultType="com.cat.common.entity.dynamicForm.DynamicForm">
-        SELECT * FROM cat_dynamic_form
+        SELECT cdf.*,cu.nickname createByName FROM cat_dynamic_form cdf
+        INNER JOIN cat_user cu on cdf.create_by = cu.id
         <where>
-            and deleted = '0'
+            and cdf.deleted = '0'
         </where>
     </select>
 </mapper>

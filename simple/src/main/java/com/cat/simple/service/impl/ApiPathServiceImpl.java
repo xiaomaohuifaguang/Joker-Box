@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.Cascade;
 import com.cat.simple.mapper.ApiPathMapper;
+import com.cat.simple.mapper.MenuMapper;
 import com.cat.simple.mapper.RoleMapper;
 import com.cat.simple.service.ApiPathService;
 import com.cat.common.entity.Page;
@@ -13,6 +14,7 @@ import com.cat.common.entity.auth.ApiPathGroup;
 import com.cat.common.entity.auth.ApiPathPageParam;
 import com.cat.common.entity.auth.ApiPathServer;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -36,6 +38,8 @@ public class ApiPathServiceImpl implements ApiPathService {
     private ApiPathMapper apiPathMapper;
     @Resource
     private RoleMapper roleMapper;
+    @Autowired
+    private MenuMapper menuMapper;
 
 
     @Override
@@ -91,6 +95,7 @@ public class ApiPathServiceImpl implements ApiPathService {
     @Override
     public void deleteBatch(String server, List<String> paths) {
         roleMapper.delete(server,paths);
+        menuMapper.delete(server, paths);
         apiPathMapper.delete(new LambdaQueryWrapper<ApiPath>().eq(ApiPath::getServer, server).notIn(ApiPath::getPath, paths));
     }
 

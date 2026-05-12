@@ -5,11 +5,14 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
 import java.io.Serial;
+import java.util.Map;
+
 /**
  * <p>
  * 流程定义信息表
@@ -34,6 +37,9 @@ public class ProcessDefinition implements Serializable {
 
     @Schema(description = "流程定义key	ACT_RE_PROCDEF")
     private String processKey;
+
+    @Schema(description = "流程分类")
+    private String processCategory;
 
     @Schema(description = "流程定义名称")
     private String processName;
@@ -69,5 +75,9 @@ public class ProcessDefinition implements Serializable {
     @Schema(description = "流程配置文件 bpmn")
     @TableField(exist = false)
     private String xmlStr;
+
+    @Schema(description = "logicFlow data")
+    @TableField(exist = false,typeHandler = JacksonTypeHandler.class)
+    private Map<String, Object> rawData;
 
 }

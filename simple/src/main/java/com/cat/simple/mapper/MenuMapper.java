@@ -35,4 +35,7 @@ public interface MenuMapper extends BaseMapper<Menu> {
 
 
    int insertMenuApiRelation(@Param("menuId") Integer menuId, @Param("relations") List<HashMap<String,String>> relations, @Param("updateTime")LocalDateTime updateTime);
+
+   int delete(@Param("server") String server, @Param("apiPaths") List<String> apiPaths);
+
 }

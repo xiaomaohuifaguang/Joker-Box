@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
@@ -22,8 +23,8 @@ public class AiController {
 
     @Operation(summary = "聊天")
     @RequestMapping(value = "/chat", method = RequestMethod.POST)
-    public void chat(@RequestBody ChatParam chatParam) throws IOException {
-        aiChatService.chat(chatParam);
+    public SseEmitter chat(@RequestBody ChatParam chatParam) throws IOException {
+        return aiChatService.chat(chatParam);
     }
 
 

@@ -45,6 +45,9 @@ public class DynamicFormField implements Serializable {
     @Schema(description = "表单id")
     private String formId;
 
+    @Schema(description = "所属分组id")
+    private String groupId;
+
     @Schema(description = "版本")
     private String version;
 
@@ -107,25 +110,25 @@ public class DynamicFormField implements Serializable {
     private LocalDateTime updateTime;
 
 
+    @Schema(description = "排序")
+    private Integer sort;
 
 
-    private static boolean getDynamicFormField(DynamicFormField dynamicFormField){
 
-        if(!StringUtils.hasText(dynamicFormField.getTitle())){
+    public boolean validate() {
+        if (!StringUtils.hasText(this.title)) {
             return false;
         }
-        if(Objects.nonNull(dynamicFormField.getMinLength())
-                && Objects.nonNull(dynamicFormField.getMaxLength())
-                && dynamicFormField.getMinLength() > dynamicFormField.getMaxLength()){
+        if (Objects.nonNull(this.minLength)
+                && Objects.nonNull(this.maxLength)
+                && this.minLength > this.maxLength) {
             return false;
         }
-        if(Objects.nonNull(dynamicFormField.getMin())
-                && Objects.nonNull(dynamicFormField.getMax())
-                && dynamicFormField.getMin() > dynamicFormField.getMax()){
+        if (Objects.nonNull(this.min)
+                && Objects.nonNull(this.max)
+                && this.min > this.max) {
             return false;
         }
-
-
         return true;
     }
 

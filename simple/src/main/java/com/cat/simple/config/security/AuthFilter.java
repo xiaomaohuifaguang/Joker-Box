@@ -10,7 +10,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
@@ -32,6 +35,8 @@ public class AuthFilter extends OncePerRequestFilter {
     @Resource
     private UserService userService;
 
+    private final SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull FilterChain filterChain) throws ServletException, IOException {
 
@@ -44,7 +49,10 @@ public class AuthFilter extends OncePerRequestFilter {
                 UserDetailsImpl userDetails = new UserDetailsImpl(loginUser);
                 // 保存用户信息 到SecurityContextHolder
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                context.setAuthentication(authenticationToken);
+                SecurityContextHolder.setContext(context);
+                securityContextRepository.saveContext(context, request, response);
             }
 
         }

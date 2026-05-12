@@ -3,9 +3,6 @@ package com.cat.simple.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cat.common.entity.dynamicForm.DynamicFormField;
 import org.apache.ibatis.annotations.Mapper;
-
-import com.cat.common.entity.Page;
-import com.cat.common.entity.PageParam;
 import org.apache.ibatis.annotations.Param;
 
 
@@ -19,5 +16,14 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface DynamicFormFieldMapper extends BaseMapper<DynamicFormField> {
-   Page<DynamicFormField> selectPage(@Param("page") Page<DynamicFormField> page);
+
+   /**
+    * 物理删除指定表单、指定版本的字段定义（绕过 @TableLogic，保留历史版本）。
+    */
+   int deletePhysicsByFormIdAndVersion(@Param("formId") String formId, @Param("version") String version);
+
+   /**
+    * 将 sourceVersion 的数据复制为 targetVersion（用于发布时 DRAFT→新版本，或停用时最新版→DRAFT）。
+    */
+   int copyVersion(@Param("formId") String formId, @Param("sourceVersion") String sourceVersion, @Param("targetVersion") String targetVersion);
 }

@@ -35,16 +35,16 @@ public class AiMessage implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public AiMessage(ChatResponse chatResponse) {
-        if(!ObjectUtils.isEmpty(chatResponse.getChoices().get(0).getMessage())){
-            this.role =  chatResponse.getChoices().get(0).getMessage().getRole();
-            setContent(chatResponse.getChoices().get(0).getMessage().getContent());
-        }
-        if(!ObjectUtils.isEmpty(chatResponse.getChoices().get(0).getDelta())){
-            this.role =  chatResponse.getChoices().get(0).getDelta().getRole();
-            setContent(chatResponse.getChoices().get(0).getDelta().getContent());
-        }
-    }
+//    public AiMessage(ChatResponse chatResponse) {
+//        if(!ObjectUtils.isEmpty(chatResponse.getChoices().get(0).getMessage())){
+//            this.role =  chatResponse.getChoices().get(0).getMessage().getRole();
+//            setContent(chatResponse.getChoices().get(0).getMessage().getContent());
+//        }
+//        if(!ObjectUtils.isEmpty(chatResponse.getChoices().get(0).getDelta())){
+//            this.role =  chatResponse.getChoices().get(0).getDelta().getRole();
+//            setContent(chatResponse.getChoices().get(0).getDelta().getContent());
+//        }
+//    }
 
     @Schema(description = "消息id")
     @TableId(value = "id")

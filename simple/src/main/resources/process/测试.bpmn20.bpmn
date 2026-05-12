@@ -1,0 +1,116 @@
+<bpmn:definitions id="Definitions" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" targetNamespace="http://logic-flow.org" exporter="logicflow" exporterVersion="1.2.10" xmlns:flowable="http://flowable.org/bpmn">
+    <bpmn:process isExecutable="true" id="Process_j3geoaqw7tq" name="互斥网关默认">
+        <bpmn:startEvent id="Event_ae2ffdd" name="开始">
+            <bpmn:outgoing>Flow_280b354</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:userTask id="Activity_7949f98" name="用户任务">
+            <bpmn:extensionElements>
+                <flowable:approvalType desc="处理类型">4</flowable:approvalType>
+                <flowable:candidateUsers desc="候选人">1</flowable:candidateUsers>
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flow_280b354</bpmn:incoming>
+            <bpmn:outgoing>Flow_8583fc2</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:userTask id="Activity_ff9eb04" name="用户任务">
+            <bpmn:extensionElements>
+                <flowable:approvalType desc="处理类型">4</flowable:approvalType>
+                <flowable:candidateUsers desc="候选人">1</flowable:candidateUsers>
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flow_e710289</bpmn:incoming>
+            <bpmn:outgoing>Flow_7992508</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:exclusiveGateway id="Gateway_87bb7a1" default="Flow_e710289">
+            <bpmn:incoming>Flow_8583fc2</bpmn:incoming>
+            <bpmn:outgoing>Flow_e710289</bpmn:outgoing>
+            <bpmn:outgoing>Flow_775c53b</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:endEvent id="Event_4821716" name="结束">
+            <bpmn:incoming>Flow_7992508</bpmn:incoming>
+            <bpmn:incoming>Flow_775c53b</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_280b354" sourceRef="Event_ae2ffdd" targetRef="Activity_7949f98" name="连线1" />
+        <bpmn:sequenceFlow id="Flow_8583fc2" sourceRef="Activity_7949f98" targetRef="Gateway_87bb7a1" name="连线2" />
+        <bpmn:sequenceFlow id="Flow_e710289" sourceRef="Gateway_87bb7a1" targetRef="Activity_ff9eb04" name="连线3" />
+        <bpmn:sequenceFlow id="Flow_7992508" sourceRef="Activity_ff9eb04" targetRef="Event_4821716" name="连线4" />
+        <bpmn:sequenceFlow id="Flow_775c53b" sourceRef="Gateway_87bb7a1" targetRef="Event_4821716" name="连线5">
+            <bpmn:extensionElements>
+                <flowable:conditionExpression desc="条件表达式">${aaa=1}</flowable:conditionExpression>
+            </bpmn:extensionElements>
+        </bpmn:sequenceFlow>
+    </bpmn:process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_j3geoaqw7tq">
+            <bpmndi:BPMNEdge id="Flow_280b354_di" bpmnElement="Flow_280b354">
+                <di:waypoint x="609.600025177002" y="125.40000915527344" />
+                <di:waypoint x="609.600025177002" y="167" />
+                <di:waypoint x="601.600025177002" y="167" />
+                <di:waypoint x="601.600025177002" y="208.59999084472656" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="594.600025177002" y="139.20000457763672" width="30" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_8583fc2_di" bpmnElement="Flow_8583fc2">
+                <di:waypoint x="601.600025177002" y="288.59999084472656" />
+                <di:waypoint x="601.600025177002" y="318.49998474121094" />
+                <di:waypoint x="599.9999885559082" y="318.49998474121094" />
+                <di:waypoint x="599.9999885559082" y="348.3999786376953" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="586.600025177002" y="296.54998779296875" width="30" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_e710289_di" bpmnElement="Flow_e710289">
+                <di:waypoint x="599.9999885559082" y="398.3999786376953" />
+                <di:waypoint x="599.9999885559082" y="403.2000274658203" />
+                <di:waypoint x="471.20000076293945" y="403.2000274658203" />
+                <di:waypoint x="471.20000076293945" y="418.2000274658203" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="520.5999946594238" y="396.2000274658203" width="30" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_7992508_di" bpmnElement="Flow_7992508">
+                <di:waypoint x="471.20000076293945" y="498.2000274658203" />
+                <di:waypoint x="471.20000076293945" y="586.2000274658203" />
+                <di:waypoint x="582.4000129699707" y="586.2000274658203" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="511.8000068664551" y="579.2000274658203" width="30" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_775c53b_di" bpmnElement="Flow_775c53b">
+                <di:waypoint x="624.9999885559082" y="373.3999786376953" />
+                <di:waypoint x="669.4000129699707" y="373.3999786376953" />
+                <di:waypoint x="669.4000129699707" y="586.2000274658203" />
+                <di:waypoint x="654.4000129699707" y="586.2000274658203" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="654.4000129699707" y="472.8000030517578" width="30" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="Event_ae2ffdd_di" bpmnElement="Event_ae2ffdd">
+                <dc:Bounds x="589.600025177002" y="69.40000915527344" width="40" height="40" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="599.600025177002" y="82.40000915527344" width="20" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_7949f98_di" bpmnElement="Activity_7949f98">
+                <dc:Bounds x="551.600025177002" y="208.59999084472656" width="100" height="80" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="581.600025177002" y="241.59999084472656" width="40" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Gateway_87bb7a1_di" bpmnElement="Gateway_87bb7a1">
+                <dc:Bounds x="549.9999885559082" y="333.3999786376953" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_ff9eb04_di" bpmnElement="Activity_ff9eb04">
+                <dc:Bounds x="421.20000076293945" y="418.2000274658203" width="100" height="80" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="451.20000076293945" y="451.2000274658203" width="40" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_4821716_di" bpmnElement="Event_4821716">
+                <dc:Bounds x="598.4000129699707" y="566.2000274658203" width="40" height="40" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="608.4000129699707" y="579.2000274658203" width="20" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.DynamicFormLinkageRuleMapper">
+
+   <delete id="deletePhysicsByFormIdAndVersion">
+      DELETE FROM cat_dynamic_form_linkage_rule WHERE form_id = #{formId}
+      <if test="version != null and version != ''">
+         AND version = #{version}
+      </if>
+   </delete>
+
+   <insert id="copyVersion">
+      INSERT INTO cat_dynamic_form_linkage_rule
+        (id, form_id, version, name, target_field_id, action_type, action_value,
+         enable, sort_order, deleted, create_by, create_time, update_time)
+      SELECT
+        REPLACE(UUID(), '-', ''), form_id, #{targetVersion},
+        name, target_field_id, action_type, action_value,
+        enable, sort_order,
+        '0', create_by, NOW(), NOW()
+      FROM cat_dynamic_form_linkage_rule
+      WHERE form_id = #{formId} AND version = #{sourceVersion} AND deleted = '0'
+   </insert>
+
+</mapper>

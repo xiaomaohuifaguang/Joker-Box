@@ -1,41 +1,40 @@
 <template>
     <div class="add-container">
-        <div class="content-wrapper">
-            <div class="form-header">
-                <div class="header-icon">
-                    <el-icon><Plus /></el-icon>
+        <div v-loading="loading" element-loading-text="加载中...">
+            <div class="content-wrapper">
+                <div class="form-header">
+                    <div class="header-icon">
+                        <el-icon><Plus /></el-icon>
+                    </div>
+                    <div class="header-content">
+                        <h3>添加${tableNameUp}</h3>
+                        <p>添加新的${tableNameUp}并填写信息</p>
+                    </div>
                 </div>
-                <div class="header-content">
-                    <h3>添加${tableNameUp}</h3>
-                    <p>添加新的${tableNameUp}并填写信息</p>
-                </div>
-            </div>
 
-            <el-form label-position="top" class="add-form">
-                <el-row :gutter="24">
+                <el-form label-position="top" class="add-form">
                     <#list fieldInfos as field>
-                        <el-col :xs="24" :sm="24" :md="24" :lg="24">
-                            <el-form-item label="${field.getComment()}" prop="${field.getFieldName()}">
-                                <el-input
-                                    v-model="info.${field.getFieldName()}"
-                                    :placeholder="`请输入${field.getComment()}`"
-                                    clearable
-                                    size="large">
-                                    <template #prefix>
-                                        <el-icon><Document /></el-icon>
-                                    </template>
-                                </el-input>
-                            </el-form-item>
-                        </el-col>
+                        <el-form-item label="${field.getComment()}" prop="${field.getFieldName()}">
+                            <el-input
+                                v-model="info.${field.getFieldName()}"
+                                :placeholder="`请输入${field.getComment()}`"
+                                autocomplete="off"
+                                clearable
+                                size="large">
+                                <template #prefix>
+                                    <el-icon><Document /></el-icon>
+                                </template>
+                            </el-input>
+                        </el-form-item>
                     </#list>
-                </el-row>
-            </el-form>
+                </el-form>
 
-            <div class="action-bar">
-                <el-button type="primary" size="large" @click="add" class="add-button">
-                    <el-icon><Check /></el-icon>
-                    <span>确认添加</span>
-                </el-button>
+                <div class="form-footer">
+                    <el-button type="primary" size="large" @click="add" class="save-button" :loading="loading">
+                        <el-icon><Check /></el-icon>
+                        <span>确认添加</span>
+                    </el-button>
+                </div>
             </div>
         </div>
     </div>
@@ -48,29 +47,35 @@ import { ref } from 'vue';
 
 const emit = defineEmits(['success']);
 
+const loading = ref(false)
+
 const info = ref({
     <#list fieldInfos as field>
     ${field.getFieldName()}: '',
     </#list>
 })
 
-const add = () => {
-    http.result({
-        url: '/${tableNameDown}/add',
-        method: 'POST',
-        data: info.value,
-        success(result) {
-            alert(result.msg, 'success')
-            emit('success');
+const add = async () => {
+    loading.value = true
+    try {
+        await http.post('/${tableNameDown}/add', info.value)
+        info.value = {
+            <#list fieldInfos as field>
+            ${field.getFieldName()}: '',
+            </#list>
         }
-    })
+        alert('添加成功', 'success')
+        emit('success');
+    } finally {
+        loading.value = false
+    }
 }
 </script>
 
 <style scoped lang="scss">
 .add-container {
     padding: 24px;
-    background: var(--el-bg-color-page);
+    background: var(--bg-page);
 
     .content-wrapper {
         max-width: 800px;
@@ -86,7 +91,7 @@ const add = () => {
         .header-icon {
             width: 56px;
             height: 56px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--brand-gradient);
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -106,13 +111,13 @@ const add = () => {
                 margin: 0 0 6px 0;
                 font-size: 20px;
                 font-weight: 600;
-                color: var(--el-text-color-primary);
+                color: var(--text-primary);
             }
 
             p {
                 margin: 0;
                 font-size: 14px;
-                color: var(--el-text-color-secondary);
+                color: var(--text-secondary);
             }
         }
     }
@@ -120,7 +125,7 @@ const add = () => {
     .add-form {
         :deep(.el-form-item__label) {
             font-weight: 500;
-            color: var(--el-text-color-regular);
+            color: var(--text-regular);
             padding-bottom: 8px;
         }
 
@@ -129,26 +134,26 @@ const add = () => {
         }
     }
 
-    .action-bar {
+    .form-footer {
         display: flex;
         justify-content: center;
         margin-top: 24px;
         padding-top: 20px;
-        border-top: 1px solid var(--el-border-color-lighter);
+        border-top: 1px solid var(--border-light);
 
-        .add-button {
+        .save-button {
             min-width: 200px;
             height: 46px;
             font-size: 16px;
             font-weight: 500;
             border-radius: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--brand-gradient);
             border: none;
             transition: all 0.3s;
 
             &:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+                box-shadow: var(--shadow-glow-strong);
             }
         }
     }
@@ -163,8 +168,8 @@ const add = () => {
             text-align: center;
         }
 
-        .action-bar {
-            .add-button {
+        .form-footer {
+            .save-button {
                 width: 100%;
             }
         }

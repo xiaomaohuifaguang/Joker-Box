@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/dynamicForm")
-@Tag(name = "dynamicForm")
+@Tag(name = "动态表单")
 public class DynamicFormController {
 
 @Resource
@@ -54,7 +54,7 @@ private DynamicFormService dynamicFormService;
             @Parameter(name = "formId",description = "表单id",required = true)
     )
     @RequestMapping(value = "/deploy",method = RequestMethod.POST)
-    public HttpResult<DynamicForm> deploy(@RequestParam(value = "formId",required = true) Integer formId) {
+    public HttpResult<DynamicForm> deploy(@RequestParam(value = "formId",required = true) String formId) {
         return HttpResult.back(dynamicFormService.deploy(formId)  ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
@@ -63,7 +63,7 @@ private DynamicFormService dynamicFormService;
             @Parameter(name = "formId",description = "表单id",required = true)
     )
     @RequestMapping(value = "/stop",method = RequestMethod.POST)
-    public HttpResult<DynamicForm> stop(@RequestParam(value = "formId",required = true) Integer formId) {
+    public HttpResult<DynamicForm> stop(@RequestParam(value = "formId",required = true) String formId) {
         return HttpResult.back(dynamicFormService.stop(formId)  ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 

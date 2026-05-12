@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.DynamicFormLinkageNodeMapper">
+
+   <delete id="deletePhysicsByFormIdAndVersion">
+      DELETE FROM cat_dynamic_form_linkage_node WHERE form_id = #{formId}
+      <if test="version != null and version != ''">
+         AND version = #{version}
+      </if>
+   </delete>
+
+   <delete id="deletePhysicsByRuleIds">
+      DELETE FROM cat_dynamic_form_linkage_node
+      WHERE rule_id IN
+      <foreach collection="ruleIds" item="id" open="(" separator="," close=")">
+         #{id}
+      </foreach>
+   </delete>
+
+   <select id="selectByRuleIds" resultType="com.cat.common.entity.dynamicForm.DynamicFormLinkageNode">
+      SELECT * FROM cat_dynamic_form_linkage_node
+      WHERE rule_id IN
+      <foreach collection="ruleIds" item="id" open="(" separator="," close=")">
+         #{id}
+      </foreach>
+      AND deleted = '0'
+      ORDER BY sort_order ASC
+   </select>
+
+   <!--
+      复制版本：配合 rule 复制使用。
+      前提：rule 复制后 id 重新生成，无法通过简单 SQL 关联。
+      实际版本复制应在 Service 层完成（查询节点 → 生成新ID → 插入）。
+      此处保留占位，供特殊场景使用。
+   -->
+   <insert id="copyVersion">
+      INSERT INTO cat_dynamic_form_linkage_node
+        (id, rule_id, parent_id, node_type, trigger_field_id, trigger_condition, trigger_value,
+         sort_order, deleted, create_by, create_time, update_time)
+      SELECT
+        REPLACE(UUID(), '-', ''), rule_id, parent_id, node_type,
+        trigger_field_id, trigger_condition, trigger_value,
+        sort_order, '0', create_by, NOW(), NOW()
+      FROM cat_dynamic_form_linkage_node
+      WHERE rule_id IN (
+         SELECT id FROM cat_dynamic_form_linkage_rule
+         WHERE form_id = #{formId} AND version = #{sourceVersion} AND deleted = '0'
+      )
+   </insert>
+
+</mapper>

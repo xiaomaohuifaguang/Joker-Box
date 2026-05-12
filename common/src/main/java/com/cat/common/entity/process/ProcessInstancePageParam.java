@@ -22,7 +22,7 @@ import java.util.Objects;
 public class ProcessInstancePageParam extends PageParam {
 
 
-    @Schema(description = "查询类型 1 全部 2 待办 3 草稿")
+    @Schema(description = "查询类型 0 草稿 1 全部 2 待办 3 待认领 ")
     private String type;
 
 
@@ -36,7 +36,7 @@ public class ProcessInstancePageParam extends PageParam {
         switch (type){
             case "0","1", "2", "3":break;
             default:{
-                setType("");
+                setType("-1");
             }
         }
     }

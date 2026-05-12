@@ -117,6 +117,10 @@
             <artifactId>fastjson2</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.flowable</groupId>
+            <artifactId>flowable-spring-boot-starter-process</artifactId>
+        </dependency>
 
 
     </dependencies>

@@ -18,9 +18,9 @@ public interface DynamicFormService {
 
     Page<DynamicForm> queryPage(PageParam pageParam);
 
-    boolean deploy(Integer formId);
+    boolean deploy(String formId);
 
-    boolean stop(Integer formId);
+    boolean stop(String formId);
 
     boolean submit(FormData formData);
 

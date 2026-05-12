@@ -80,8 +80,46 @@
         INNER JOIN cat_user_role cur ON cu.id = cur.user_id
         <where>
             cu.deleted = 0
+            <if test="roleIds == null or roleIds.size() == 0">
+                and 1 = 2
+            </if>
             <foreach collection="roleIds" item="roleId" open="AND (" close=")" separator="OR">
                 cur.role_id = #{roleId}
+            </foreach>
+        </where>
+    </select>
+    <select id="selectListByOrg" resultType="com.cat.common.entity.auth.User">
+        SELECT cu.*
+        FROM cat_user cu
+        INNER JOIN cat_org_user cou ON cu.id = cou.user_id
+        <where>
+            cu.deleted = 0
+            and cou.org_id = #{orgId}
+        </where>
+    </select>
+    <select id="selectListByOrgs" resultType="com.cat.common.entity.auth.User">
+        SELECT cu.*
+        FROM cat_user cu
+        INNER JOIN cat_org_user cou ON cu.id = cou.user_id
+        <where>
+            cu.deleted = 0
+            <if test="orgIds == null or orgIds.size() == 0">
+                and 1 = 2
+            </if>
+            <foreach collection="orgIds" item="orgId" open="AND (" close=")" separator="OR">
+                cou.org_id = #{orgId}
+            </foreach>
+        </where>
+    </select>
+    <select id="selectListByIds" resultType="com.cat.common.entity.auth.User">
+        select * from cat_user
+        <where>
+            deleted = 0
+            <if test="userIds == null or userIds.size() == 0">
+                and 1 = 2
+            </if>
+            <foreach collection="userIds" item="userId" open="AND (" close=")" separator="OR">
+                id = #{userId}
             </foreach>
         </where>
     </select>

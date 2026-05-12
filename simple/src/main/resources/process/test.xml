@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://logic-flow.org" exporter="logicflow" exporterVersion="1.2.10" id="Definitions">
+    <process id="Process" isExecutable="true">
+        <startEvent id="Event_3a75387" name="开始"></startEvent>
+        <endEvent id="Event_7a9835d" name="结束"></endEvent>
+        <sequenceFlow id="Flow_235af2c" sourceRef="Event_3a75387" targetRef="Event_7a9835d"></sequenceFlow>
+    </process>
+    <bpmndi:BPMNDiagram id="BPMNDiagram_Process">
+        <bpmndi:BPMNPlane bpmnElement="Process" id="BPMNPlane_Process">
+            <bpmndi:BPMNShape bpmnElement="Event_3a75387" id="BPMNShape_Event_3a75387">
+                <omgdc:Bounds height="40.0" width="40.0" x="118.0" y="118.0"></omgdc:Bounds>
+                <bpmndi:BPMNLabel>
+                    <omgdc:Bounds height="14.0" width="20.0" x="128.0" y="131.0"></omgdc:Bounds>
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape bpmnElement="Event_7a9835d" id="BPMNShape_Event_7a9835d">
+                <omgdc:Bounds height="40.0" width="40.0" x="294.0" y="118.0"></omgdc:Bounds>
+                <bpmndi:BPMNLabel>
+                    <omgdc:Bounds height="14.0" width="20.0" x="304.0" y="131.0"></omgdc:Bounds>
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge bpmnElement="Flow_235af2c" id="BPMNEdge_Flow_235af2c">
+                <omgdi:waypoint x="156.0" y="138.0"></omgdi:waypoint>
+                <omgdi:waypoint x="296.0" y="138.0"></omgdi:waypoint>
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</definitions>

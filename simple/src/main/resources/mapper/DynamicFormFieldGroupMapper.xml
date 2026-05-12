@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.mapper.DynamicFormFieldGroupMapper">
+
+   <delete id="deletePhysicsByFormIdAndVersion">
+      DELETE FROM cat_dynamic_form_field_group WHERE form_id = #{formId}
+      <if test="version != null and version != ''">
+         AND version = #{version}
+      </if>
+   </delete>
+
+</mapper>

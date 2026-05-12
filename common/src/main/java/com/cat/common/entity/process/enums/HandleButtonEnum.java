@@ -7,15 +7,16 @@ import lombok.Getter;
 @Getter
 public enum HandleButtonEnum {
 
-    APPLY("0","申请"),
-    PASS("1","通过"),
-    REJECT("2","拒绝"),
-    TRANSFER("3","转办"),
-    DELEGATE("4","委派"),
-    ADD_SIGN("5","加签"),
-    RETURN("6","退回"),
-    COPY("7","抄送"),
-    SYSTEM_TASK("8","系统任务");
+    APPLY("apply","申请"),
+    PASS("pass","通过"),
+    REJECT("reject","拒绝"),
+    TRANSFER("transfter","转办"),
+    DELEGATE("delegate","委派"),
+    ADD_SIGN("add_sign","加签"),
+    BACK("back","驳回"),
+    COPY("copy","抄送"),
+    SYSTEM_TASK("system_task","系统任务"),
+    CLAIM("claim","认领");
 
 
     private final String code;

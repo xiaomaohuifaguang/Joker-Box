@@ -5,6 +5,7 @@
     <select id="selectPage" resultType="com.cat.common.entity.auth.Org">
         SELECT * FROM cat_org
         <where>
+            deleted = 0
             <if test='param.search != null and param.search != ""'>
                 AND name = #{param.search}
             </if>

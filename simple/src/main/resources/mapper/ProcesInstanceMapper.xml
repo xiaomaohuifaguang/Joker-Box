@@ -4,15 +4,46 @@
 
     <select id="selectPage" resultType="com.cat.common.entity.process.ProcessInstance">
         SELECT
-            cpi.*,task.ID_ AS task_id
+            cpi.*, task.ID_ AS task_id
         FROM cat_process_instance cpi
         <choose>
-            <!-- 待办任务 -->
-            <when test='param.type != null and param.type == "1"'>
-                INNER JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ and task.ASSIGNEE_ = #{param.userId}
+            <!-- 0 草稿：当前用户创建且尚未真正提交到引擎 -->
+            <when test='param.type != null and param.type == "0"'>
+                LEFT JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ AND task.ASSIGNEE_ = #{param.userId}
+                WHERE cpi.deleted = '0'
+                  AND cpi.process_status = '0'
+                  AND cpi.create_by = #{param.userId}
             </when>
+            <!-- 1 全部：当前用户创建过 或 历史上以处理人身份参与过 -->
+            <when test='param.type != null and param.type == "1"'>
+                LEFT JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ AND task.ASSIGNEE_ = #{param.userId}
+                WHERE cpi.deleted = '0'
+                  AND (
+                    cpi.create_by = #{param.userId}
+                    OR EXISTS (
+                        SELECT 1 FROM ACT_HI_TASKINST hti
+                        WHERE hti.PROC_INST_ID_ = cpi.process_instance_id
+                          AND hti.ASSIGNEE_ = #{param.userId}
+                    )
+                  )
+            </when>
+            <!-- 2 待办：当前用户已签收的活动任务 -->
+            <when test='param.type != null and param.type == "2"'>
+                INNER JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ AND task.ASSIGNEE_ = #{param.userId}
+                WHERE cpi.deleted = '0'
+            </when>
+            <!-- 3 待认领：当前用户作为候选人但还未签收 -->
+            <when test='param.type != null and param.type == "3"'>
+                INNER JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_
+                INNER JOIN ACT_RU_IDENTITYLINK il ON il.TASK_ID_ = task.ID_
+                    AND il.TYPE_ = 'candidate'
+                    AND il.USER_ID_ = #{param.userId}
+                WHERE cpi.deleted = '0'
+                  AND task.ASSIGNEE_ IS NULL
+            </when>
+            <!-- -1 非法/默认：返回空集 -->
             <otherwise>
-                LEFT JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ and task.ASSIGNEE_ = #{param.userId}
+                WHERE 1 = 2
             </otherwise>
         </choose>
     </select>

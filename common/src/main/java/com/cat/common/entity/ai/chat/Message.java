@@ -32,6 +32,9 @@ public class Message implements Serializable {
     @Schema(description = "内容")
     private String content;
 
+    @Schema(description = "思考内容")
+    private String reasoning_content;
+
     /**
      * The role of the messages author, in this case system.
      */
@@ -45,8 +48,8 @@ public class Message implements Serializable {
     private String name;
 
 
-    public Message(String role, String content) {
-        this.role = role;
-        this.content = content;
-    }
+//    public Message(String role, String content) {
+//        this.role = role;
+//        this.content = content;
+//    }
 }

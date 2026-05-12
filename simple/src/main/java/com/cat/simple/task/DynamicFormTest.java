@@ -22,7 +22,7 @@ public class DynamicFormTest {
 
 
 
-    @PostConstruct
+//    @PostConstruct
     private void test(){
 //        dynamicFormFieldMapper.insert(new DynamicFormField()
 //                .setTitle("姓名")

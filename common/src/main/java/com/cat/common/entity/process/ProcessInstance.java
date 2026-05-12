@@ -37,6 +37,12 @@ public class ProcessInstance implements Serializable {
     @Schema(description = "流程定义id = 自定义流程定义表对应id")
     private Integer processDefinitionId;
 
+    @Schema(description = "流程标题")
+    private String title;
+
+    @Schema(description = "流程编号")
+    private String code;
+
     @Schema(description = "流程定义名称")
     @TableField(exist = false)
     private String processDefinitionName;

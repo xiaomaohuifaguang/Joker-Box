@@ -29,10 +29,15 @@ public interface UserMapper extends BaseMapper<User> {
 
     int userCountByRole(@Param("roleId") String roleId);
 
+    List<User> selectListByIds(@Param("userIds") List<String> userIds);
 
     List<User> selectListByRole(@Param("roleId") Integer roleId);
 
     List<User> selectListByRoles(@Param("roleIds") List<String> roleIds);
+
+    List<User> selectListByOrg(@Param("orgId") Integer orgId);
+
+    List<User> selectListByOrgs(@Param("orgIds") List<String> orgIds);
 
 
     int insertUserAndOrg(@Param("userId") String userId, @Param("orgId") String orgId, @Param("createTime") LocalDateTime createTime);

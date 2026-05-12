@@ -1,77 +1,89 @@
 package com.cat.simple.controller;
 
-import com.cat.common.entity.*;
-import com.cat.common.entity.process.ProcessInfo;
+import com.cat.common.entity.HttpResult;
+import com.cat.common.entity.HttpResultStatus;
+import com.cat.common.entity.Page;
+import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.common.entity.process.ProcessInstancePageParam;
 import com.cat.simple.service.ProcessInstanceService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/processInstance")
-@Tag(name = "流程审批")
+@Tag(name = "流程实例")
 public class ProcessInstanceController {
 
     @Resource
     private ProcessInstanceService processInstanceService;
 
-//    @Operation(summary = "分页")
-//    @RequestMapping(value = "/queryPage",method = RequestMethod.POST)
-//    public HttpResult<Page<ProcessInstance>> queryPage(@RequestBody ProcessInstancePageParam pageParam) {
-//        return HttpResult.back(processInstanceService.queryPage(pageParam));
-//    }
-//
-//    @Operation(summary = "启动")
-//    @RequestMapping(value = "/start",method = RequestMethod.POST)
-//    public HttpResult<ProcessInstance> start(@RequestParam Integer processDefinitionId) {
-//        ProcessInstance start = processInstanceService.start(processDefinitionId);
-//        return HttpResult.back(Objects.isNull(start) ? HttpResultStatus.ERROR : HttpResultStatus.SUCCESS);
-//    }
-//
-//
-//    @Operation(summary = "详情")
-//    @RequestMapping(value = "/info",method = RequestMethod.POST)
-//    public HttpResult<ProcessInfo> info(@RequestParam Integer processInstanceId) {
-//        ProcessInfo info = processInstanceService.info(processInstanceId);
-//        return HttpResult.back(Objects.isNull(info) ? HttpResultStatus.ERROR : HttpResultStatus.SUCCESS, info);
-//    }
-//
-//    @Operation(summary = "处理信息")
-//    @RequestMapping(value = "/handleInfo",method = RequestMethod.POST)
-//    public HttpResult<ProcessInfo> handleInfo(@RequestParam Integer processInstanceId) {
-//        ProcessInfo info = processInstanceService.handleInfo(processInstanceId);
-//        return HttpResult.back(Objects.isNull(info) ? HttpResultStatus.ERROR : HttpResultStatus.SUCCESS, info);
-//    }
-//
-//    @Operation(summary = "通过")
-//    @RequestMapping(value = "/pass",method = RequestMethod.POST)
-//    public HttpResult<?> pass(@RequestParam Integer processInstanceId) {
-//        return HttpResult.back(processInstanceService.pass(processInstanceId) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
-//    }
-//
-//
-//    @Operation(summary = "转办")
-//    @RequestMapping(value = "/transfer",method = RequestMethod.POST)
-//    public HttpResult<?> transfer(@RequestParam Integer processInstanceId, @RequestParam Integer userId) {
-//        return HttpResult.back(processInstanceService.transfer(processInstanceId, userId) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
-//    }
-//
-//    @Operation(summary = "拒绝")
-//    @RequestMapping(value = "/reject",method = RequestMethod.POST)
-//    public HttpResult<?> reject(@RequestParam Integer processInstanceId) {
-//        return HttpResult.back(processInstanceService.reject(processInstanceId) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
-//    }
+
+    @Operation(summary = "发起流程")
+    @Parameters({
+            @Parameter(name = "processDefinitionId", description = "自建流程定义id", required = true),
+            @Parameter(name = "title", description = "流程标题")
+    })
+    @RequestMapping(value = "/start", method = RequestMethod.POST)
+    public HttpResult<ProcessInstance> start(@RequestParam("processDefinitionId") Integer processDefinitionId,
+                                              @RequestParam(value = "title", required = false) String title) {
+        return HttpResult.back(processInstanceService.start(processDefinitionId, title));
+    }
 
 
+    @Operation(summary = "分页")
+    @RequestMapping(value = "/queryPage", method = RequestMethod.POST)
+    public HttpResult<Page<ProcessInstance>> queryPage(@RequestBody ProcessInstancePageParam pageParam) {
+        return HttpResult.back(processInstanceService.queryPage(pageParam));
+    }
 
 
+    @Operation(summary = "详情")
+    @Parameters({
+            @Parameter(name = "id", description = "自建流程实例id", required = true)
+    })
+    @RequestMapping(value = "/info", method = RequestMethod.POST)
+    public HttpResult<ProcessInstance> info(@RequestParam("id") Integer id) {
+        return HttpResult.back(processInstanceService.info(id));
+    }
 
 
+    @Operation(summary = "认领任务")
+    @RequestMapping(value = "/claim", method = RequestMethod.POST)
+    public HttpResult<?> claim(@RequestBody ProcessHandleParam param) {
+        processInstanceService.claim(param);
+        return HttpResult.back(HttpResultStatus.SUCCESS);
+    }
+
+
+    @Operation(summary = "审批通过")
+    @RequestMapping(value = "/pass", method = RequestMethod.POST)
+    public HttpResult<?> pass(@RequestBody ProcessHandleParam param) {
+        processInstanceService.pass(param);
+        return HttpResult.back(HttpResultStatus.SUCCESS);
+    }
+
+
+    @Operation(summary = "保存草稿")
+    @Parameters({
+            @Parameter(name = "id", description = "草稿流程实例id，传则更新，不传则新建"),
+            @Parameter(name = "processDefinitionId", description = "自建流程定义id", required = true),
+            @Parameter(name = "title", description = "流程标题")
+    })
+    @RequestMapping(value = "/saveDraft", method = RequestMethod.POST)
+    public HttpResult<ProcessInstance> saveDraft(@RequestParam(value = "id", required = false) Integer id,
+                                                  @RequestParam("processDefinitionId") Integer processDefinitionId,
+                                                  @RequestParam(value = "title", required = false) String title) {
+        return HttpResult.back(processInstanceService.saveDraft(id, processDefinitionId, title));
+    }
 
 
 }

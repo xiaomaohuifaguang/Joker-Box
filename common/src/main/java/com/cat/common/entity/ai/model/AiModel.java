@@ -39,8 +39,11 @@ public class AiModel implements Serializable {
     @Schema(description = "模型")
     private String model;
 
-    @Schema(description = "版本")
-    private String version;
+    @Schema(description = "基础URL")
+    private String baseUrl;
+
+    @Schema(description = "API密钥")
+    private String apiKey;
 
     @Schema(description = "描述")
     private String description;

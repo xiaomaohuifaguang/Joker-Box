@@ -13,6 +13,28 @@
         <module>simple</module>
     </modules>
 
+    <repositories>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <name>Central Portal Snapshots</name>
+            <id>central-portal-snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
@@ -31,7 +53,7 @@
         <hutool.version>5.8.29</hutool.version>
         <TinyPinyin.version>2.0.3.RELEASE</TinyPinyin.version>
         <httpclient5.version>5.3.1</httpclient5.version>
-        <flowable.version>7.0.0</flowable.version>
+        <flowable.version>8.0.0</flowable.version>
         <fastjson2.version>2.0.53</fastjson2.version>
         <googleauth.version>1.5.0</googleauth.version>
         <zxing.version>3.5.3</zxing.version>
@@ -47,6 +69,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>1.0.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.cat</groupId>
                 <artifactId>common</artifactId>
@@ -164,7 +193,7 @@
 
             <dependency>
                 <groupId>org.flowable</groupId>
-                <artifactId>flowable-spring-boot-starter</artifactId>
+                <artifactId>flowable-spring-boot-starter-process</artifactId>
                 <version>${flowable.version}</version>
             </dependency>
 

@@ -8,4 +8,25 @@
          and deleted = '0'
       </where>
    </select>
+
+   <delete id="deletePhysicsByFormIdAndVersion">
+      DELETE FROM cat_dynamic_form_field WHERE form_id = #{formId}
+      <if test="version != null and version != ''">
+         AND version = #{version}
+      </if>
+   </delete>
+
+   <insert id="copyVersion">
+      INSERT INTO cat_dynamic_form_field
+        (id, form_id, group_id, version, field_id, title, type, required, default_value, placeholder,
+         options, min_length, max_length, min, max, pattern, pattern_tips, span,
+         deleted, create_by, create_time, update_time, sort)
+      SELECT
+        REPLACE(UUID(), '-', ''), form_id, group_id, #{targetVersion},
+        field_id, title, type, required, default_value, placeholder,
+        options, min_length, max_length, min, max, pattern, pattern_tips, span,
+        '0', create_by, NOW(), NOW(), sort
+      FROM cat_dynamic_form_field
+      WHERE form_id = #{formId} AND version = #{sourceVersion} AND deleted = '0'
+   </insert>
 </mapper>

@@ -42,7 +42,7 @@ public class OrgServiceImpl implements OrgService {
 
     @Override
     public boolean delete(Org org){
-        return orgMapper.deleteById(org) == 1;
+        return orgMapper.deleteById(org.getId()) == 1;
     }
 
     @Override
