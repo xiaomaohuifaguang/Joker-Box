@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
 import java.io.Serial;
+import java.util.List;
+
 /**
  * <p>
  * 流程实例表
@@ -75,6 +77,14 @@ public class ProcessInstance implements Serializable {
     @Schema(description = "任务id")
     @TableField(exist = false)
     private String taskId;
+
+    @Schema(description = "可使用的按钮")
+    @TableField(exist = false)
+    private List<String> buttonActions;
+
+    @Schema(description = "流程处理记录")
+    @TableField(exist = false)
+    private List<ProcessHandleInfo> processHandleInfoList;
 
 
 

@@ -21,7 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-@Schema(name = "Page", description = "分页")
+@Schema(description = "分页")
 public class Page<T> implements IPage<T> {
 
     @Schema(description = "记录")

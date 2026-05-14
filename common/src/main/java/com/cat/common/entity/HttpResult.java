@@ -17,7 +17,7 @@ import lombok.experimental.Accessors;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-@Schema(name = "HttpResult", description = "响应")
+@Schema(description = "响应")
 public class HttpResult<T> {
 
     @Schema(description = "状态码")

@@ -18,7 +18,7 @@ import org.springframework.util.StringUtils;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-@Schema(name = "DTO", description = "业务层传递控制层")
+@Schema(description = "业务层传递控制层")
 public class DTO<T> {
     public boolean flag = true;
     public String msg = "请求成功";
