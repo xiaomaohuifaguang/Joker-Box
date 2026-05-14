@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.cat.simple.config.flowable.constant.ProcessConstants.*;
+
 /**
  * 审批上下文，封装从 UserTask 扩展元素 {@code <flowable:*>} 解析出的配置。
  * 作为 record 在解析期创建，运行期只读。
@@ -24,24 +26,6 @@ public record ApprovalContext(
         String backNodeId
 ) {
 
-    /** BPMN 扩展元素名：审批类型 */
-    public static final String EL_APPROVAL_TYPE = "approvalType";
-    /** BPMN 扩展元素名：候选用户 */
-    public static final String EL_CANDIDATE_USERS = "candidateUsers";
-    /** BPMN 扩展元素名：候选角色 */
-    public static final String EL_CANDIDATE_ROLES = "candidateRoles";
-    /** BPMN 扩展元素名：候选组 */
-    public static final String EL_CANDIDATE_GROUPS = "candidateGroups";
-    /** BPMN 扩展元素名：候选部门 */
-    public static final String EL_CANDIDATE_DEPTS = "candidateDepts";
-    /** BPMN 扩展元素名：通过率 */
-    public static final String EL_PASS_RATE = "passRate";
-    /** BPMN 扩展元素名：处理按钮 */
-    public static final String EL_ACTION_BUTTONS = "actionButtons";
-    /** BPMN 扩展元素名：驳回方式 */
-    public static final String EL_BACK_TYPE = "backType";
-    /** BPMN 扩展元素名：驳回节点 */
-    public static final String EL_BACK_NODE_ID = "backNodeId";
 
     /**
      * 从 UserTask 的扩展元素中解析审批上下文。

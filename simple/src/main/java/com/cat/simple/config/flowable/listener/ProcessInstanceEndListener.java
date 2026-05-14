@@ -1,6 +1,6 @@
-package com.cat.simple.config.flowable;
+package com.cat.simple.config.flowable.listener;
 
-import com.cat.common.entity.process.enums.ProcessStatusEnum;
+import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.service.ProcessInstanceService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
@@ -13,9 +13,7 @@ import org.flowable.engine.RuntimeService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-
-import static com.cat.common.entity.process.enums.ProcessStatusEnum.*;
+import static com.cat.simple.config.flowable.enums.ProcessStatusEnum.*;
 
 /**
  * 流程实例结束监听器，监听流程完成、终止事件，将状态同步到业务表。

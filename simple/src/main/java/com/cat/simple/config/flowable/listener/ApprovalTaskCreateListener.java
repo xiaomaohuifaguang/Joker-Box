@@ -17,6 +17,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.cat.simple.config.flowable.constant.ProcessConstants.*;
+
 /**
  * 审批任务创建监听器，由 {@link com.cat.simple.config.flowable.parse.ApprovalUserTaskParseHandler}
  * 在解析期为每个带 approvalType 的 UserTask 注册。
@@ -45,12 +47,6 @@ public class ApprovalTaskCreateListener implements TaskListener {
         }
     }
 
-    /** 任务变量：处理按钮列表 */
-    public static final String VAR_ACTION_BUTTONS = "actionButtons";
-    /** 任务变量：驳回方式 */
-    public static final String VAR_BACK_TYPE = "backType";
-    /** 任务变量：驳回节点ID */
-    public static final String VAR_BACK_NODE_ID = "backNodeId";
 
     @Override
     public void notify(DelegateTask delegateTask) {
@@ -71,13 +67,13 @@ public class ApprovalTaskCreateListener implements TaskListener {
 
         // 将按钮配置写入任务变量，供后端接口查询和校验
         if (ctx.actionButtons() != null && !ctx.actionButtons().isEmpty()) {
-            delegateTask.setVariableLocal(VAR_ACTION_BUTTONS, String.join(",", ctx.actionButtons()));
+            delegateTask.setVariableLocal(EL_ACTION_BUTTONS, String.join(",", ctx.actionButtons()));
         }
         if (ctx.backType() != null && !ctx.backType().isBlank()) {
-            delegateTask.setVariableLocal(VAR_BACK_TYPE, ctx.backType());
+            delegateTask.setVariableLocal(EL_BACK_TYPE, ctx.backType());
         }
         if (ctx.backNodeId() != null && !ctx.backNodeId().isBlank()) {
-            delegateTask.setVariableLocal(VAR_BACK_NODE_ID, ctx.backNodeId());
+            delegateTask.setVariableLocal(EL_BACK_NODE_ID, ctx.backNodeId());
         }
     }
 

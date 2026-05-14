@@ -8,8 +8,8 @@ import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.process.*;
 
 
-import com.cat.common.entity.process.enums.HandleButtonEnum;
-import com.cat.common.entity.process.enums.ProcessStatusEnum;
+import com.cat.simple.config.flowable.enums.HandleTypeEnum;
+import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.process.ProcessCodeGenerator;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.mapper.ProcessDefinitionMapper;
@@ -17,7 +17,6 @@ import com.cat.simple.mapper.ProcessHandleInfoMapper;
 import com.cat.simple.mapper.ProcessInstanceMapper;
 import com.cat.simple.service.ProcessInstanceService;
 import jakarta.annotation.Resource;
-import org.flowable.bpmn.model.*;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
@@ -27,11 +26,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.cat.common.entity.process.enums.ProcessStatusEnum.*;
+import static com.cat.simple.config.flowable.enums.ProcessStatusEnum.*;
 
 @Service
 public class ProcessInstanceServiceImpl implements ProcessInstanceService {
@@ -104,13 +103,8 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             updateProcessInstanceInfo(instance.getId(), flowableInstance.getProcessInstanceId(), now, COMPLETED);
         }
 
-        ProcessHandleInfo handleInfo = new ProcessHandleInfo()
-                .setProcessInstanceId(instance.getId())
-                .setHandleUser(currentUserId)
-                .setHandleType(HandleButtonEnum.APPLY.getCode())
-                .setRemark(HandleButtonEnum.APPLY.getName())
-                .setHandleTime(now);
-        processHandleInfoMapper.insert(handleInfo);
+        saveHandleInfo(instance.getId(), null, null, currentUserId,
+                HandleTypeEnum.APPLY.getCode(), HandleTypeEnum.APPLY.getName());
 
         return instance;
     }
@@ -131,7 +125,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     @Override
     public ProcessInstance info(Integer id) {
-        return processInstanceMapper.selectInfoById(id);
+        ProcessInstance processInstance = processInstanceMapper.selectInfoById(id);
+        // 填充处理信息
+        List<ProcessHandleInfo> processHandleInfoList = processHandleInfoMapper.selectDetailListByProcessInstanceId(processInstance.getId());
+        processInstance.setProcessHandleInfoList(processHandleInfoList);
+        return processInstance;
     }
 
     @Override
@@ -159,17 +157,10 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         taskService.claim(param.getTaskId(), currentUserId);
 
         String remark = param.getRemark() != null && !param.getRemark().isBlank()
-                ? param.getRemark() : HandleButtonEnum.CLAIM.getName();
+                ? param.getRemark() : HandleTypeEnum.CLAIM.getName();
 
-        ProcessHandleInfo handleInfo = new ProcessHandleInfo()
-                .setProcessInstanceId(instance.getId())
-                .setTaskId(param.getTaskId())
-                .setTaskName(task.getName())
-                .setHandleUser(currentUserId)
-                .setHandleType(HandleButtonEnum.CLAIM.getCode())
-                .setRemark(remark)
-                .setHandleTime(LocalDateTime.now());
-        processHandleInfoMapper.insert(handleInfo);
+        saveHandleInfo(instance.getId(), param.getTaskId(), task.getName(), currentUserId,
+                HandleTypeEnum.CLAIM.getCode(), remark);
     }
 
     @Override
@@ -195,21 +186,47 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         }
 
         String remark = param.getRemark() != null && !param.getRemark().isBlank()
-                ? param.getRemark() : HandleButtonEnum.PASS.getName();
+                ? param.getRemark() : HandleTypeEnum.PASS.getName();
 
         taskService.complete(task.getId());
 
-        ProcessHandleInfo handleInfo = new ProcessHandleInfo()
-                .setProcessInstanceId(instance.getId())
-                .setTaskId(param.getTaskId())
-                .setTaskName(task.getName())
-                .setHandleUser(currentUserId)
-                .setHandleType(HandleButtonEnum.PASS.getCode())
-                .setRemark(remark)
-                .setHandleTime(LocalDateTime.now());
-        processHandleInfoMapper.insert(handleInfo);
+        saveHandleInfo(instance.getId(), param.getTaskId(), task.getName(), currentUserId,
+                HandleTypeEnum.PASS.getCode(), remark);
 
         updateProcessInstanceInfo(instance.getId(), instance.getProcessInstanceId(), LocalDateTime.now(), null);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reject(ProcessHandleParam param) {
+        ProcessInstance instance = Optional.ofNullable(processInstanceMapper.selectById(param.getProcessInstanceId()))
+                .orElseThrow(() -> new IllegalArgumentException("流程实例不存在: " + param.getProcessInstanceId()));
+
+        if (!ACTIVE.getStatus().equals(instance.getProcessStatus())) {
+            throw new IllegalStateException("流程实例非审批中状态, 无法审批拒绝: " + param.getProcessInstanceId());
+        }
+
+        String currentUserId = Optional.ofNullable(SecurityUtils.getLoginUser())
+                .map(LoginUser::getUserId)
+                .orElseThrow(() -> new IllegalStateException("当前未登录, 无法审批拒绝"));
+
+        Task task = taskService.createTaskQuery()
+                .taskId(param.getTaskId())
+                .taskAssignee(currentUserId)
+                .singleResult();
+        if (Objects.isNull(task)) {
+            throw new IllegalStateException("当前用户没有该任务的办理权限, taskId: " + param.getTaskId());
+        }
+
+        String remark = param.getRemark() != null && !param.getRemark().isBlank()
+                ? param.getRemark() : HandleTypeEnum.REJECT.getName();
+
+        runtimeService.deleteProcessInstance(instance.getProcessInstanceId(), remark);
+
+        saveHandleInfo(instance.getId(), param.getTaskId(), task.getName(), currentUserId,
+                HandleTypeEnum.REJECT.getCode(), remark);
+
+        updateProcessInstanceInfo(instance.getId(), instance.getProcessInstanceId(), LocalDateTime.now(), TERMINATED);
     }
 
     @Override
@@ -298,5 +315,17 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         return processInstanceMapper.selectOne(new LambdaQueryWrapper<ProcessInstance>().eq(ProcessInstance::getProcessInstanceId, flowableProcessInstanceId));
     }
 
+    private void saveHandleInfo(Integer processInstanceId, String taskId, String taskName,
+                                String handleUser, String handleType, String remark) {
+        ProcessHandleInfo handleInfo = new ProcessHandleInfo()
+                .setProcessInstanceId(processInstanceId)
+                .setTaskId(taskId)
+                .setTaskName(taskName)
+                .setHandleUser(handleUser)
+                .setHandleType(handleType)
+                .setRemark(remark)
+                .setHandleTime(LocalDateTime.now());
+        processHandleInfoMapper.insert(handleInfo);
+    }
 
 }

@@ -1,4 +1,4 @@
-package com.cat.common.entity.process.enums;
+package com.cat.simple.config.flowable.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

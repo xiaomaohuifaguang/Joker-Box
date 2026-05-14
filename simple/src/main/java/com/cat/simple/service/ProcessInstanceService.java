@@ -5,7 +5,7 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.common.entity.process.ProcessInstancePageParam;
-import com.cat.common.entity.process.enums.ProcessStatusEnum;
+import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 
 
 
@@ -67,6 +67,14 @@ public interface ProcessInstanceService {
      * @param param 流程任务操作参数
      */
     void pass(ProcessHandleParam param);
+
+    /**
+     * 审批拒绝
+     * 验证当前用户是否为指定任务的办理人, 若是则终止流程并记录到 {@link com.cat.common.entity.process.ProcessHandleInfo}。
+     *
+     * @param param 流程任务操作参数
+     */
+    void reject(ProcessHandleParam param);
 
 
     /**

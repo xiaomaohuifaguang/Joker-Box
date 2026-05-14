@@ -71,6 +71,13 @@ public class ProcessInstanceController {
         return HttpResult.back(HttpResultStatus.SUCCESS);
     }
 
+    @Operation(summary = "拒绝")
+    @RequestMapping(value = "/reject", method = RequestMethod.POST)
+    public HttpResult<?> reject(@RequestBody ProcessHandleParam param) {
+        processInstanceService.reject(param);
+        return HttpResult.back(HttpResultStatus.SUCCESS);
+    }
+
 
     @Operation(summary = "保存草稿")
     @Parameters({

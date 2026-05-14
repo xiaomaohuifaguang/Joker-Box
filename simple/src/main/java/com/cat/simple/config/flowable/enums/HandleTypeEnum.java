@@ -1,11 +1,11 @@
-package com.cat.common.entity.process.enums;
+package com.cat.simple.config.flowable.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum HandleButtonEnum {
+public enum HandleTypeEnum {
 
     APPLY("apply","申请"),
     PASS("pass","通过"),
@@ -15,7 +15,6 @@ public enum HandleButtonEnum {
     ADD_SIGN("add_sign","加签"),
     BACK("back","驳回"),
     COPY("copy","抄送"),
-    SYSTEM_TASK("system_task","系统任务"),
     CLAIM("claim","认领");
 
 
