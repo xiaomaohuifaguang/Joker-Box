@@ -66,9 +66,14 @@ public class FileServiceImpl implements FileService {
 
     private final static String UPLOAD_PATH = "/码头云盘/";
 
+    private final static String DYNAMIC_FORM = "/动态表单/";
+
     @Override
     @Transactional
     public DTO<FileInfo> upload(MultipartFile uploadFile, String parentId) throws IOException {
+        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && notExistFolder(parentId)){
+            return DTO.error("文件夹不存在",null);
+        }
         return upload(uploadFile, parentId, UPLOAD_PATH+SecurityUtils.getLoginUser().getUserId()+"/");
     }
 
@@ -111,11 +116,7 @@ public class FileServiceImpl implements FileService {
     public DTO<FileInfo> upload(MultipartFile uploadFile, String parentId, String realPath) throws IOException {
         long size = uploadFile.getSize();
         if(!SecurityUtils.isAdmin() && ( size >  100 * 1000 * 1000) ){
-            return DTO.error("只有尊贵的VIP才能上传超过100M的文件",null);
-        }
-
-        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && notExistFolder(parentId)){
-            return DTO.error("文件夹不存在",null);
+            return DTO.error("只有尊贵的VIP才能上传超过100M的文件，当然了没有成为VIP的方法",null);
         }
 
         FileInfo fileInfo = new FileInfo()
@@ -165,7 +166,6 @@ public class FileServiceImpl implements FileService {
     @Override
     public void download(String fileId) throws IOException {
         download(fileId, UPLOAD_PATH+userMapper.selectById(fileInfoMapper.selectById(fileId).getUserId()).getIdStr()+"/");
-
     }
 
     @Override
@@ -303,6 +303,16 @@ public class FileServiceImpl implements FileService {
         return DTO.success();
     }
 
+
+    @Override
+    public DTO<FileInfo> uploadDynamicForm(MultipartFile uploadFile) throws IOException {
+        return upload(uploadFile, DYNAMIC_FORM,DYNAMIC_FORM);
+    }
+
+    @Override
+    public void downloadDynamicForm(String fileId) throws IOException {
+        download(fileId, DYNAMIC_FORM);
+    }
 
     private boolean notExistFolder(String folderId){
         Long parentFolderCount = fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId()).eq(FileInfo::getId, folderId).eq(FileInfo::getType,CONSTANTS.FILE_TYPE_2));

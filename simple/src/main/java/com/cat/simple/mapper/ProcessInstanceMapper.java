@@ -21,4 +21,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface ProcessInstanceMapper extends BaseMapper<ProcessInstance> {
    Page<ProcessInstance> selectPage(@Param("page") Page<ProcessInstance> page, @Param("param")ProcessInstancePageParam param);
+
+
+   ProcessInstance selectInfoById(@Param("id") Integer id);
+
 }

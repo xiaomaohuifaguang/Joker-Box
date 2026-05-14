@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
@@ -84,6 +85,24 @@ public class FileController {
     @RequestMapping(value = "/rename", method = RequestMethod.POST)
     public HttpResult<?> rename(@RequestParam("fileId") String fileId, @RequestParam("filename") String filename) throws IOException {
         return HttpResult.back(fileService.rename(fileId,filename));
+    }
+
+    @Operation(summary = "动态表单文件上传")
+    @Parameters({
+            @Parameter(name = "uploadFile", schema = @Schema(format = "binary"), description = "文件", required = true)
+    })
+    @RequestMapping(value = "/uploadDynamicForm", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public HttpResult<FileInfo> uploadDynamicForm(@RequestPart(value = "uploadFile") MultipartFile uploadFile) throws IOException {
+        return HttpResult.back(fileService.uploadDynamicForm(uploadFile));
+    }
+
+    @Operation(summary = "动态表单文件下载")
+    @Parameters({
+            @Parameter(name = "fileId", description = "文件唯一id", required = true)
+    })
+    @RequestMapping(value = "/downloadDynamicForm", method = RequestMethod.GET)
+    public void downloadDynamicForm(@RequestParam("fileId") String fileId) throws IOException {
+        fileService.downloadDynamicForm(fileId);
     }
 
 }

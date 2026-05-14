@@ -4,8 +4,9 @@
 
     <select id="selectPage" resultType="com.cat.common.entity.process.ProcessInstance">
         SELECT
-            cpi.*, task.ID_ AS task_id
+            cpi.*, task.ID_ AS task_id, cu.nickname createByName
         FROM cat_process_instance cpi
+        INNER JOIN cat_user cu on cpi.create_by = cu.id
         <choose>
             <!-- 0 草稿：当前用户创建且尚未真正提交到引擎 -->
             <when test='param.type != null and param.type == "0"'>
@@ -46,6 +47,14 @@
                 WHERE 1 = 2
             </otherwise>
         </choose>
+    </select>
+    <select id="selectInfoById" resultType="com.cat.common.entity.process.ProcessInstance">
+        SELECT cpi.*, cu.nickname createByName FROM cat_process_instance cpi
+        INNER JOIN cat_user cu on cpi.create_by = cu.id
+        <where>
+            cpi.deleted = '0'
+            AND cpi.id = #{id}
+        </where>
     </select>
 
 

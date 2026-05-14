@@ -131,7 +131,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     @Override
     public ProcessInstance info(Integer id) {
-        return processInstanceMapper.selectById(id);
+        return processInstanceMapper.selectInfoById(id);
     }
 
     @Override

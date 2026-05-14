@@ -54,5 +54,9 @@ public interface FileService {
 
     DTO<?> rename(String fileId, String filename);
 
+    DTO<FileInfo> uploadDynamicForm(MultipartFile uploadFile) throws IOException;
+
+    void downloadDynamicForm(String fileId) throws IOException;
+
 
 }
