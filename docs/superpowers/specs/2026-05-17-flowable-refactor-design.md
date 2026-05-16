@@ -958,7 +958,7 @@ StartProcessCommand.execute()
 
 ### 8.2 集成测试
 
-- 保留现有 `ProcessInstanceServiceTest` 和 `ProcessBackServiceTest`
+- 保留现有 `ProcessInstanceServiceTest`，将 `ProcessBackServiceTest` 中的驳回相关测试用例合并到其中，然后删除 `ProcessBackServiceTest`
 - 重构后这些测试仍然通过，验证行为一致性
 - 新增 `ProcessLifecycleHookTest`：验证 Hook 在正确时机被调用
 
