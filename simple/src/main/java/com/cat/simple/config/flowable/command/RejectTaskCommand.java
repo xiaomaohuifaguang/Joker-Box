@@ -6,11 +6,8 @@ import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
 import org.flowable.task.api.Task;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 
-@Component
 public class RejectTaskCommand extends ProcessCommand<Void> {
 
     @Resource private RuntimeService runtimeService;

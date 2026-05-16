@@ -4,9 +4,6 @@ import com.cat.common.entity.process.ProcessHandleParam;
 import jakarta.annotation.Resource;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
-import org.springframework.stereotype.Component;
-
-@Component
 public class ClaimTaskCommand extends ProcessCommand<Void> {
 
     @Resource private TaskService taskService;

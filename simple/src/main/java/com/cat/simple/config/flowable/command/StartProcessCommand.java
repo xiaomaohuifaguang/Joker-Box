@@ -5,11 +5,8 @@ import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.process.ProcessCodeGenerator;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
-import org.springframework.stereotype.Component;
-
 import java.time.LocalDateTime;
 
-@Component
 public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 
     @Resource private RuntimeService runtimeService;

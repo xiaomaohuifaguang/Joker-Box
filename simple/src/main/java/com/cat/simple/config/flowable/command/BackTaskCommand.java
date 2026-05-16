@@ -8,9 +8,6 @@ import com.cat.simple.config.flowable.back.BackTargetResolver;
 import com.cat.simple.config.flowable.util.BpmnModelUtil;
 import jakarta.annotation.Resource;
 import org.flowable.task.api.Task;
-import org.springframework.stereotype.Component;
-
-@Component
 public class BackTaskCommand extends ProcessCommand<Void> {
 
     @Resource private BackConfigReader backConfigReader;
