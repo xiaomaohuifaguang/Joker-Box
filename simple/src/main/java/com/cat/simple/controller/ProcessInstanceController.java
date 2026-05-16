@@ -5,8 +5,12 @@ import com.cat.common.entity.HttpResultStatus;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.common.entity.process.BackTargetNode;
+import com.cat.common.entity.process.ProcessBackParam;
 import com.cat.common.entity.process.ProcessInstancePageParam;
+import com.cat.simple.service.ProcessBackService;
 import com.cat.simple.service.ProcessInstanceService;
+import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -25,6 +29,9 @@ public class ProcessInstanceController {
 
     @Resource
     private ProcessInstanceService processInstanceService;
+
+    @Resource
+    private ProcessBackService processBackService;
 
 
     @Operation(summary = "发起流程")
@@ -92,5 +99,17 @@ public class ProcessInstanceController {
         return HttpResult.back(processInstanceService.saveDraft(id, processDefinitionId, title));
     }
 
+    @Operation(summary = "驳回")
+    @RequestMapping(value = "/back", method = RequestMethod.POST)
+    public HttpResult<?> back(@RequestBody ProcessBackParam param) {
+        processBackService.back(param);
+        return HttpResult.back(HttpResultStatus.SUCCESS);
+    }
+
+    @Operation(summary = "查询当前任务可驳回的目标节点")
+    @RequestMapping(value = "/availableBackTargets", method = RequestMethod.POST)
+    public HttpResult<List<BackTargetNode>> availableBackTargets(@RequestParam String taskId) {
+        return HttpResult.back(processBackService.getAvailableBackTargets(taskId));
+    }
 
 }
