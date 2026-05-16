@@ -3,6 +3,7 @@ package com.cat.simple.config.flowable.command;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
+import com.cat.simple.config.flowable.hook.RejectContext;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
 import org.flowable.task.api.Task;
@@ -42,11 +43,18 @@ public class RejectTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
+    protected void beforeHook() {
+        RejectContext ctx = new RejectContext(param.getProcessInstanceId(), param.getTaskId(), param.getRemark());
+        lifecycleHook.beforeReject(ctx);
+    }
+
+    @Override
     protected void afterHook(Void result) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
         processInstanceMapper.update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ProcessInstance>()
                 .eq(ProcessInstance::getId, instance.getId())
                 .set(ProcessInstance::getProcessStatus, ProcessStatusEnum.TERMINATED.getStatus())
                 .set(ProcessInstance::getUpdateTime, LocalDateTime.now()));
+        lifecycleHook.afterReject(instance);
     }
 }

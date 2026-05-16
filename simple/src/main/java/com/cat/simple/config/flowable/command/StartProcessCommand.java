@@ -2,6 +2,7 @@ package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
+import com.cat.simple.config.flowable.hook.StartContext;
 import com.cat.simple.config.process.ProcessCodeGenerator;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
@@ -63,5 +64,16 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
     @Override
     protected void record(ProcessInstance result) {
         recorder.recordApply(result, guard.getCurrentUserId());
+    }
+
+    @Override
+    protected void beforeHook() {
+        StartContext ctx = new StartContext(processDefinitionId, title, guard.getCurrentUserId(), null);
+        lifecycleHook.beforeStart(ctx);
+    }
+
+    @Override
+    protected void afterHook(ProcessInstance result) {
+        lifecycleHook.afterStart(result);
     }
 }

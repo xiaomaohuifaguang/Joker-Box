@@ -5,9 +5,11 @@ import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.simple.config.flowable.back.BackConfigReader;
 import com.cat.simple.config.flowable.back.BackEngine;
 import com.cat.simple.config.flowable.back.BackTargetResolver;
+import com.cat.simple.config.flowable.hook.BackContext;
 import com.cat.simple.config.flowable.util.BpmnModelUtil;
 import jakarta.annotation.Resource;
 import org.flowable.task.api.Task;
+
 public class BackTaskCommand extends ProcessCommand<Void> {
 
     @Resource private BackConfigReader backConfigReader;
@@ -66,5 +68,17 @@ public class BackTaskCommand extends ProcessCommand<Void> {
     @Override
     protected void record(Void result) {
         // record is called in doExecute because targetNodeId is needed
+    }
+
+    @Override
+    protected void beforeHook() {
+        BackConfig cfg = backConfigReader.getBackConfig(param.getTaskId());
+        BackContext ctx = new BackContext(param.getProcessInstanceId(), param.getTaskId(), param.getRemark(), param.getTargetNodeId(), cfg);
+        lifecycleHook.beforeBack(ctx);
+    }
+
+    @Override
+    protected void afterHook(Void result) {
+        lifecycleHook.afterBack(guard.getInstance(param.getProcessInstanceId()), resolvedTargetNodeId);
     }
 }
