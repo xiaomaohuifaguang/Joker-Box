@@ -4,7 +4,7 @@
 
     <select id="selectPage" resultType="com.cat.common.entity.process.ProcessInstance">
         SELECT
-            cpi.*, task.ID_ AS task_id, cu.nickname createByName
+            cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName
         FROM cat_process_instance cpi
         INNER JOIN cat_user cu on cpi.create_by = cu.id
         <choose>
