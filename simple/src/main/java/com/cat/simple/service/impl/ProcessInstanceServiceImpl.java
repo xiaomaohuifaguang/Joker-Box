@@ -317,6 +317,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     private void saveHandleInfo(Integer processInstanceId, String taskId, String taskName,
                                 String handleUser, String handleType, String remark) {
+        saveHandleInfo(processInstanceId, taskId, taskName, handleUser, handleType, remark, null, 1, null);
+    }
+
+    private void saveHandleInfo(Integer processInstanceId, String taskId, String taskName,
+                                String handleUser, String handleType, String remark,
+                                String taskDefinitionKey, Integer round, String extra) {
         ProcessHandleInfo handleInfo = new ProcessHandleInfo()
                 .setProcessInstanceId(processInstanceId)
                 .setTaskId(taskId)
@@ -324,7 +330,10 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .setHandleUser(handleUser)
                 .setHandleType(handleType)
                 .setRemark(remark)
-                .setHandleTime(LocalDateTime.now());
+                .setHandleTime(LocalDateTime.now())
+                .setTaskDefinitionKey(taskDefinitionKey)
+                .setRound(round != null ? round : 1)
+                .setExtra(extra);
         processHandleInfoMapper.insert(handleInfo);
     }
 
