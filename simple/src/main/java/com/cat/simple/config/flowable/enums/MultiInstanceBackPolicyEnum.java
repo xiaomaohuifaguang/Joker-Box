@@ -7,17 +7,17 @@ import java.util.Arrays;
 
 @AllArgsConstructor
 @Getter
-public enum BackTypeEnum {
+public enum MultiInstanceBackPolicyEnum {
 
-    PREV("prev", "上一节点"),
-    SPECIFIC("specific", "驳回到指定节点"),
-    CHOOSE("choose","用户自选");
+    AUTO("auto", "智能默认：会签→全体回退，或签/随机/认领→独立处理"),
+    ALL_BACK("all_back", "一人 back，取消所有并行实例，整体回退"),
+    INDEPENDENT("independent", "仅处理当前子实例，其他实例不受影响");
 
     private final String code;
 
-    private final String name;
+    private final String description;
 
-    public static BackTypeEnum of(String code) {
+    public static MultiInstanceBackPolicyEnum of(String code) {
         if (code == null || code.isBlank()) {
             return null;
         }
@@ -26,5 +26,4 @@ public enum BackTypeEnum {
                 .findFirst()
                 .orElse(null);
     }
-
 }

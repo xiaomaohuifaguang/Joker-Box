@@ -7,17 +7,17 @@ import java.util.Arrays;
 
 @AllArgsConstructor
 @Getter
-public enum BackTypeEnum {
+public enum BackAssigneePolicyEnum {
 
-    PREV("prev", "上一节点"),
-    SPECIFIC("specific", "驳回到指定节点"),
-    CHOOSE("choose","用户自选");
+    AUTO("auto", "智能默认：有上次办理人则派回，无则按配置重新分配"),
+    LAST_HANDLER("last_handler", "派给上次办理人"),
+    REASSIGN("reassign", "按节点 candidate 配置重新分配");
 
     private final String code;
 
-    private final String name;
+    private final String description;
 
-    public static BackTypeEnum of(String code) {
+    public static BackAssigneePolicyEnum of(String code) {
         if (code == null || code.isBlank()) {
             return null;
         }
@@ -26,5 +26,4 @@ public enum BackTypeEnum {
                 .findFirst()
                 .orElse(null);
     }
-
 }

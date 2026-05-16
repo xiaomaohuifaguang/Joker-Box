@@ -4,6 +4,10 @@ import com.cat.common.entity.process.*;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
+import com.cat.simple.config.flowable.enums.BackAssigneePolicyEnum;
+import com.cat.simple.config.flowable.enums.BackTypeEnum;
+import com.cat.simple.config.flowable.enums.HandleTypeEnum;
+import com.cat.simple.config.flowable.enums.MultiInstanceBackPolicyEnum;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.mapper.ProcessHandleInfoMapper;
 import com.cat.simple.mapper.ProcessInstanceMapper;
@@ -78,10 +82,10 @@ public class ProcessBackServiceImpl implements ProcessBackService {
         boolean isMultiInstance = task.getProcessInstanceId() != null && isMultiInstance(task);
         String effectivePolicy = resolveMultiInstancePolicy(multiInstanceBackPolicy, isMultiInstance);
 
-        if (isMultiInstance && "all_back".equals(effectivePolicy)) {
+        if (isMultiInstance && MultiInstanceBackPolicyEnum.ALL_BACK.getCode().equals(effectivePolicy)) {
             backMultiInstanceAllBack(instance, task, targetNodeId, currentUserId, param.getRemark(),
                     backAssigneePolicy, targetNodeName);
-        } else if (isMultiInstance && "independent".equals(effectivePolicy)) {
+        } else if (isMultiInstance && MultiInstanceBackPolicyEnum.INDEPENDENT.getCode().equals(effectivePolicy)) {
             throw new UnsupportedOperationException("independent 回退策略暂不支持");
         } else {
             // 单实例直接回退
@@ -133,8 +137,8 @@ public class ProcessBackServiceImpl implements ProcessBackService {
         config.setAllowBack(backType != null && !backType.isBlank());
         config.setBackType(backType);
         config.setBackNodeId(backNodeId);
-        config.setBackAssigneePolicy(backAssigneePolicy != null ? backAssigneePolicy : "auto");
-        config.setMultiInstanceBackPolicy(multiInstanceBackPolicy != null ? multiInstanceBackPolicy : "auto");
+        config.setBackAssigneePolicy(backAssigneePolicy != null ? backAssigneePolicy : BackAssigneePolicyEnum.AUTO.getCode());
+        config.setMultiInstanceBackPolicy(multiInstanceBackPolicy != null ? multiInstanceBackPolicy : MultiInstanceBackPolicyEnum.AUTO.getCode());
         config.setActionButtons(actionButtons != null && !actionButtons.isBlank()
                 ? Arrays.asList(actionButtons.split(",")) : List.of());
         return config;
@@ -181,29 +185,32 @@ public class ProcessBackServiceImpl implements ProcessBackService {
 
     private String resolveMultiInstancePolicy(String policy, boolean isMultiInstance) {
         if (!isMultiInstance) return "single";
-        if (policy == null || policy.isBlank() || "auto".equals(policy)) {
-            return "all_back";
+        if (policy == null || policy.isBlank() || MultiInstanceBackPolicyEnum.AUTO.getCode().equals(policy)) {
+            return MultiInstanceBackPolicyEnum.ALL_BACK.getCode();
         }
         return policy;
     }
 
     private String resolveTargetNodeId(Task task, String backType, String backNodeId, String paramTargetNodeId) {
-        return switch (backType) {
-            case "prev" -> resolvePrevNodeId(task);
-            case "specific" -> {
+        BackTypeEnum type = BackTypeEnum.of(backType);
+        if (type == null) {
+            throw new IllegalStateException("不支持的驳回方式: " + backType);
+        }
+        return switch (type) {
+            case PREV -> resolvePrevNodeId(task);
+            case SPECIFIC -> {
                 if (backNodeId == null || backNodeId.isBlank()) {
                     throw new IllegalStateException("该节点未配置固定驳回目标");
                 }
                 yield backNodeId;
             }
-            case "choose" -> {
+            case CHOOSE -> {
                 if (paramTargetNodeId == null || paramTargetNodeId.isBlank()) {
                     throw new IllegalArgumentException("请选择驳回目标节点");
                 }
                 validateTargetNode(task.getProcessInstanceId(), paramTargetNodeId);
                 yield paramTargetNodeId;
             }
-            default -> throw new IllegalStateException("不支持的驳回方式: " + backType);
         };
     }
 
@@ -328,16 +335,15 @@ public class ProcessBackServiceImpl implements ProcessBackService {
     }
 
     private String resolveAssignee(Task newTask, String policy, ProcessInstance instance) {
-        String effectivePolicy = (policy == null || policy.isBlank()) ? "auto" : policy;
+        BackAssigneePolicyEnum p = BackAssigneePolicyEnum.of(policy);
+        if (p == null) {
+            p = BackAssigneePolicyEnum.AUTO;
+        }
 
-        return switch (effectivePolicy) {
-            case "last_handler" -> findLastHandler(instance.getId(), newTask.getTaskDefinitionKey());
-            case "reassign" -> resolveByCandidateConfig(newTask);
-            case "auto" -> {
-                String last = findLastHandler(instance.getId(), newTask.getTaskDefinitionKey());
-                yield last != null ? last : resolveByCandidateConfig(newTask);
-            }
-            default -> {
+        return switch (p) {
+            case LAST_HANDLER -> findLastHandler(instance.getId(), newTask.getTaskDefinitionKey());
+            case REASSIGN -> resolveByCandidateConfig(newTask);
+            case AUTO -> {
                 String last = findLastHandler(instance.getId(), newTask.getTaskDefinitionKey());
                 yield last != null ? last : resolveByCandidateConfig(newTask);
             }
@@ -381,7 +387,7 @@ public class ProcessBackServiceImpl implements ProcessBackService {
                 .setTaskId(task.getId())
                 .setTaskName(task.getName())
                 .setHandleUser(currentUserId)
-                .setHandleType("back")
+                .setHandleType(HandleTypeEnum.BACK.getCode())
                 .setRemark(remark != null && !remark.isBlank() ? remark : "驳回")
                 .setHandleTime(LocalDateTime.now())
                 .setTaskDefinitionKey(task.getTaskDefinitionKey())
