@@ -1,6 +1,7 @@
 package com.cat.simple.config.flowable.constant;
 
 import com.cat.simple.config.flowable.enums.ExtensionElementEnum;
+import com.cat.simple.config.flowable.variable.VariableNames;
 
 public class ProcessConstants {
 
@@ -27,6 +28,6 @@ public class ProcessConstants {
     public static final String EL_BACK_ASSIGNEE_POLICY = ExtensionElementEnum.BACK_ASSIGNEE_POLICY.getCode();
 
     /** 回退时注入流程变量的前缀，用于临时覆盖多实例 collection */
-    public static final String BACK_ASSIGNEE_VAR_PREFIX = "__back_assignees_";
+    public static final String BACK_ASSIGNEE_VAR_PREFIX = VariableNames.BACK_ASSIGNEES_PREFIX.getKey();
 
 }
