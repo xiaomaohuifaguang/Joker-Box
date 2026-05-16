@@ -47,4 +47,12 @@ public class ProcessVariableStore {
     public <T> T getLocal(Task task, VariableNames name, Class<T> type) {
         return getLocal(task.getId(), name, type);
     }
+
+    public void setRaw(String processInstanceId, String key, Object value) {
+        runtimeService.setVariable(processInstanceId, key, value);
+    }
+
+    public void removeRaw(String processInstanceId, String key) {
+        runtimeService.removeVariable(processInstanceId, key);
+    }
 }
