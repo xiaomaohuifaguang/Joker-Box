@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum BackTypeEnum {
 
     PREV("prev", "上一节点"),
-    SPECIFIC("specific", "驳回到指定节点");
+    SPECIFIC("specific", "驳回到指定节点"),
+    CHOOSE("choose","用户自选");
 
     private final String code;
 
