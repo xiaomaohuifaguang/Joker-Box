@@ -5,6 +5,7 @@ import com.cat.common.entity.process.ProcessBackParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.security.UserDetailsImpl;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,6 +44,7 @@ public class ProcessBackServiceTest {
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
+    @Disabled("需要有效的 taskId，请先启动流程实例并替换占位符")
     @Test
     void testGetBackConfig() {
         // 需要先启动一个流程并获取任务ID
@@ -54,6 +56,7 @@ public class ProcessBackServiceTest {
         assertNotNull(config);
     }
 
+    @Disabled("需要有效的 taskId，请先启动流程实例并替换占位符")
     @Test
     void testGetAvailableBackTargets() {
         String taskId = "REPLACE_WITH_VALID_TASK_ID";
