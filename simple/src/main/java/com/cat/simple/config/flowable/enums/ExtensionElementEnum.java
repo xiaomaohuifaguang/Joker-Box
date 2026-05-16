@@ -16,8 +16,7 @@ public enum ExtensionElementEnum {
     ACTION_BUTTONS("actionButtons", "处理按钮"),
     BACK_TYPE("backType", "驳回方式"),
     BACK_NODE_ID("backNodeId", "驳回节点"),
-    BACK_ASSIGNEE_POLICY("backAssigneePolicy", "回退后任务分配策略"),
-    MULTI_INSTANCE_BACK_POLICY("multiInstanceBackPolicy", "多实例回退策略");
+    BACK_ASSIGNEE_POLICY("backAssigneePolicy", "回退后任务分配策略");
 
     private final String code;
 

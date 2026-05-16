@@ -51,11 +51,12 @@ public class ProcessInstanceController {
 
     @Operation(summary = "详情")
     @Parameters({
-            @Parameter(name = "id", description = "自建流程实例id", required = true)
+            @Parameter(name = "id", description = "自建流程实例id", required = true),
+            @Parameter(name = "taskId", description = "任务id", required = false)
     })
     @RequestMapping(value = "/info", method = RequestMethod.POST)
-    public HttpResult<ProcessInstance> info(@RequestParam("id") Integer id) {
-        return HttpResult.back(processInstanceService.info(id));
+    public HttpResult<ProcessInstance> info(@RequestParam("id") Integer id, @RequestParam(value = "taskId",required = false) String taskId) {
+        return HttpResult.back(processInstanceService.info(id, taskId));
     }
 
 

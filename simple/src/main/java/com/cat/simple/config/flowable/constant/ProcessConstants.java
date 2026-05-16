@@ -25,7 +25,8 @@ public class ProcessConstants {
     public static final String EL_BACK_NODE_ID = ExtensionElementEnum.BACK_NODE_ID.getCode();
     /** BPMN 扩展元素名：回退后任务分配策略 */
     public static final String EL_BACK_ASSIGNEE_POLICY = ExtensionElementEnum.BACK_ASSIGNEE_POLICY.getCode();
-    /** BPMN 扩展元素名：多实例回退策略 */
-    public static final String EL_MULTI_INSTANCE_BACK_POLICY = ExtensionElementEnum.MULTI_INSTANCE_BACK_POLICY.getCode();
+
+    /** 回退时注入流程变量的前缀，用于临时覆盖多实例 collection */
+    public static final String BACK_ASSIGNEE_VAR_PREFIX = "__back_assignees_";
 
 }

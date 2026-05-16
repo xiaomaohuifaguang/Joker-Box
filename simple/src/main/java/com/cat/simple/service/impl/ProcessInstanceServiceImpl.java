@@ -7,14 +7,12 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.process.*;
 
-
-import com.cat.simple.config.flowable.approval.ApprovalContext;
-import com.cat.simple.config.flowable.candidate.CandidateResolver;
-import com.cat.simple.config.flowable.enums.BackAssigneePolicyEnum;
-import com.cat.simple.config.flowable.enums.BackTypeEnum;
+import com.cat.simple.config.flowable.back.BackConfigReader;
+import com.cat.simple.config.flowable.back.BackEngine;
+import com.cat.simple.config.flowable.back.BackTargetResolver;
 import com.cat.simple.config.flowable.enums.HandleTypeEnum;
-import com.cat.simple.config.flowable.enums.MultiInstanceBackPolicyEnum;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
+import com.cat.simple.config.flowable.util.BpmnModelUtil;
 import com.cat.simple.config.process.ProcessCodeGenerator;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.mapper.ProcessDefinitionMapper;
@@ -22,25 +20,18 @@ import com.cat.simple.mapper.ProcessHandleInfoMapper;
 import com.cat.simple.mapper.ProcessInstanceMapper;
 import com.cat.simple.service.ProcessInstanceService;
 import jakarta.annotation.Resource;
-import org.flowable.bpmn.model.BpmnModel;
-import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.HistoryService;
-import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
-import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.runtime.Execution;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.cat.simple.config.flowable.constant.ProcessConstants.*;
 import static com.cat.simple.config.flowable.enums.ProcessStatusEnum.*;
 
 @Service
@@ -68,10 +59,16 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     private ProcessCodeGenerator codeGenerator;
 
     @Resource
-    private RepositoryService repositoryService;
+    private BackEngine backEngine;
 
     @Resource
-    private CandidateResolver candidateResolver;
+    private BackTargetResolver backTargetResolver;
+
+    @Resource
+    private BackConfigReader backConfigReader;
+
+    @Resource
+    private BpmnModelUtil bpmnModelUtil;
 
     @Override
     public void updateStatus(String flowableProcessInstanceId,  ProcessStatusEnum processStatusEnum) {
@@ -145,10 +142,22 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
 
     @Override
-    public ProcessInstance info(Integer id) {
+    public ProcessInstance info(Integer id, String taskId) {
+        Task task = null;
+        if(StringUtils.hasText(taskId)){
+            task = taskService.createTaskQuery().taskId(taskId).taskAssignee(Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId()).singleResult();
+            if(Objects.isNull(task)){
+                throw new IllegalStateException("任务不存在/非本人处理任务");
+            }
+        }
+
         ProcessInstance processInstance = processInstanceMapper.selectInfoById(id);
         // 填充处理信息
         List<ProcessHandleInfo> processHandleInfoList = processHandleInfoMapper.selectDetailListByProcessInstanceId(processInstance.getId());
+        if(!Objects.isNull(task)){
+            processInstance.setTaskId(taskId);
+            processInstance.setTaskName(task.getName());
+        }
         processInstance.setProcessHandleInfoList(processHandleInfoList);
         return processInstance;
     }
@@ -384,83 +393,41 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         }
 
         // 2. 读取节点配置
-        String backType = getTaskLocalVar(task, EL_BACK_TYPE);
-        String backNodeId = getTaskLocalVar(task, EL_BACK_NODE_ID);
-        String backAssigneePolicy = getTaskLocalVar(task, EL_BACK_ASSIGNEE_POLICY);
-        String multiInstanceBackPolicy = getTaskLocalVar(task, EL_MULTI_INSTANCE_BACK_POLICY);
-
-        if (backType == null || backType.isBlank()) {
+        BackConfig cfg = backConfigReader.getBackConfig(param.getTaskId());
+        if (!cfg.isAllowBack()) {
             throw new IllegalStateException("该节点未配置驳回方式, taskId: " + param.getTaskId());
         }
 
         // 3. 解析目标节点
-        String targetNodeId = resolveTargetNodeId(task, backType, backNodeId, param.getTargetNodeId());
-        String targetNodeName = resolveTargetNodeName(instance.getProcessInstanceId(), targetNodeId);
+        String targetNodeId = backTargetResolver.resolveTargetNodeId(
+                task, cfg.getBackType(), cfg.getBackNodeId(), param.getTargetNodeId());
+        String targetNodeName = backTargetResolver.resolveTargetNodeName(
+                instance.getProcessInstanceId(), targetNodeId);
 
-        // 4. 多实例协调
-        boolean isMultiInstance = task.getProcessInstanceId() != null && isMultiInstance(task);
-        String effectivePolicy = resolveMultiInstancePolicy(multiInstanceBackPolicy, isMultiInstance);
+        // 4. 多实例回退统一走 ALL_BACK
+        boolean isMultiInstance = task.getProcessInstanceId() != null && bpmnModelUtil.isMultiInstance(task);
 
-        if (isMultiInstance && MultiInstanceBackPolicyEnum.ALL_BACK.getCode().equals(effectivePolicy)) {
-            backMultiInstanceAllBack(instance, task, targetNodeId, currentUserId, param.getRemark(),
-                    backAssigneePolicy, targetNodeName);
-        } else if (isMultiInstance && MultiInstanceBackPolicyEnum.INDEPENDENT.getCode().equals(effectivePolicy)) {
-            throw new UnsupportedOperationException("independent 回退策略暂不支持");
+        if (isMultiInstance) {
+            backEngine.backMultiInstanceAllBack(instance, task, targetNodeId, currentUserId, param.getRemark(),
+                    cfg.getBackAssigneePolicy(), targetNodeName);
         } else {
             // 单实例直接回退
-            backSingleInstance(instance, task, targetNodeId, currentUserId, param.getRemark(),
-                    backAssigneePolicy, targetNodeName);
+            backEngine.backSingleInstance(instance, task, targetNodeId, currentUserId, param.getRemark(),
+                    cfg.getBackAssigneePolicy(), targetNodeName);
         }
+
+        // 记录轨迹
+        saveBackHandleInfo(instance, task, currentUserId, param.getRemark(), targetNodeId, targetNodeName);
     }
 
     @Override
     public List<BackTargetNode> getAvailableBackTargets(String taskId) {
-        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-        if (task == null) {
-            throw new IllegalArgumentException("任务不存在: " + taskId);
-        }
-
-        List<HistoricActivityInstance> userTasks = historyService
-                .createHistoricActivityInstanceQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .activityType("userTask")
-                .orderByHistoricActivityInstanceEndTime().desc()
-                .list();
-
-        Map<String, BackTargetNode> targets = new LinkedHashMap<>();
-        for (HistoricActivityInstance h : userTasks) {
-            String nodeId = h.getActivityId();
-            if (nodeId.equals(task.getTaskDefinitionKey())) continue;
-
-            targets.putIfAbsent(nodeId, new BackTargetNode()
-                    .setNodeId(nodeId)
-                    .setNodeName(h.getActivityName()));
-        }
-        return new ArrayList<>(targets.values());
+        return backConfigReader.getAvailableBackTargets(taskId);
     }
 
     @Override
     public BackConfig getBackConfig(String taskId) {
-        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-        if (task == null) {
-            throw new IllegalArgumentException("任务不存在: " + taskId);
-        }
-
-        String actionButtons = getTaskLocalVar(task, EL_ACTION_BUTTONS);
-        String backType = getTaskLocalVar(task, EL_BACK_TYPE);
-        String backNodeId = getTaskLocalVar(task, EL_BACK_NODE_ID);
-        String backAssigneePolicy = getTaskLocalVar(task, EL_BACK_ASSIGNEE_POLICY);
-        String multiInstanceBackPolicy = getTaskLocalVar(task, EL_MULTI_INSTANCE_BACK_POLICY);
-
-        BackConfig config = new BackConfig();
-        config.setAllowBack(backType != null && !backType.isBlank());
-        config.setBackType(backType);
-        config.setBackNodeId(backNodeId);
-        config.setBackAssigneePolicy(backAssigneePolicy != null ? backAssigneePolicy : BackAssigneePolicyEnum.AUTO.getCode());
-        config.setMultiInstanceBackPolicy(multiInstanceBackPolicy != null ? multiInstanceBackPolicy : MultiInstanceBackPolicyEnum.AUTO.getCode());
-        config.setActionButtons(actionButtons != null && !actionButtons.isBlank()
-                ? Arrays.asList(actionButtons.split(",")) : List.of());
-        return config;
+        return backConfigReader.getBackConfig(taskId);
     }
 
     // ==================== Back helper methods ====================
@@ -488,211 +455,6 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         return Optional.ofNullable(SecurityUtils.getLoginUser())
                 .map(LoginUser::getUserId)
                 .orElseThrow(() -> new IllegalStateException("当前未登录, 无法驳回"));
-    }
-
-    private String getTaskLocalVar(Task task, String varName) {
-        Object value = taskService.getVariableLocal(task.getId(), varName);
-        return value != null ? value.toString() : null;
-    }
-
-    private boolean isMultiInstance(Task task) {
-        BpmnModel model = repositoryService.getBpmnModel(task.getProcessDefinitionId());
-        if (model == null) return false;
-        if (!(model.getFlowElement(task.getTaskDefinitionKey()) instanceof UserTask ut)) return false;
-        return ut.getLoopCharacteristics() != null;
-    }
-
-    private String resolveMultiInstancePolicy(String policy, boolean isMultiInstance) {
-        if (!isMultiInstance) return "single";
-        if (policy == null || policy.isBlank() || MultiInstanceBackPolicyEnum.AUTO.getCode().equals(policy)) {
-            return MultiInstanceBackPolicyEnum.ALL_BACK.getCode();
-        }
-        return policy;
-    }
-
-    private String resolveTargetNodeId(Task task, String backType, String backNodeId, String paramTargetNodeId) {
-        BackTypeEnum type = BackTypeEnum.of(backType);
-        if (type == null) {
-            throw new IllegalStateException("不支持的驳回方式: " + backType);
-        }
-        return switch (type) {
-            case PREV -> resolvePrevNodeId(task);
-            case SPECIFIC -> {
-                if (backNodeId == null || backNodeId.isBlank()) {
-                    throw new IllegalStateException("该节点未配置固定驳回目标");
-                }
-                yield backNodeId;
-            }
-            case CHOOSE -> {
-                if (paramTargetNodeId == null || paramTargetNodeId.isBlank()) {
-                    throw new IllegalArgumentException("请选择驳回目标节点");
-                }
-                validateTargetNode(task.getProcessInstanceId(), paramTargetNodeId);
-                yield paramTargetNodeId;
-            }
-        };
-    }
-
-    private String resolvePrevNodeId(Task task) {
-        HistoricActivityInstance last = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .activityType("userTask")
-                .finishedBefore(task.getCreateTime())
-                .orderByHistoricActivityInstanceEndTime().desc()
-                .list().stream()
-                .filter(h -> !h.getActivityId().equals(task.getTaskDefinitionKey()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("没有可驳回的上级节点"));
-        return last.getActivityId();
-    }
-
-    private void validateTargetNode(String processInstanceId, String targetNodeId) {
-        long count = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .activityId(targetNodeId)
-                .activityType("userTask")
-                .count();
-        if (count == 0) {
-            throw new IllegalArgumentException("无效的回退目标节点: " + targetNodeId);
-        }
-    }
-
-    private String resolveTargetNodeName(String processInstanceId, String targetNodeId) {
-        BpmnModel model = repositoryService.getBpmnModel(
-                runtimeService.createProcessInstanceQuery()
-                        .processInstanceId(processInstanceId)
-                        .singleResult()
-                        .getProcessDefinitionId());
-        if (model != null && model.getFlowElement(targetNodeId) instanceof UserTask ut) {
-            return ut.getName();
-        }
-        return targetNodeId;
-    }
-
-    private void backSingleInstance(ProcessInstance instance, Task task, String targetNodeId,
-                                    String currentUserId, String remark, String backAssigneePolicy,
-                                    String targetNodeName) {
-        // 校验目标节点是否已有进行中的任务
-        long activeCount = taskService.createTaskQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .taskDefinitionKey(targetNodeId)
-                .count();
-        if (activeCount > 0) {
-            throw new IllegalStateException("目标节点已有进行中的任务，无法驳回");
-        }
-
-        // Flowable 改状态
-        runtimeService.createChangeActivityStateBuilder()
-                .processInstanceId(task.getProcessInstanceId())
-                .moveExecutionToActivityId(task.getExecutionId(), targetNodeId)
-                .changeState();
-
-        // 新任务分派
-        Task newTask = taskService.createTaskQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .taskDefinitionKey(targetNodeId)
-                .singleResult();
-
-        if (newTask != null) {
-            String assignee = resolveAssignee(newTask, backAssigneePolicy, instance);
-            if (assignee != null) {
-                taskService.setAssignee(newTask.getId(), assignee);
-            }
-        }
-
-        // 记录轨迹
-        saveBackHandleInfo(instance, task, currentUserId, remark, targetNodeId, targetNodeName);
-    }
-
-    private void backMultiInstanceAllBack(ProcessInstance instance, Task task, String targetNodeId,
-                                          String currentUserId, String remark, String backAssigneePolicy,
-                                          String targetNodeName) {
-        // 校验目标节点
-        long activeCount = taskService.createTaskQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .taskDefinitionKey(targetNodeId)
-                .count();
-        if (activeCount > 0) {
-            throw new IllegalStateException("目标节点已有进行中的任务，无法驳回");
-        }
-
-        // 找到多实例父执行
-        Execution childExecution = runtimeService.createExecutionQuery()
-                .executionId(task.getExecutionId())
-                .singleResult();
-        if (childExecution == null || childExecution.getParentId() == null) {
-            throw new IllegalStateException("无法定位多实例父执行");
-        }
-        Execution miBody = runtimeService.createExecutionQuery()
-                .executionId(childExecution.getParentId())
-                .singleResult();
-        if (miBody == null) {
-            throw new IllegalStateException("无法定位多实例父执行");
-        }
-
-        // 用父执行改状态
-        runtimeService.createChangeActivityStateBuilder()
-                .processInstanceId(task.getProcessInstanceId())
-                .moveExecutionToActivityId(miBody.getId(), targetNodeId)
-                .changeState();
-
-        // 新任务分派
-        List<Task> newTasks = taskService.createTaskQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .taskDefinitionKey(targetNodeId)
-                .list();
-
-        if (!CollectionUtils.isEmpty(newTasks)) {
-            for (Task newTask : newTasks) {
-                String assignee = resolveAssignee(newTask, backAssigneePolicy, instance);
-                if (assignee != null) {
-                    taskService.setAssignee(newTask.getId(), assignee);
-                }
-            }
-        }
-
-        // 记录轨迹
-        saveBackHandleInfo(instance, task, currentUserId, remark, targetNodeId, targetNodeName);
-    }
-
-    private String resolveAssignee(Task newTask, String policy, ProcessInstance instance) {
-        BackAssigneePolicyEnum p = BackAssigneePolicyEnum.of(policy);
-        if (p == null) {
-            p = BackAssigneePolicyEnum.AUTO;
-        }
-
-        return switch (p) {
-            case LAST_HANDLER -> findLastHandler(instance.getId(), newTask.getTaskDefinitionKey());
-            case REASSIGN -> resolveByCandidateConfig(newTask);
-            case AUTO -> {
-                String last = findLastHandler(instance.getId(), newTask.getTaskDefinitionKey());
-                yield last != null ? last : resolveByCandidateConfig(newTask);
-            }
-        };
-    }
-
-    private String findLastHandler(Integer processInstanceId, String taskDefinitionKey) {
-        List<ProcessHandleInfo> list = processHandleInfoMapper.selectDetailListByProcessInstanceId(processInstanceId);
-        return list.stream()
-                .filter(h -> taskDefinitionKey.equals(h.getTaskDefinitionKey()))
-                .max(Comparator.comparing(ProcessHandleInfo::getHandleTime))
-                .map(ProcessHandleInfo::getHandleUser)
-                .orElse(null);
-    }
-
-    private String resolveByCandidateConfig(Task task) {
-        BpmnModel model = repositoryService.getBpmnModel(task.getProcessDefinitionId());
-        if (model == null) return null;
-        if (!(model.getFlowElement(task.getTaskDefinitionKey()) instanceof UserTask ut)) return null;
-
-        ApprovalContext ctx = ApprovalContext.from(ut);
-        if (ctx == null) return null;
-
-        List<String> assignees = candidateResolver.resolve(ctx);
-        if (!ObjectUtils.isEmpty(assignees)) {
-            return assignees.get(0);
-        }
-        return null;
     }
 
     private void saveBackHandleInfo(ProcessInstance instance, Task task, String currentUserId,

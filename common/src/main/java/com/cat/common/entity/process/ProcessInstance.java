@@ -78,6 +78,10 @@ public class ProcessInstance implements Serializable {
     @TableField(exist = false)
     private String taskId;
 
+    @Schema(description = "任务名称")
+    @TableField(exist = false)
+    private String taskName;
+
     @Schema(description = "可使用的按钮")
     @TableField(exist = false)
     private List<String> buttonActions;

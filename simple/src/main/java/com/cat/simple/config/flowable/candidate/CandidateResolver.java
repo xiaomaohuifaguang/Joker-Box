@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.cat.simple.config.flowable.constant.ProcessConstants.BACK_ASSIGNEE_VAR_PREFIX;
+
 /**
  * 候选人解析器，负责把 BPMN 上的候选源（用户 / 角色 / 用户组 / 部门）展开为最终用户 ID 列表。
  * 作为 Spring Bean 被多实例 collection 表达式 {@code ${candidateResolver.resolveAssignees(execution)}} 调用。
@@ -39,6 +41,13 @@ public class CandidateResolver {
      * @return 去重后的用户 ID 列表；解析结果为空时抛异常，防止 Flowable 跳过节点
      */
     public List<String> resolveAssignees(DelegateExecution execution) {
+        // 回退场景：优先使用注入的历史处理人列表，保证任务数和上一轮一致
+        String backVarName = BACK_ASSIGNEE_VAR_PREFIX + execution.getCurrentActivityId();
+        Object backAssignees = execution.getVariable(backVarName);
+        if (backAssignees instanceof List<?> list && !list.isEmpty()) {
+            return list.stream().map(Object::toString).toList();
+        }
+
         ApprovalContext ctx = readContext(execution.getProcessDefinitionId(), execution.getCurrentActivityId());
         if (ctx == null) {
             log.warn("activityId={} 缺少 approvalType, 候选人为空", execution.getCurrentActivityId());

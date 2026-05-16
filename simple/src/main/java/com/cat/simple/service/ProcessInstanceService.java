@@ -52,7 +52,7 @@ public interface ProcessInstanceService {
      * @param id 自建 cat_process_instance 主键
      * @return 实例详情, 不存在返回 {@code null}
      */
-    ProcessInstance info(Integer id);
+    ProcessInstance info(Integer id, String taskId);
 
 
     /**

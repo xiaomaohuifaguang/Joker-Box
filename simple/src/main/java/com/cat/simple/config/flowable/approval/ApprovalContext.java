@@ -24,8 +24,7 @@ public record ApprovalContext(
         List<String> actionButtons,
         String backType,
         String backNodeId,
-        String backAssigneePolicy,
-        String multiInstanceBackPolicy
+        String backAssigneePolicy
 ) {
 
 
@@ -57,8 +56,7 @@ public record ApprovalContext(
                 splitCsv(readText(map, EL_ACTION_BUTTONS)),
                 readText(map, EL_BACK_TYPE),
                 readText(map, EL_BACK_NODE_ID),
-                readText(map, EL_BACK_ASSIGNEE_POLICY),
-                readText(map, EL_MULTI_INSTANCE_BACK_POLICY)
+                readText(map, EL_BACK_ASSIGNEE_POLICY)
         );
     }
 

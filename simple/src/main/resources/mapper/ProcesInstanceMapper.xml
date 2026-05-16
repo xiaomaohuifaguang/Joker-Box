@@ -49,8 +49,9 @@
         </choose>
     </select>
     <select id="selectInfoById" resultType="com.cat.common.entity.process.ProcessInstance">
-        SELECT cpi.*, cu.nickname createByName FROM cat_process_instance cpi
+        SELECT cpi.*, cu.nickname createByName,cpd.id processDefinitionId, cpd.process_name processDefinitionName FROM cat_process_instance cpi
         INNER JOIN cat_user cu on cpi.create_by = cu.id
+        INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
         <where>
             cpi.deleted = '0'
             AND cpi.id = #{id}
