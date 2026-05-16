@@ -21,9 +21,9 @@ public class ProcessConstants {
     public static final String EL_BACK_TYPE = "backType";
     /** BPMN 扩展元素名：驳回节点 */
     public static final String EL_BACK_NODE_ID = "backNodeId";
-
-
-
-
+    /** BPMN 扩展元素名：回退后任务分配策略 */
+    public static final String EL_BACK_ASSIGNEE_POLICY = "backAssigneePolicy";
+    /** BPMN 扩展元素名：多实例回退策略 */
+    public static final String EL_MULTI_INSTANCE_BACK_POLICY = "multiInstanceBackPolicy";
 
 }

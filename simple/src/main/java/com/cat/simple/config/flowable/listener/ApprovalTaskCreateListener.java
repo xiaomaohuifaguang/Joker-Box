@@ -75,6 +75,12 @@ public class ApprovalTaskCreateListener implements TaskListener {
         if (ctx.backNodeId() != null && !ctx.backNodeId().isBlank()) {
             delegateTask.setVariableLocal(EL_BACK_NODE_ID, ctx.backNodeId());
         }
+        if (ctx.backAssigneePolicy() != null && !ctx.backAssigneePolicy().isBlank()) {
+            delegateTask.setVariableLocal(EL_BACK_ASSIGNEE_POLICY, ctx.backAssigneePolicy());
+        }
+        if (ctx.multiInstanceBackPolicy() != null && !ctx.multiInstanceBackPolicy().isBlank()) {
+            delegateTask.setVariableLocal(EL_MULTI_INSTANCE_BACK_POLICY, ctx.multiInstanceBackPolicy());
+        }
     }
 
     /**
