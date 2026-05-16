@@ -40,6 +40,10 @@ public class ProcessVariableStore {
         setLocal(task.getId(), name, value);
     }
 
+    public void setLocal(org.flowable.task.service.delegate.DelegateTask delegateTask, VariableNames name, Object value) {
+        setLocal(delegateTask.getId(), name, value);
+    }
+
     public <T> T getLocal(Task task, VariableNames name, Class<T> type) {
         return getLocal(task.getId(), name, type);
     }

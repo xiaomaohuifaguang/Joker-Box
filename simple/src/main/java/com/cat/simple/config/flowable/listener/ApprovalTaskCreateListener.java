@@ -3,6 +3,8 @@ package com.cat.simple.config.flowable.listener;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.approval.ApprovalTypeHandler;
+import com.cat.simple.config.flowable.variable.ProcessVariableStore;
+import com.cat.simple.config.flowable.variable.VariableNames;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +18,6 @@ import org.springframework.stereotype.Component;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.cat.simple.config.flowable.constant.ProcessConstants.*;
 
 /**
  * 审批任务创建监听器，由 {@link com.cat.simple.config.flowable.parse.ApprovalUserTaskParseHandler}
@@ -33,6 +33,9 @@ public class ApprovalTaskCreateListener implements TaskListener {
 
     @Resource
     private RepositoryService repositoryService;
+
+    @Resource
+    private ProcessVariableStore variableStore;
 
     private Map<ApprovalTypeEnum, ApprovalTypeHandler> handlerMap;
 
@@ -67,16 +70,16 @@ public class ApprovalTaskCreateListener implements TaskListener {
 
         // 将按钮配置写入任务变量，供后端接口查询和校验
         if (ctx.actionButtons() != null && !ctx.actionButtons().isEmpty()) {
-            delegateTask.setVariableLocal(EL_ACTION_BUTTONS, String.join(",", ctx.actionButtons()));
+            variableStore.setLocal(delegateTask, VariableNames.ACTION_BUTTONS, String.join(",", ctx.actionButtons()));
         }
         if (ctx.backType() != null && !ctx.backType().isBlank()) {
-            delegateTask.setVariableLocal(EL_BACK_TYPE, ctx.backType());
+            variableStore.setLocal(delegateTask, VariableNames.BACK_TYPE, ctx.backType());
         }
         if (ctx.backNodeId() != null && !ctx.backNodeId().isBlank()) {
-            delegateTask.setVariableLocal(EL_BACK_NODE_ID, ctx.backNodeId());
+            variableStore.setLocal(delegateTask, VariableNames.BACK_NODE_ID, ctx.backNodeId());
         }
         if (ctx.backAssigneePolicy() != null && !ctx.backAssigneePolicy().isBlank()) {
-            delegateTask.setVariableLocal(EL_BACK_ASSIGNEE_POLICY, ctx.backAssigneePolicy());
+            variableStore.setLocal(delegateTask, VariableNames.BACK_ASSIGNEE_POLICY, ctx.backAssigneePolicy());
         }
     }
 
