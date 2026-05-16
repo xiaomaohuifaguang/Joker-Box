@@ -54,6 +54,7 @@ public class ProcessInstanceServiceTest {
     }
 
 
+    @Disabled("需要数据库中存在的流程定义 ID")
     @Test
     void testStart() {
         // 请先替换为数据库中存在的流程定义 ID
