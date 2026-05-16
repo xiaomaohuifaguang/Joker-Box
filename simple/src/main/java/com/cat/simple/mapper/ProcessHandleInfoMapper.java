@@ -25,4 +25,6 @@ public interface ProcessHandleInfoMapper extends BaseMapper<ProcessHandleInfo> {
 
    List<ProcessHandleInfo> selectDetailListByProcessInstanceId(@Param("processInstanceId") Integer processInstanceId);
 
+   Integer selectMaxRound(@Param("processInstanceId") Integer processInstanceId,
+                          @Param("taskDefinitionKey") String taskDefinitionKey);
 }
