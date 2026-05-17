@@ -18,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ProcessInstanceServiceImpl implements ProcessInstanceService {
@@ -49,8 +50,10 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         if (instance == null) {
             return null;
         }
-        instance.setProcessHandleInfoList(
-                processHandleInfoMapper.selectDetailListByProcessInstanceId(instance.getId()));
+        List<ProcessHandleInfo> handleList =
+                processHandleInfoMapper.selectDetailListByProcessInstanceId(instance.getId());
+        instance.setProcessHandleInfoList(handleList);
+        instance.setTimeline(buildTimeline(handleList));
 
         if (StringUtils.hasText(taskId)) {
             Task task = guard.assertTaskAssignee(taskId);
@@ -58,6 +61,41 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             instance.setTaskName(task.getName());
         }
         return instance;
+    }
+
+    private List<ProcessTimelineNode> buildTimeline(List<ProcessHandleInfo> list) {
+        if (list == null || list.isEmpty()) {
+            return List.of();
+        }
+        return list.stream()
+                .collect(Collectors.groupingBy(h -> {
+                    String key = h.getTaskDefinitionKey() != null ? h.getTaskDefinitionKey() : "_start";
+                    int round = h.getRound() != null ? h.getRound() : 1;
+                    return key + "#" + round;
+                }))
+                .values().stream()
+                .map(group -> {
+                    group.sort(Comparator.comparing(ProcessHandleInfo::getHandleTime,
+                            Comparator.nullsLast(Comparator.naturalOrder())));
+                    ProcessHandleInfo first = group.get(0);
+                    String nodeId = first.getTaskDefinitionKey() != null ? first.getTaskDefinitionKey() : "_start";
+                    ProcessTimelineNode node = new ProcessTimelineNode();
+                    node.setNodeId(nodeId);
+                    node.setNodeName(first.getTaskName() != null ? first.getTaskName()
+                            : ("_start".equals(nodeId) ? "申请" : nodeId));
+                    node.setRound(first.getRound() != null ? first.getRound() : 1);
+                    node.setHandlers(group);
+                    node.setStartTime(first.getHandleTime());
+                    node.setEndTime(group.get(group.size() - 1).getHandleTime());
+                    boolean hasEndAction = group.stream()
+                            .anyMatch(h -> h.getHandleType() != null
+                                    && Set.of("pass", "reject", "back").contains(h.getHandleType()));
+                    node.setNodeStatus(hasEndAction ? "completed" : "active");
+                    return node;
+                })
+                .sorted(Comparator.comparing(ProcessTimelineNode::getStartTime,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
     }
 
     @Override
