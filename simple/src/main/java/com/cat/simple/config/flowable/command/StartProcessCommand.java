@@ -12,7 +12,7 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 
     @Resource private RuntimeService runtimeService;
     @Resource private ProcessCodeGenerator codeGenerator;
-    @Resource private com.cat.simple.mapper.ProcessInstanceMapper processInstanceMapper;
+    @Resource private com.cat.simple.process.mapper.ProcessInstanceMapper processInstanceMapper;
 
     private final Integer processDefinitionId;
     private final String title;

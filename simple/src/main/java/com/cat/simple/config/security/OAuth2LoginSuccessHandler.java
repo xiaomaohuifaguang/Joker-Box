@@ -3,7 +3,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.utils.JSONUtils;
 import com.cat.simple.config.redis.RedisService;
-import com.cat.simple.service.UserService;
+import com.cat.simple.system.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

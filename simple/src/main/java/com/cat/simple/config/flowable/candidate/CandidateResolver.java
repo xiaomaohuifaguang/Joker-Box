@@ -1,7 +1,7 @@
 package com.cat.simple.config.flowable.candidate;
 
 import com.cat.simple.config.flowable.approval.ApprovalContext;
-import com.cat.simple.mapper.UserMapper;
+import com.cat.simple.system.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.UserTask;

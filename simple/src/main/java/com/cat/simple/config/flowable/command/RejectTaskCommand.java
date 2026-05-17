@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class RejectTaskCommand extends ProcessCommand<Void> {
 
     @Resource private RuntimeService runtimeService;
-    @Resource private com.cat.simple.mapper.ProcessInstanceMapper processInstanceMapper;
+    @Resource private com.cat.simple.process.mapper.ProcessInstanceMapper processInstanceMapper;
 
     private final ProcessHandleParam param;
     private Task task;

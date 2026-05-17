@@ -5,7 +5,7 @@ import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.enums.HandleTypeEnum;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
-import com.cat.simple.mapper.ProcessHandleInfoMapper;
+import com.cat.simple.process.mapper.ProcessHandleInfoMapper;
 import jakarta.annotation.Resource;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Component;

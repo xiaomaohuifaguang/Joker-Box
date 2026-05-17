@@ -5,7 +5,7 @@ import com.cat.common.entity.DTO;
 import com.cat.common.entity.auth.RegisterUserInfo;
 import com.cat.common.entity.auth.User;
 import com.cat.common.utils.who.RandomUserNameUtils;
-import com.cat.simple.service.UserService;
+import com.cat.simple.system.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

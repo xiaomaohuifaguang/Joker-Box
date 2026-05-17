@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cat.simple.mapper.RoleMapper">
+<mapper namespace="com.cat.simple.system.mapper.RoleMapper">
     <select id="getRolesByUserId" resultType="com.cat.common.entity.auth.Role" parameterType="java.lang.String">
         SELECT R.*
         FROM cat_role R

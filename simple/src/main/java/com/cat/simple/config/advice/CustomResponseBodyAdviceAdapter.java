@@ -2,7 +2,7 @@ package com.cat.simple.config.advice;
 import com.cat.common.entity.HttpResult;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.simple.config.security.SecurityUtils;
-import com.cat.simple.service.UserService;
+import com.cat.simple.system.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;

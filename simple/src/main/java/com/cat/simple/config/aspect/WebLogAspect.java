@@ -7,7 +7,7 @@ import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.utils.JSONUtils;
 import com.cat.common.utils.ServletUtils;
 import com.cat.simple.config.security.SecurityUtils;
-import com.cat.simple.service.WebLogService;
+import com.cat.simple.log.service.WebLogService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,7 +39,7 @@ public class WebLogAspect {
     @Resource
     private WebLogService webLogService;
 
-    @Pointcut("execution(public * com.cat.simple.controller.*.*(..))")
+    @Pointcut("execution(public * com.cat.simple..controller.*.*(..))")
     public void webLog() {}
 
     @Around("webLog()")

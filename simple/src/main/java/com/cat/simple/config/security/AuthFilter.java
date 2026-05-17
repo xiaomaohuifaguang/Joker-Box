@@ -1,6 +1,6 @@
 package com.cat.simple.config.security;
 
-import com.cat.simple.service.UserService;
+import com.cat.simple.system.service.UserService;
 import com.cat.common.entity.auth.LoginUser;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;

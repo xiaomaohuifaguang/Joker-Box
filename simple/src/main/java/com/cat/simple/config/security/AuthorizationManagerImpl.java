@@ -1,6 +1,6 @@
 package com.cat.simple.config.security;
 
-import com.cat.simple.service.RoleService;
+import com.cat.simple.system.service.RoleService;
 import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.HttpResultStatus;
 import jakarta.annotation.Resource;

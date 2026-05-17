@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
-import com.cat.simple.mapper.ProcessInstanceMapper;
+import com.cat.simple.process.mapper.ProcessInstanceMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
