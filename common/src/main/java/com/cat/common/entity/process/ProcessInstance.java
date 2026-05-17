@@ -90,6 +90,8 @@ public class ProcessInstance implements Serializable {
     @TableField(exist = false)
     private List<ProcessHandleInfo> processHandleInfoList;
 
-
+    @Schema(description = "流程节点时间线")
+    @TableField(exist = false)
+    private List<ProcessTimelineNode> timeline;
 
 }
