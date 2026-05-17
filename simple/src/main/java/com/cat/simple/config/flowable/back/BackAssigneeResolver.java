@@ -18,6 +18,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 驳回后任务办理人解析器，根据策略决定回退节点的 assignee。
+ */
 @Component
 public class BackAssigneeResolver {
 
@@ -30,6 +33,7 @@ public class BackAssigneeResolver {
     @Resource
     private CandidateResolver candidateResolver;
 
+    /** 按策略解析回退后任务的办理人。 */
     public String resolveAssignee(Task newTask, String policy, ProcessInstance instance) {
         BackAssigneePolicyEnum p = BackAssigneePolicyEnum.of(policy);
         if (p == null) {
@@ -46,6 +50,7 @@ public class BackAssigneeResolver {
         };
     }
 
+    /** 查询目标节点最近一次的历史办理人。 */
     public String findLastHandler(String flowableProcessInstanceId, String taskDefinitionKey) {
         return historyService.createHistoricTaskInstanceQuery()
                 .processInstanceId(flowableProcessInstanceId)
@@ -58,6 +63,7 @@ public class BackAssigneeResolver {
                 .orElse(null);
     }
 
+    /** 查询目标节点所有历史办理人去重列表。 */
     public List<String> findHistoricHandlers(String flowableProcessInstanceId, String taskDefinitionKey) {
         return historyService.createHistoricTaskInstanceQuery()
                 .processInstanceId(flowableProcessInstanceId)
@@ -87,6 +93,7 @@ public class BackAssigneeResolver {
                 .toList();
     }
 
+    /** 按节点候选配置解析办理人，取第一个候选人。 */
     public String resolveByCandidateConfig(Task task) {
         BpmnModel model = repositoryService.getBpmnModel(task.getProcessDefinitionId());
         if (model == null) return null;

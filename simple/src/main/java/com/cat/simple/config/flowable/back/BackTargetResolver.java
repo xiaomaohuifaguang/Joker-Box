@@ -11,6 +11,9 @@ import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Component;
 
+/**
+ * 驳回目标节点解析器，根据驳回类型确定回退的目标节点 ID 与名称。
+ */
 @Component
 public class BackTargetResolver {
 
@@ -23,6 +26,7 @@ public class BackTargetResolver {
     @Resource
     private RepositoryService repositoryService;
 
+    /** 根据驳回类型解析目标节点 ID。 */
     public String resolveTargetNodeId(Task task, String backType, String backNodeId, String paramTargetNodeId) {
         BackTypeEnum type = BackTypeEnum.of(backType);
         if (type == null) {
@@ -46,6 +50,7 @@ public class BackTargetResolver {
         };
     }
 
+    /** 解析上一审批节点 ID。 */
     public String resolvePrevNodeId(Task task) {
         HistoricActivityInstance last = historyService.createHistoricActivityInstanceQuery()
                 .processInstanceId(task.getProcessInstanceId())
@@ -59,6 +64,7 @@ public class BackTargetResolver {
         return last.getActivityId();
     }
 
+    /** 校验目标节点是否在当前流程历史中出现过。 */
     public void validateTargetNode(String processInstanceId, String targetNodeId) {
         long count = historyService.createHistoricActivityInstanceQuery()
                 .processInstanceId(processInstanceId)
@@ -70,6 +76,7 @@ public class BackTargetResolver {
         }
     }
 
+    /** 解析目标节点的显示名称。 */
     public String resolveTargetNodeName(String processInstanceId, String targetNodeId) {
         BpmnModel model = repositoryService.getBpmnModel(
                 runtimeService.createProcessInstanceQuery()

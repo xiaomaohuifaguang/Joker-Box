@@ -8,6 +8,9 @@ import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
 import java.time.LocalDateTime;
 
+/**
+ * 启动流程命令，根据流程定义创建新的流程实例。
+ */
 public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 
     @Resource private RuntimeService runtimeService;

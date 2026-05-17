@@ -5,6 +5,9 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
+/**
+ * 驳回后任务分配策略枚举。
+ */
 @AllArgsConstructor
 @Getter
 public enum BackAssigneePolicyEnum {
@@ -17,6 +20,7 @@ public enum BackAssigneePolicyEnum {
 
     private final String description;
 
+    /** 按编码解析枚举，不存在返回 null。 */
     public static BackAssigneePolicyEnum of(String code) {
         if (code == null || code.isBlank()) {
             return null;

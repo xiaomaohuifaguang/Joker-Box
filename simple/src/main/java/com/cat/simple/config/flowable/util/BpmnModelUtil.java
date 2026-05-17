@@ -7,16 +7,21 @@ import org.flowable.engine.RepositoryService;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Component;
 
+/**
+ * BPMN 模型工具类，提供流程节点属性查询能力。
+ */
 @Component
 public class BpmnModelUtil {
 
     @Resource
     private RepositoryService repositoryService;
 
+    /** 判断任务是否为多实例节点。 */
     public boolean isMultiInstance(Task task) {
         return isMultiInstance(task.getProcessDefinitionId(), task.getTaskDefinitionKey());
     }
 
+    /** 按流程定义 ID 与节点 Key 判断是否为多实例节点。 */
     public boolean isMultiInstance(String processDefinitionId, String taskDefinitionKey) {
         BpmnModel model = repositoryService.getBpmnModel(processDefinitionId);
         if (model == null) return false;

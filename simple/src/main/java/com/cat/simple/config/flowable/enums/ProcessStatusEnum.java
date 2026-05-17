@@ -3,6 +3,9 @@ package com.cat.simple.config.flowable.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 流程实例状态枚举。
+ */
 @AllArgsConstructor
 @Getter
 public enum ProcessStatusEnum {

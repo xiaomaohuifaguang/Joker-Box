@@ -3,6 +3,9 @@ package com.cat.simple.config.flowable.variable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 流程变量名枚举，统一封装 BPMN 扩展元素与运行时变量的 key。
+ */
 @AllArgsConstructor
 @Getter
 public enum VariableNames {

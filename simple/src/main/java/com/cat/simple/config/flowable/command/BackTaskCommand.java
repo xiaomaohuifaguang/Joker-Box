@@ -10,6 +10,9 @@ import com.cat.simple.config.flowable.util.BpmnModelUtil;
 import jakarta.annotation.Resource;
 import org.flowable.task.api.Task;
 
+/**
+ * 驳回任务命令，将当前任务回退到指定或上一节点。
+ */
 public class BackTaskCommand extends ProcessCommand<Void> {
 
     @Resource private BackConfigReader backConfigReader;

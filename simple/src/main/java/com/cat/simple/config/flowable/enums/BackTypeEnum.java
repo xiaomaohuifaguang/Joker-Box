@@ -5,6 +5,9 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
+/**
+ * 驳回类型枚举，定义回退目标节点的选择方式。
+ */
 @AllArgsConstructor
 @Getter
 public enum BackTypeEnum {
@@ -17,6 +20,7 @@ public enum BackTypeEnum {
 
     private final String name;
 
+    /** 按编码解析枚举，不存在返回 null。 */
     public static BackTypeEnum of(String code) {
         if (code == null || code.isBlank()) {
             return null;

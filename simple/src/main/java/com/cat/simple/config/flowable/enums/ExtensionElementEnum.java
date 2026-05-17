@@ -3,6 +3,9 @@ package com.cat.simple.config.flowable.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * BPMN 扩展元素名枚举，对应流程设计器中的自定义配置项。
+ */
 @AllArgsConstructor
 @Getter
 public enum ExtensionElementEnum {

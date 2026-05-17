@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * 启动流程操作上下文，封装启动请求参数。
+ */
 @Data
 @AllArgsConstructor
 public class StartContext {

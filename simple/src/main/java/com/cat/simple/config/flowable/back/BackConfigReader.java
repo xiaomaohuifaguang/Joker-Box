@@ -14,6 +14,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+/**
+ * 驳回配置读取器，从任务变量中解析驳回相关配置与可选回退目标列表。
+ */
 @Component
 public class BackConfigReader {
 
@@ -26,6 +29,7 @@ public class BackConfigReader {
     @Resource
     private ProcessVariableStore variableStore;
 
+    /** 获取当前任务可回退的历史节点列表（去重）。 */
     public List<BackTargetNode> getAvailableBackTargets(String taskId) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) {
@@ -51,6 +55,7 @@ public class BackConfigReader {
         return new ArrayList<>(targets.values());
     }
 
+    /** 从任务变量读取驳回配置。 */
     public BackConfig getBackConfig(String taskId) {
         Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         if (task == null) {

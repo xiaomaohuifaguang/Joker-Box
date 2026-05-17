@@ -17,6 +17,9 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+/**
+ * 流程实例结束监听器，监听流程完成/取消事件并同步业务库状态。
+ */
 @Slf4j
 @Component
 public class ProcessInstanceEndListener implements FlowableEventListener {
@@ -25,6 +28,7 @@ public class ProcessInstanceEndListener implements FlowableEventListener {
     @Resource private ProcessInstanceMapper processInstanceMapper;
     @Resource private ProcessGuard guard;
 
+    /** 注册流程结束事件监听器。 */
     @PostConstruct
     public void register() {
         runtimeService.addEventListener(this,
@@ -33,6 +37,7 @@ public class ProcessInstanceEndListener implements FlowableEventListener {
                 FlowableEngineEventType.PROCESS_CANCELLED);
     }
 
+    /** 处理流程结束事件，更新业务库流程状态。 */
     @Override
     public void onEvent(FlowableEvent event) {
         if (!(event instanceof FlowableEngineEvent engineEvent)) {

@@ -3,6 +3,9 @@ package com.cat.simple.config.flowable.constant;
 import com.cat.simple.config.flowable.enums.ExtensionElementEnum;
 import com.cat.simple.config.flowable.variable.VariableNames;
 
+/**
+ * 流程引擎常量，汇总 BPMN 扩展元素名与回退变量前缀。
+ */
 public class ProcessConstants {
 
 

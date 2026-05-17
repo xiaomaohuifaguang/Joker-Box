@@ -6,6 +6,9 @@ import jakarta.annotation.Resource;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
 
+/**
+ * 通过任务命令，完成当前用户指派的审批任务。
+ */
 public class PassTaskCommand extends ProcessCommand<Void> {
 
     @Resource private TaskService taskService;

@@ -6,6 +6,9 @@ import jakarta.annotation.Resource;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
 
+/**
+ * 认领任务命令，当前候选人将任务指派给自己。
+ */
 public class ClaimTaskCommand extends ProcessCommand<Void> {
 
     @Resource private TaskService taskService;

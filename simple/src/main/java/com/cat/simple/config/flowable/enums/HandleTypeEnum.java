@@ -3,6 +3,9 @@ package com.cat.simple.config.flowable.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 流程操作类型枚举，记录用户对流程实例的处理动作。
+ */
 @AllArgsConstructor
 @Getter
 public enum HandleTypeEnum {

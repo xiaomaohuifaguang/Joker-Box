@@ -9,6 +9,9 @@ import org.flowable.engine.RuntimeService;
 import org.flowable.task.api.Task;
 import java.time.LocalDateTime;
 
+/**
+ * 拒绝任务命令，终止当前流程实例。
+ */
 public class RejectTaskCommand extends ProcessCommand<Void> {
 
     @Resource private RuntimeService runtimeService;

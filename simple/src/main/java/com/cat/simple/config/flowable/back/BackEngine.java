@@ -15,6 +15,9 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
+/**
+ * 驳回引擎，负责执行单实例与多实例任务的回退操作，包括状态迁移与任务重新分派。
+ */
 @Component
 public class BackEngine {
 
@@ -33,6 +36,7 @@ public class BackEngine {
     @Resource
     private ProcessVariableStore variableStore;
 
+    /** 单实例任务驳回到目标节点。 */
     public void backSingleInstance(ProcessInstance instance, Task task, String targetNodeId,
                                     String currentUserId, String remark, String backAssigneePolicy,
                                     String targetNodeName) {
@@ -77,6 +81,7 @@ public class BackEngine {
         }
     }
 
+    /** 多实例任务整体驳回到目标节点。 */
     public void backMultiInstanceAllBack(ProcessInstance instance, Task task, String targetNodeId,
                                           String currentUserId, String remark, String backAssigneePolicy,
                                           String targetNodeName) {
@@ -135,6 +140,7 @@ public class BackEngine {
         }
     }
 
+    /** 按策略为回退后的新任务分派办理人。 */
     public void assignBackTasks(List<Task> newTasks, String backAssigneePolicy,
                                  ProcessInstance instance, String targetNodeId,
                                  List<String> prevRoundHandlers) {
