@@ -47,6 +47,7 @@
                 WHERE 1 = 2
             </otherwise>
         </choose>
+        ORDER BY cpi.update_time desc
     </select>
     <select id="selectInfoById" resultType="com.cat.common.entity.process.ProcessInstance">
         SELECT cpi.*, cu.nickname createByName,cpd.id processDefinitionId, cpd.process_name processDefinitionName FROM cat_process_instance cpi
