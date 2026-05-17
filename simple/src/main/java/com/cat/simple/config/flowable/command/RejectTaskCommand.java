@@ -15,6 +15,7 @@ public class RejectTaskCommand extends ProcessCommand<Void> {
     @Resource private com.cat.simple.mapper.ProcessInstanceMapper processInstanceMapper;
 
     private final ProcessHandleParam param;
+    private Task task;
 
     public RejectTaskCommand(ProcessHandleParam param) {
         this.param = param;
@@ -29,7 +30,7 @@ public class RejectTaskCommand extends ProcessCommand<Void> {
     @Override
     protected Void doExecute() {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Task task = guard.getTask(param.getTaskId());
+        this.task = guard.getTask(param.getTaskId());
         String remark = param.getRemark() != null && !param.getRemark().isBlank()
                 ? param.getRemark() : "拒绝";
         runtimeService.deleteProcessInstance(instance.getProcessInstanceId(), remark);
@@ -38,7 +39,6 @@ public class RejectTaskCommand extends ProcessCommand<Void> {
 
     @Override
     protected void record(Void result) {
-        Task task = guard.getTask(param.getTaskId());
         recorder.recordReject(param, task);
     }
 

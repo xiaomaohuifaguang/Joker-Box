@@ -11,6 +11,7 @@ public class ClaimTaskCommand extends ProcessCommand<Void> {
     @Resource private TaskService taskService;
 
     private final ProcessHandleParam param;
+    private Task task;
 
     public ClaimTaskCommand(ProcessHandleParam param) {
         this.param = param;
@@ -24,14 +25,13 @@ public class ClaimTaskCommand extends ProcessCommand<Void> {
 
     @Override
     protected Void doExecute() {
-        Task task = guard.getTask(param.getTaskId());
         taskService.claim(param.getTaskId(), guard.getCurrentUserId());
+        this.task = guard.getTask(param.getTaskId());
         return null;
     }
 
     @Override
     protected void record(Void result) {
-        Task task = guard.getTask(param.getTaskId());
         recorder.recordClaim(param, task);
     }
 
@@ -43,7 +43,6 @@ public class ClaimTaskCommand extends ProcessCommand<Void> {
 
     @Override
     protected void afterHook(Void result) {
-        Task task = guard.getTask(param.getTaskId());
         lifecycleHook.afterClaim(guard.getInstance(param.getProcessInstanceId()), task);
     }
 }

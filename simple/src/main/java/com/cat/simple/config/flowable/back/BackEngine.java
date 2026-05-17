@@ -143,37 +143,18 @@ public class BackEngine {
         boolean targetIsMultiInstance = bpmnModelUtil.isMultiInstance(
                 newTasks.get(0).getProcessDefinitionId(), targetNodeId);
 
-        if (targetIsMultiInstance && newTasks.size() > 1) {
-            if (BackAssigneePolicyEnum.REASSIGN.getCode().equals(backAssigneePolicy)) {
-                // REASSIGN：按当前候选配置分配，不干预
-                for (Task newTask : newTasks) {
-                    String assignee = backAssigneeResolver.resolveByCandidateConfig(newTask);
-                    if (assignee != null) {
-                        taskService.setAssignee(newTask.getId(), assignee);
-                    }
-                }
-            } else {
-                // LAST_HANDLER / AUTO：按历史处理人分配
-                List<String> assignees = prevRoundHandlers.isEmpty()
-                        ? backAssigneeResolver.findHistoricHandlers(instance.getProcessInstanceId(), targetNodeId)
-                        : prevRoundHandlers;
-                for (int i = 0; i < newTasks.size(); i++) {
-                    String assignee = assignees.isEmpty()
-                            ? null : assignees.get(i % assignees.size());
-                    if (assignee == null) {
-                        assignee = backAssigneeResolver.resolveByCandidateConfig(newTasks.get(i));
-                    }
-                    if (assignee != null) {
-                        taskService.setAssignee(newTasks.get(i).getId(), assignee);
-                    }
-                }
-            }
-        } else {
-            for (Task newTask : newTasks) {
-                String assignee = backAssigneeResolver.resolveAssignee(newTask, backAssigneePolicy, instance);
-                if (assignee != null) {
-                    taskService.setAssignee(newTask.getId(), assignee);
-                }
+        if (targetIsMultiInstance) {
+            // 多实例目标节点：由 CandidateResolver + 多实例处理器自动处理 assignee
+            // 干预时已通过 __back_assignees_{targetNodeId} 变量注入历史处理人
+            // 不干预时 CandidateResolver 按候选配置解析
+            return;
+        }
+
+        // 单实例目标节点：按策略手动设置 assignee
+        for (Task newTask : newTasks) {
+            String assignee = backAssigneeResolver.resolveAssignee(newTask, backAssigneePolicy, instance);
+            if (assignee != null) {
+                taskService.setAssignee(newTask.getId(), assignee);
             }
         }
     }

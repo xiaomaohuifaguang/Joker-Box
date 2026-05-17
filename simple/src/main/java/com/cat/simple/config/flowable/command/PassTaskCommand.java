@@ -11,6 +11,7 @@ public class PassTaskCommand extends ProcessCommand<Void> {
     @Resource private TaskService taskService;
 
     private final ProcessHandleParam param;
+    private Task task;
 
     public PassTaskCommand(ProcessHandleParam param) {
         this.param = param;
@@ -24,14 +25,13 @@ public class PassTaskCommand extends ProcessCommand<Void> {
 
     @Override
     protected Void doExecute() {
-        Task task = guard.getTask(param.getTaskId());
+        this.task = guard.getTask(param.getTaskId());
         taskService.complete(task.getId());
         return null;
     }
 
     @Override
     protected void record(Void result) {
-        Task task = guard.getTask(param.getTaskId());
         recorder.recordPass(param, task);
     }
 
