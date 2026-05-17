@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import com.cat.common.entity.Page;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -27,4 +28,8 @@ public interface ProcessHandleInfoMapper extends BaseMapper<ProcessHandleInfo> {
 
    Integer selectMaxRound(@Param("processInstanceId") Integer processInstanceId,
                           @Param("taskDefinitionKey") String taskDefinitionKey);
+
+   LocalDateTime selectLatestHandleTime(@Param("processInstanceId") Integer processInstanceId,
+                                         @Param("taskDefinitionKey") String taskDefinitionKey,
+                                         @Param("round") Integer round);
 }

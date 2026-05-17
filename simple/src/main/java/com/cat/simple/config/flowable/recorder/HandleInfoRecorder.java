@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 @Component
 public class HandleInfoRecorder {
@@ -28,7 +30,7 @@ public class HandleInfoRecorder {
 
     public void recordClaim(ProcessHandleParam param, Task task) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer round = resolveRound(instance.getId(), task.getTaskDefinitionKey());
+        Integer round = resolveRound(instance.getId(), task);
         String remark = StringUtils.hasText(param.getRemark())
                 ? param.getRemark() : HandleTypeEnum.CLAIM.getName();
         insert(buildBase(instance, guard.getCurrentUserId())
@@ -42,7 +44,7 @@ public class HandleInfoRecorder {
 
     public void recordPass(ProcessHandleParam param, Task task) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer round = resolveRound(instance.getId(), task.getTaskDefinitionKey());
+        Integer round = resolveRound(instance.getId(), task);
         String remark = StringUtils.hasText(param.getRemark())
                 ? param.getRemark() : HandleTypeEnum.PASS.getName();
         insert(buildBase(instance, guard.getCurrentUserId())
@@ -56,7 +58,7 @@ public class HandleInfoRecorder {
 
     public void recordReject(ProcessHandleParam param, Task task) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer round = resolveRound(instance.getId(), task.getTaskDefinitionKey());
+        Integer round = resolveRound(instance.getId(), task);
         String remark = StringUtils.hasText(param.getRemark())
                 ? param.getRemark() : HandleTypeEnum.REJECT.getName();
         insert(buildBase(instance, guard.getCurrentUserId())
@@ -71,18 +73,17 @@ public class HandleInfoRecorder {
     public void recordBack(ProcessHandleParam param, Task task,
                            String targetNodeId, String targetNodeName) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer maxRound = processHandleInfoMapper.selectMaxRound(instance.getId(), targetNodeId);
-        int newRound = (maxRound == null) ? 1 : maxRound + 1;
+        Integer round = resolveRound(instance.getId(), task);
         String remark = StringUtils.hasText(param.getRemark()) ? param.getRemark() : "驳回";
         String extra = String.format("{\"targetNodeId\":\"%s\",\"targetNodeName\":\"%s\"}",
                 targetNodeId, targetNodeName != null ? targetNodeName : "");
         insert(buildBase(instance, guard.getCurrentUserId())
                 .setTaskId(task.getId())
                 .setTaskName(task.getName())
-                .setTaskDefinitionKey(targetNodeId)
+                .setTaskDefinitionKey(task.getTaskDefinitionKey())
                 .setHandleType(HandleTypeEnum.BACK.getCode())
                 .setRemark(remark)
-                .setRound(newRound)
+                .setRound(round)
                 .setExtra(extra));
     }
 
@@ -93,9 +94,23 @@ public class HandleInfoRecorder {
                 .setHandleTime(LocalDateTime.now());
     }
 
-    private Integer resolveRound(Integer processInstanceId, String taskDefinitionKey) {
+    private Integer resolveRound(Integer processInstanceId, Task task) {
+        String taskDefinitionKey = task.getTaskDefinitionKey();
         Integer max = processHandleInfoMapper.selectMaxRound(processInstanceId, taskDefinitionKey);
-        return max != null ? max : 1;
+        if (max == null) {
+            return 1;
+        }
+        LocalDateTime latest = processHandleInfoMapper.selectLatestHandleTime(
+                processInstanceId, taskDefinitionKey, max);
+        if (latest == null) {
+            return max;
+        }
+        Date createTime = task.getCreateTime();
+        if (createTime == null) {
+            return max;
+        }
+        LocalDateTime taskCreate = createTime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        return taskCreate.isAfter(latest) ? max + 1 : max;
     }
 
     private void insert(ProcessHandleInfo info) {

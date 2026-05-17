@@ -12,6 +12,7 @@ import com.cat.simple.process.mapper.ProcessInstanceMapper;
 import com.cat.simple.process.mapper.ProcessHandleInfoMapper;
 import com.cat.simple.process.service.ProcessInstanceService;
 import jakarta.annotation.Resource;
+import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private ProcessHandleInfoMapper processHandleInfoMapper;
     @Resource private BackConfigReader backConfigReader;
     @Resource private BackTargetResolver backTargetResolver;
+    @Resource private TaskService taskService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -53,7 +55,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         List<ProcessHandleInfo> handleList =
                 processHandleInfoMapper.selectDetailListByProcessInstanceId(instance.getId());
         instance.setProcessHandleInfoList(handleList);
-        instance.setTimeline(buildTimeline(handleList));
+        instance.setTimeline(buildTimeline(handleList, instance));
 
         if (StringUtils.hasText(taskId)) {
             Task task = guard.assertTaskAssignee(taskId);
@@ -63,39 +65,89 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         return instance;
     }
 
-    private List<ProcessTimelineNode> buildTimeline(List<ProcessHandleInfo> list) {
-        if (list == null || list.isEmpty()) {
-            return List.of();
+    private List<ProcessTimelineNode> buildTimeline(List<ProcessHandleInfo> list, ProcessInstance instance) {
+        List<ProcessTimelineNode> timeline = new ArrayList<>();
+        if (list != null && !list.isEmpty()) {
+            timeline = list.stream()
+                    .collect(Collectors.groupingBy(h -> {
+                        String nodeKey = h.getTaskDefinitionKey() != null ? h.getTaskDefinitionKey() : "_start";
+                        int round = h.getRound() != null ? h.getRound() : 1;
+                        return nodeKey + "#" + round;
+                    }))
+                    .values().stream()
+                    .map(group -> {
+                        group.sort(Comparator.comparing(ProcessHandleInfo::getHandleTime,
+                                Comparator.nullsLast(Comparator.naturalOrder())));
+                        ProcessHandleInfo first = group.get(0);
+                        String nodeId = first.getTaskDefinitionKey() != null ? first.getTaskDefinitionKey() : "_start";
+                        ProcessTimelineNode node = new ProcessTimelineNode();
+                        node.setNodeId(nodeId);
+                        node.setNodeName(first.getTaskName() != null ? first.getTaskName()
+                                : ("_start".equals(nodeId) ? "申请" : nodeId));
+                        node.setRound(first.getRound() != null ? first.getRound() : 1);
+                        node.setHandlers(group);
+                        node.setStartTime(first.getHandleTime());
+                        node.setEndTime(group.get(group.size() - 1).getHandleTime());
+                        boolean hasEndAction = group.stream()
+                                .anyMatch(h -> h.getHandleType() != null
+                                        && Set.of("pass", "reject", "back", "apply").contains(h.getHandleType()));
+                        node.setNodeStatus(hasEndAction ? "completed" : "active");
+                        return node;
+                    })
+                    .collect(Collectors.toList());
         }
-        return list.stream()
-                .collect(Collectors.groupingBy(h -> {
-                    String key = h.getTaskDefinitionKey() != null ? h.getTaskDefinitionKey() : "_start";
-                    int round = h.getRound() != null ? h.getRound() : 1;
-                    return key + "#" + round;
-                }))
-                .values().stream()
-                .map(group -> {
-                    group.sort(Comparator.comparing(ProcessHandleInfo::getHandleTime,
-                            Comparator.nullsLast(Comparator.naturalOrder())));
-                    ProcessHandleInfo first = group.get(0);
-                    String nodeId = first.getTaskDefinitionKey() != null ? first.getTaskDefinitionKey() : "_start";
-                    ProcessTimelineNode node = new ProcessTimelineNode();
-                    node.setNodeId(nodeId);
-                    node.setNodeName(first.getTaskName() != null ? first.getTaskName()
-                            : ("_start".equals(nodeId) ? "申请" : nodeId));
-                    node.setRound(first.getRound() != null ? first.getRound() : 1);
-                    node.setHandlers(group);
-                    node.setStartTime(first.getHandleTime());
-                    node.setEndTime(group.get(group.size() - 1).getHandleTime());
-                    boolean hasEndAction = group.stream()
-                            .anyMatch(h -> h.getHandleType() != null
-                                    && Set.of("pass", "reject", "back").contains(h.getHandleType()));
-                    node.setNodeStatus(hasEndAction ? "completed" : "active");
-                    return node;
-                })
-                .sorted(Comparator.comparing(ProcessTimelineNode::getStartTime,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
-                .toList();
+
+        // 拼接待办节点：查询 Flowable 当前活跃任务，补全尚未产生 handle 记录的节点
+        if (instance != null && StringUtils.hasText(instance.getProcessInstanceId())) {
+            List<org.flowable.task.api.Task> activeTasks = taskService.createTaskQuery()
+                    .processInstanceId(instance.getProcessInstanceId())
+                    .list();
+            for (org.flowable.task.api.Task task : activeTasks) {
+                String nodeId = task.getTaskDefinitionKey();
+                if (nodeId == null) continue;
+                Integer round = resolveRoundForActiveTask(instance.getId(), task);
+                String key = nodeId + "#" + round;
+                boolean exists = timeline.stream()
+                        .anyMatch(n -> nodeId.equals(n.getNodeId()) && round.equals(n.getRound()));
+                if (!exists) {
+                    ProcessTimelineNode pending = new ProcessTimelineNode();
+                    pending.setNodeId(nodeId);
+                    pending.setNodeName(task.getName() != null ? task.getName() : nodeId);
+                    pending.setRound(round);
+                    pending.setNodeStatus("active");
+                    pending.setHandlers(List.of());
+                    if (task.getCreateTime() != null) {
+                        pending.setStartTime(task.getCreateTime().toInstant()
+                                .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
+                    }
+                    timeline.add(pending);
+                }
+            }
+        }
+
+//        timeline.sort(Comparator.comparing(ProcessTimelineNode::getStartTime,
+//                Comparator.nullsLast(Comparator.naturalOrder())));
+        return timeline;
+    }
+
+    private Integer resolveRoundForActiveTask(Integer processInstanceId, org.flowable.task.api.Task task) {
+        String taskDefinitionKey = task.getTaskDefinitionKey();
+        Integer max = processHandleInfoMapper.selectMaxRound(processInstanceId, taskDefinitionKey);
+        if (max == null) {
+            return 1;
+        }
+        java.time.LocalDateTime latest = processHandleInfoMapper.selectLatestHandleTime(
+                processInstanceId, taskDefinitionKey, max);
+        if (latest == null) {
+            return max;
+        }
+        java.util.Date createTime = task.getCreateTime();
+        if (createTime == null) {
+            return max;
+        }
+        java.time.LocalDateTime taskCreate = createTime.toInstant()
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+        return taskCreate.isAfter(latest) ? max + 1 : max;
     }
 
     @Override

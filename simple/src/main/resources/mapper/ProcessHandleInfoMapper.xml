@@ -17,4 +17,10 @@
         WHERE process_instance_id = #{processInstanceId}
           AND task_definition_key = #{taskDefinitionKey}
     </select>
+    <select id="selectLatestHandleTime" resultType="java.time.LocalDateTime">
+        SELECT MAX(handle_time) FROM cat_process_handle_info
+        WHERE process_instance_id = #{processInstanceId}
+          AND task_definition_key = #{taskDefinitionKey}
+          AND round = #{round}
+    </select>
 </mapper>
