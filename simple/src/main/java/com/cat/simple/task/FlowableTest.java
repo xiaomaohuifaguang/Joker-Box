@@ -2,7 +2,7 @@ package com.cat.simple.task;
 
 import com.cat.common.entity.DTO;
 import com.cat.common.utils.flowable.FlowableUtils;
-import com.cat.simple.service.ProcessInstanceService;
+import com.cat.simple.process.service.ProcessInstanceService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
@@ -95,24 +95,24 @@ public class FlowableTest {
         System.out.println(response);
     }
 
-//    @PostConstruct
+    @PostConstruct
     private void test1() throws Exception {
-        clearAll();
+//        clearAll();
 //
-        createDeployment();
+//        createDeployment();
 
-        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("Process_p9q6vjdkwp");
+//        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("Process_p9q6vjdkwp");
 
 
-        List<Task> list = taskService.createTaskQuery()
-                .taskCandidateUser("1")  // 核心方法：查询我是候选人的任务
-                .list();
+//        List<Task> list = taskService.createTaskQuery()
+//                .taskCandidateUser("1")  // 核心方法：查询我是候选人的任务
+//                .list();
 //        List<Task> list = taskService.createTaskQuery().processInstanceId(processInstance.getProcessInstanceId()).list();
 
 //        taskService.complete(list.get(0).getId());
 //        taskService.complete(list.get(1).getId());
 
-        System.out.println(list.size());
+//        System.out.println(list.size());
 //        createDeployment();
 //        createDeployment();
 //        createDeployment();

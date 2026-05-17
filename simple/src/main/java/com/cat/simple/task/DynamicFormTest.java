@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.dynamicForm.DynamicFormField;
 import com.cat.common.entity.dynamicForm.DynamicFormFieldType;
 import com.cat.common.entity.dynamicForm.DynamicFormOption;
-import com.cat.simple.mapper.DynamicFormFieldMapper;
+import com.cat.simple.form.mapper.DynamicFormFieldMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;

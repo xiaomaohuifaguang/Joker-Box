@@ -3,7 +3,7 @@ package com.cat.simple.task;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.WebLog;
 import com.cat.common.utils.datetime.DateTimeUtils;
-import com.cat.simple.mapper.WebLogMapper;
+import com.cat.simple.log.mapper.WebLogMapper;
 import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
