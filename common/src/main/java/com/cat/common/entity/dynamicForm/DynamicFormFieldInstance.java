@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler;
+import com.cat.common.handler.DefaultValueTypeHandler;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -40,7 +41,7 @@ public class DynamicFormFieldInstance implements Serializable {
     private String formInstanceId;
 
     @Schema(description = "真实值 包括不限于 输入框 选择框 开关等")
-    @TableField(typeHandler = Fastjson2TypeHandler.class)
+    @TableField(typeHandler = DefaultValueTypeHandler.class)
     private Object val;
 
     @Schema(description = "版本")

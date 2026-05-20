@@ -662,65 +662,114 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
         for (DynamicFormField field : fields) {
             Object value = data == null ? null : data.get(field.getFieldId());
-            String strVal = value == null ? null : value.toString();
 
             LinkageValidator.FieldEffect effect = effects.get(field.getFieldId());
             boolean hidden = effect != null && !effect.visible();
             boolean disabled = effect != null && effect.disabled();
 
-            if (!hidden && !disabled && "1".equals(field.getRequired())
-                    && !StringUtils.hasText(strVal)) {
-                throw new IllegalArgumentException(field.getTitle() + " 必填");
-            }
-
-            if (!StringUtils.hasText(strVal) || hidden || disabled) {
+            if (hidden || disabled) {
                 continue;
             }
 
-            if (field.getMinLength() != null && strVal.length() < field.getMinLength()) {
-                throw new IllegalArgumentException(
-                        field.getTitle() + " 长度不能小于 " + field.getMinLength());
-            }
-            if (field.getMaxLength() != null && strVal.length() > field.getMaxLength()) {
-                throw new IllegalArgumentException(
-                        field.getTitle() + " 长度不能大于 " + field.getMaxLength());
-            }
-
-            if (field.getType() == DynamicFormFieldType.NUMBER) {
-                try {
-                    double num = Double.parseDouble(strVal);
-                    if (field.getMin() != null && num < field.getMin()) {
-                        throw new IllegalArgumentException(
-                                field.getTitle() + " 不能小于 " + field.getMin());
+            switch (field.getType()) {
+                case MULTISELECT, CHECKBOX, MULTICASCADER -> {
+                    List<?> arr = extractList(value);
+                    if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 必填");
                     }
-                    if (field.getMax() != null && num > field.getMax()) {
-                        throw new IllegalArgumentException(
-                                field.getTitle() + " 不能大于 " + field.getMax());
+                    if (isEmptyList(arr)) {
+                        continue;
                     }
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException(field.getTitle() + " 必须为数字");
+                    if (field.getMin() != null && arr.size() < field.getMin()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 至少选择 " + field.getMin() + " 项");
+                    }
+                    if (field.getMax() != null && arr.size() > field.getMax()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 最多选择 " + field.getMax() + " 项");
+                    }
                 }
-            }
-
-            String effectivePattern = effect != null && effect.pattern() != null
-                    ? effect.pattern() : field.getPattern();
-            String effectivePatternTips = effect != null && effect.patternTips() != null
-                    ? effect.patternTips() : field.getPatternTips();
-
-            if (StringUtils.hasText(effectivePattern)) {
-                try {
-                    if (!Pattern.matches(effectivePattern, strVal)) {
-                        throw new IllegalArgumentException(
-                                StringUtils.hasText(effectivePatternTips)
-                                        ? effectivePatternTips
-                                        : field.getTitle() + " 格式不正确");
+                case UPLOAD -> {
+                    List<?> arr = extractList(value);
+                    if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 必填");
                     }
-                } catch (PatternSyntaxException e) {
-                    throw new IllegalArgumentException(
-                            field.getTitle() + " 正则表达式配置错误");
+                    if (isEmptyList(arr)) {
+                        continue;
+                    }
+                    if (field.getMinLength() != null && arr.size() < field.getMinLength()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 至少上传 " + field.getMinLength() + " 个文件");
+                    }
+                    if (field.getMaxLength() != null && arr.size() > field.getMaxLength()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 最多上传 " + field.getMaxLength() + " 个文件");
+                    }
+                }
+                default -> {
+                    String strVal = value == null ? null : value.toString();
+                    if ("1".equals(field.getRequired()) && !StringUtils.hasText(strVal)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 必填");
+                    }
+                    if (!StringUtils.hasText(strVal)) {
+                        continue;
+                    }
+                    if (field.getMinLength() != null && strVal.length() < field.getMinLength()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 长度不能小于 " + field.getMinLength());
+                    }
+                    if (field.getMaxLength() != null && strVal.length() > field.getMaxLength()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 长度不能大于 " + field.getMaxLength());
+                    }
+                    if (field.getType() == DynamicFormFieldType.NUMBER) {
+                        try {
+                            double num = Double.parseDouble(strVal);
+                            if (field.getMin() != null && num < field.getMin()) {
+                                throw new IllegalArgumentException(
+                                        field.getTitle() + " 不能小于 " + field.getMin());
+                            }
+                            if (field.getMax() != null && num > field.getMax()) {
+                                throw new IllegalArgumentException(
+                                        field.getTitle() + " 不能大于 " + field.getMax());
+                            }
+                        } catch (NumberFormatException e) {
+                            throw new IllegalArgumentException(field.getTitle() + " 必须为数字");
+                        }
+                    }
+
+                    String effectivePattern = effect != null && effect.pattern() != null
+                            ? effect.pattern() : field.getPattern();
+                    String effectivePatternTips = effect != null && effect.patternTips() != null
+                            ? effect.patternTips() : field.getPatternTips();
+
+                    if (StringUtils.hasText(effectivePattern)) {
+                        try {
+                            if (!Pattern.matches(effectivePattern, strVal)) {
+                                throw new IllegalArgumentException(
+                                        StringUtils.hasText(effectivePatternTips)
+                                                ? effectivePatternTips
+                                                : field.getTitle() + " 格式不正确");
+                            }
+                        } catch (PatternSyntaxException e) {
+                            throw new IllegalArgumentException(
+                                    field.getTitle() + " 正则表达式配置错误");
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private List<?> extractList(Object value) {
+        if (value instanceof List) {
+            return (List<?>) value;
+        }
+        return Collections.emptyList();
+    }
+
+    private boolean isEmptyList(List<?> list) {
+        return list == null || list.isEmpty();
     }
 
     // ========== 发布前完整验证 ==========
@@ -874,6 +923,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         String title = field.getTitle();
         String fieldId = field.getFieldId();
         DynamicFormFieldType type = field.getType();
+        String defaultValueStr = field.getDefaultValue() == null ? null : field.getDefaultValue().toString();
 
         // fieldId 校验
         if (!StringUtils.hasText(fieldId)) {
@@ -945,9 +995,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 if (field.getMin() != null && field.getMax() != null && field.getMax() < field.getMin()) {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最大值不能小于最小值");
                 }
-                if (StringUtils.hasText(field.getDefaultValue())) {
+                if (StringUtils.hasText(defaultValueStr)) {
                     try {
-                        Double.parseDouble(field.getDefaultValue());
+                        Double.parseDouble(defaultValueStr);
                     } catch (NumberFormatException e) {
                         throw new IllegalArgumentException("字段 \"" + title + "\" 默认值必须是数字");
                     }
@@ -958,9 +1008,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
                 }
                 validateOptions(field.getOptions(), title);
-                if (StringUtils.hasText(field.getDefaultValue())) {
+                if (StringUtils.hasText(defaultValueStr)) {
                     boolean match = field.getOptions().stream()
-                            .anyMatch(o -> field.getDefaultValue().equals(o.getValue()));
+                            .anyMatch(o -> defaultValueStr.equals(o.getValue()));
                     if (!match) {
                         throw new IllegalArgumentException("字段 \"" + title + "\" 默认值不在选项列表中");
                     }
@@ -992,8 +1042,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 // 注：DATERANGE 当前未在 DynamicFormFieldType 枚举中定义
             }
             case SWITCH -> {
-                if (StringUtils.hasText(field.getDefaultValue())) {
-                    String dv = field.getDefaultValue().trim().toLowerCase();
+                if (StringUtils.hasText(defaultValueStr)) {
+                    String dv = defaultValueStr.trim().toLowerCase();
                     if (!"true".equals(dv) && !"false".equals(dv) && !"1".equals(dv) && !"0".equals(dv)) {
                         throw new IllegalArgumentException("字段 \"" + title + "\" 默认值必须是布尔值");
                     }
@@ -1022,9 +1072,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 if (field.getMax() != null && field.getMax() < 1) {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最大分值不能小于1");
                 }
-                if (StringUtils.hasText(field.getDefaultValue())) {
+                if (StringUtils.hasText(defaultValueStr)) {
                     try {
-                        double val = Double.parseDouble(field.getDefaultValue());
+                        double val = Double.parseDouble(defaultValueStr);
                         if (val < 0 || (field.getMax() != null && val > field.getMax())) {
                             throw new IllegalArgumentException("字段 \"" + title + "\" 默认值超出评分范围");
                         }
@@ -1037,9 +1087,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 if (field.getMax() != null && field.getMin() != null && field.getMax() <= field.getMin()) {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最大值必须大于最小值");
                 }
-                if (StringUtils.hasText(field.getDefaultValue())) {
+                if (StringUtils.hasText(defaultValueStr)) {
                     try {
-                        double val = Double.parseDouble(field.getDefaultValue());
+                        double val = Double.parseDouble(defaultValueStr);
                         if ((field.getMin() != null && val < field.getMin())
                                 || (field.getMax() != null && val > field.getMax())) {
                             throw new IllegalArgumentException("字段 \"" + title + "\" 默认值超出滑块范围");
