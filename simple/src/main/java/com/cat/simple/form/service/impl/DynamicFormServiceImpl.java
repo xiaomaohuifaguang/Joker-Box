@@ -435,6 +435,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             field.setCreateBy(createBy);
             field.setCreateTime(time);
             field.setUpdateTime(time);
+            if (field.getProps() == null) {
+                field.setProps(new java.util.HashMap<>());
+            }
         }
         dynamicFormFieldMapper.insert(fields);
     }
@@ -656,6 +659,86 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         }
     }
 
+    private Set<String> extractOptionValues(List<DynamicFormOption> options) {
+        if (CollectionUtils.isEmpty(options)) {
+            return Collections.emptySet();
+        }
+        return options.stream().map(DynamicFormOption::getValue).collect(Collectors.toSet());
+    }
+
+    private Set<String> extractCascaderValues(List<DynamicFormOption> options) {
+        Set<String> values = new HashSet<>();
+        if (CollectionUtils.isEmpty(options)) {
+            return values;
+        }
+        for (DynamicFormOption opt : options) {
+            values.add(opt.getValue());
+            values.addAll(extractCascaderValues(opt.getChildren()));
+        }
+        return values;
+    }
+
+    private void validateValueFormat(DynamicFormField field, String strVal) {
+        switch (field.getType()) {
+            case SELECT, RADIO -> {
+                Set<String> optionValues = extractOptionValues(field.getOptions());
+                if (!optionValues.contains(strVal)) {
+                    throw new IllegalArgumentException(
+                            field.getTitle() + " 选项值无效: " + strVal);
+                }
+            }
+            case CASCADER -> {
+                Set<String> optionValues = extractCascaderValues(field.getOptions());
+                if (!optionValues.contains(strVal)) {
+                    throw new IllegalArgumentException(
+                            field.getTitle() + " 选项值无效: " + strVal);
+                }
+            }
+            case SWITCH -> {
+                String sv = strVal.trim().toLowerCase();
+                if (!"true".equals(sv) && !"false".equals(sv)
+                        && !"1".equals(sv) && !"0".equals(sv)) {
+                    throw new IllegalArgumentException(
+                            field.getTitle() + " 值必须是布尔类型");
+                }
+            }
+            case RATE -> {
+                try {
+                    double num = Double.parseDouble(strVal);
+                    double max = field.getMax() != null ? field.getMax() : 5;
+                    if (num < 0 || num > max) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 评分值需在 0-" + max + " 之间");
+                    }
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException(
+                            field.getTitle() + " 评分值必须是数字");
+                }
+            }
+            case SLIDER -> {
+                try {
+                    double num = Double.parseDouble(strVal);
+                    if ((field.getMin() != null && num < field.getMin())
+                            || (field.getMax() != null && num > field.getMax())) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 滑块值需在 "
+                                        + field.getMin() + "-" + field.getMax() + " 之间");
+                    }
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException(
+                            field.getTitle() + " 滑块值必须是数字");
+                }
+            }
+            case COLOR -> {
+                if (!strVal.matches("^#[0-9A-Fa-f]{6}$")) {
+                    throw new IllegalArgumentException(
+                            field.getTitle() + " 颜色格式不正确，应为 #RRGGBB");
+                }
+            }
+            default -> {}
+        }
+    }
+
     private void validateFormData(List<DynamicFormField> fields, Map<String, Object> data,
                                   List<DynamicFormLinkageRule> rules) {
         Map<String, LinkageValidator.FieldEffect> effects = LinkageValidator.evalFieldEffects(rules, data);
@@ -672,7 +755,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             }
 
             switch (field.getType()) {
-                case MULTISELECT, CHECKBOX, MULTICASCADER -> {
+                case MULTISELECT, CHECKBOX -> {
                     List<?> arr = extractList(value);
                     if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
                         throw new IllegalArgumentException(field.getTitle() + " 必填");
@@ -687,6 +770,47 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (field.getMax() != null && arr.size() > field.getMax()) {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 最多选择 " + field.getMax() + " 项");
+                    }
+                    Set<String> optionValues = extractOptionValues(field.getOptions());
+                    for (Object item : arr) {
+                        if (!optionValues.contains(String.valueOf(item))) {
+                            throw new IllegalArgumentException(
+                                    field.getTitle() + " 包含无效选项值: " + item);
+                        }
+                    }
+                }
+                case MULTICASCADER -> {
+                    List<?> arr = extractList(value);
+                    if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 必填");
+                    }
+                    if (isEmptyList(arr)) {
+                        continue;
+                    }
+                    if (field.getMin() != null && arr.size() < field.getMin()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 至少选择 " + field.getMin() + " 项");
+                    }
+                    if (field.getMax() != null && arr.size() > field.getMax()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 最多选择 " + field.getMax() + " 项");
+                    }
+                    Set<String> optionValues = extractCascaderValues(field.getOptions());
+                    for (Object item : arr) {
+                        if (!optionValues.contains(String.valueOf(item))) {
+                            throw new IllegalArgumentException(
+                                    field.getTitle() + " 包含无效选项值: " + item);
+                        }
+                    }
+                }
+                case DATERANGE -> {
+                    List<?> arr = extractList(value);
+                    if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 必填");
+                    }
+                    if (!isEmptyList(arr) && arr.size() != 2) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 日期区间必须包含开始和结束两个日期");
                     }
                 }
                 case UPLOAD -> {
@@ -714,6 +838,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (!StringUtils.hasText(strVal)) {
                         continue;
                     }
+                    validateValueFormat(field, strVal);
                     if (field.getMinLength() != null && strVal.length() < field.getMinLength()) {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 长度不能小于 " + field.getMinLength());
@@ -836,9 +961,11 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     allFields.addAll(group.getFields());
                 }
             }
-        } else if (!CollectionUtils.isEmpty(form.getFormFields())) {
+        }
+        if (!CollectionUtils.isEmpty(form.getFormFields())) {
             allFields.addAll(form.getFormFields());
-        } else {
+        }
+        if (allFields.isEmpty()) {
             throw new IllegalArgumentException("至少需要配置一个表单字段");
         }
 
@@ -1039,7 +1166,21 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             }
             case DATE, DATETIME, TIME -> {
                 // defaultValue 为字符串，不做严格格式校验
-                // 注：DATERANGE 当前未在 DynamicFormFieldType 枚举中定义
+            }
+            case DATERANGE -> {
+                if (field.getDefaultValue() != null) {
+                    List<?> arr = extractList(field.getDefaultValue());
+                    if (arr.size() != 2) {
+                        throw new IllegalArgumentException(
+                                "字段 \"" + title + "\" 默认值必须是包含两个日期的数组");
+                    }
+                    for (Object item : arr) {
+                        if (!StringUtils.hasText(String.valueOf(item))) {
+                            throw new IllegalArgumentException(
+                                    "字段 \"" + title + "\" 默认日期值不能为空");
+                        }
+                    }
+                }
             }
             case SWITCH -> {
                 if (StringUtils.hasText(defaultValueStr)) {
@@ -1106,6 +1247,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     }
 
     private void validateOptions(List<DynamicFormOption> options, String fieldTitle) {
+        Set<String> values = new HashSet<>();
         for (DynamicFormOption opt : options) {
             if (!StringUtils.hasText(opt.getLabel()) || opt.getLabel().trim().isEmpty()) {
                 throw new IllegalArgumentException("字段 \"" + fieldTitle + "\" 选项标签不能为空");
@@ -1116,6 +1258,11 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             if (!StringUtils.hasText(opt.getValue())) {
                 throw new IllegalArgumentException("字段 \"" + fieldTitle + "\" 选项值不能为空");
             }
+            if (values.contains(opt.getValue())) {
+                throw new IllegalArgumentException(
+                        "字段 \"" + fieldTitle + "\" 选项值重复: " + opt.getValue());
+            }
+            values.add(opt.getValue());
         }
     }
 

@@ -115,7 +115,9 @@ public class DynamicFormField implements Serializable {
     @Schema(description = "排序")
     private Integer sort;
 
-
+    @Schema(description = "组件额外配置")
+    @TableField(typeHandler = Fastjson2TypeHandler.class)
+    private Object props;
 
     public boolean validate() {
         if (!StringUtils.hasText(this.title)) {

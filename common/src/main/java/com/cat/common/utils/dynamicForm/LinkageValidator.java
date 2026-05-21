@@ -124,7 +124,7 @@ public class LinkageValidator {
      */
     private static boolean evaluateNode(DynamicFormLinkageNode node, Map<String, Object> data) {
         if (node == null) {
-            return true;
+            return false;
         }
         // 叶子条件节点
         if ("CONDITION".equals(node.getNodeType())) {
@@ -169,7 +169,9 @@ public class LinkageValidator {
                 }
             }
             case "SET_SPAN" -> {
-                if (actionValue instanceof Map<?, ?> m) {
+                if (actionValue instanceof Number n) {
+                    effect.span = n.intValue();
+                } else if (actionValue instanceof Map<?, ?> m) {
                     Object v = m.get("span");
                     if (v instanceof Number n) {
                         effect.span = n.intValue();
@@ -185,17 +187,57 @@ public class LinkageValidator {
         String strActual = actual == null ? "" : actual.toString();
 
         return switch (condition) {
-            case "EQ"        -> Objects.equals(actual, expect);
-            case "NE"        -> !Objects.equals(actual, expect);
-            case "EMPTY"     -> !StringUtils.hasText(strActual);
-            case "NOT_EMPTY" -> StringUtils.hasText(strActual);
+            case "EQ"        -> Objects.equals(
+                    actual == null ? "" : actual.toString(),
+                    expect == null ? "" : expect.toString());
+            case "NE"        -> !Objects.equals(
+                    actual == null ? "" : actual.toString(),
+                    expect == null ? "" : expect.toString());
+            case "EMPTY"     -> isEmptyValue(actual);
+            case "NOT_EMPTY" -> !isEmptyValue(actual);
             case "GT", "LT", "GE", "LE" -> compareNumber(actual, condition, expect);
             case "IN"        -> {
+                // actual 为数组/集合时：判断任一元素是否在 expect 中
+                if (actual instanceof Collection<?> ac) {
+                    if (expect instanceof Collection<?> ec) yield ac.stream().anyMatch(ec::contains);
+                    if (expect instanceof Object[] earr) {
+                        List<?> elist = Arrays.asList(earr);
+                        yield ac.stream().anyMatch(elist::contains);
+                    }
+                    yield ac.stream().anyMatch(e -> Objects.equals(e, expect));
+                }
+                if (actual instanceof Object[] aarr) {
+                    List<?> alist = Arrays.asList(aarr);
+                    if (expect instanceof Collection<?> ec) yield alist.stream().anyMatch(ec::contains);
+                    if (expect instanceof Object[] earr) {
+                        List<?> elist = Arrays.asList(earr);
+                        yield alist.stream().anyMatch(elist::contains);
+                    }
+                    yield alist.stream().anyMatch(e -> Objects.equals(e, expect));
+                }
                 if (expect instanceof Collection<?> c) yield c.contains(actual);
                 if (expect instanceof Object[] arr) yield Arrays.asList(arr).contains(actual);
                 yield Objects.equals(actual, expect);
             }
             case "NOT_IN"    -> {
+                // actual 为数组/集合时：所有元素都不在 expect 中
+                if (actual instanceof Collection<?> ac) {
+                    if (expect instanceof Collection<?> ec) yield ac.stream().noneMatch(ec::contains);
+                    if (expect instanceof Object[] earr) {
+                        List<?> elist = Arrays.asList(earr);
+                        yield ac.stream().noneMatch(elist::contains);
+                    }
+                    yield ac.stream().noneMatch(e -> Objects.equals(e, expect));
+                }
+                if (actual instanceof Object[] aarr) {
+                    List<?> alist = Arrays.asList(aarr);
+                    if (expect instanceof Collection<?> ec) yield alist.stream().noneMatch(ec::contains);
+                    if (expect instanceof Object[] earr) {
+                        List<?> elist = Arrays.asList(earr);
+                        yield alist.stream().noneMatch(elist::contains);
+                    }
+                    yield alist.stream().noneMatch(e -> Objects.equals(e, expect));
+                }
                 if (expect instanceof Collection<?> c) yield !c.contains(actual);
                 if (expect instanceof Object[] arr) yield !Arrays.asList(arr).contains(actual);
                 yield !Objects.equals(actual, expect);
@@ -227,6 +269,15 @@ public class LinkageValidator {
         } catch (NumberFormatException ex) {
             return false;
         }
+    }
+
+    private static boolean isEmptyValue(Object value) {
+        if (value == null) return true;
+        if (value instanceof String s) return !StringUtils.hasText(s);
+        if (value instanceof Collection<?> c) return c.isEmpty();
+        if (value instanceof Object[] arr) return arr.length == 0;
+        String str = value.toString();
+        return !StringUtils.hasText(str);
     }
 
     private static class MutableEffect {
