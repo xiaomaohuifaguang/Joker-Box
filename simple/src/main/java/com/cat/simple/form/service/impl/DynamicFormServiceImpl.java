@@ -687,13 +687,6 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                             field.getTitle() + " 选项值无效: " + strVal);
                 }
             }
-            case CASCADER -> {
-                Set<String> optionValues = extractCascaderValues(field.getOptions());
-                if (!optionValues.contains(strVal)) {
-                    throw new IllegalArgumentException(
-                            field.getTitle() + " 选项值无效: " + strVal);
-                }
-            }
             case SWITCH -> {
                 String sv = strVal.trim().toLowerCase();
                 if (!"true".equals(sv) && !"false".equals(sv)
@@ -795,12 +788,22 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 最多选择 " + field.getMax() + " 项");
                     }
-                    Set<String> optionValues = extractCascaderValues(field.getOptions());
                     for (Object item : arr) {
-                        if (!optionValues.contains(String.valueOf(item))) {
+                        if (item instanceof List<?> path) {
+                            validateCascaderPath(field.getOptions(), path, field.getTitle());
+                        } else {
                             throw new IllegalArgumentException(
-                                    field.getTitle() + " 包含无效选项值: " + item);
+                                    field.getTitle() + " 值格式错误，每条选中项应为路径数组");
                         }
+                    }
+                }
+                case CASCADER -> {
+                    List<?> path = extractList(value);
+                    if ("1".equals(field.getRequired()) && isEmptyList(path)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 必填");
+                    }
+                    if (!isEmptyList(path)) {
+                        validateCascaderPath(field.getOptions(), path, field.getTitle());
                     }
                 }
                 case DATERANGE -> {
@@ -895,6 +898,41 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
     private boolean isEmptyList(List<?> list) {
         return list == null || list.isEmpty();
+    }
+
+    private void validateCascaderProps(DynamicFormField field) {
+        if (field.getProps() == null) {
+            return;
+        }
+        if (field.getProps() instanceof Map<?, ?> props) {
+            Object checkStrictly = props.get("checkStrictly");
+            if (checkStrictly != null && !(checkStrictly instanceof Boolean)) {
+                throw new IllegalArgumentException(
+                        "字段 \"" + field.getTitle() + "\" props.checkStrictly 必须是 boolean");
+            }
+        }
+    }
+
+    private void validateCascaderPath(List<DynamicFormOption> options, List<?> path, String title) {
+        if (CollectionUtils.isEmpty(path)) {
+            throw new IllegalArgumentException(title + " 级联选中路径不能为空");
+        }
+        List<DynamicFormOption> currentLevel = options;
+        for (Object node : path) {
+            String nodeValue = String.valueOf(node);
+            boolean found = false;
+            for (DynamicFormOption opt : currentLevel) {
+                if (nodeValue.equals(opt.getValue())) {
+                    found = true;
+                    currentLevel = opt.getChildren();
+                    break;
+                }
+            }
+            if (!found) {
+                throw new IllegalArgumentException(
+                        title + " 级联路径中存在无效节点: " + nodeValue);
+            }
+        }
     }
 
     // ========== 发布前完整验证 ==========
@@ -1158,11 +1196,34 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最多勾选数不能小于最少勾选数");
                 }
             }
-            case CASCADER, MULTICASCADER -> {
+            case CASCADER -> {
                 if (CollectionUtils.isEmpty(field.getOptions())) {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
                 }
                 validateCascaderOptions(field.getOptions(), title, 0);
+                if (field.getDefaultValue() != null) {
+                    List<?> path = extractList(field.getDefaultValue());
+                    validateCascaderPath(field.getOptions(), path, title);
+                }
+                validateCascaderProps(field);
+            }
+            case MULTICASCADER -> {
+                if (CollectionUtils.isEmpty(field.getOptions())) {
+                    throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
+                }
+                validateCascaderOptions(field.getOptions(), title, 0);
+                if (field.getDefaultValue() != null) {
+                    List<?> arr = extractList(field.getDefaultValue());
+                    for (Object item : arr) {
+                        if (item instanceof List<?> path) {
+                            validateCascaderPath(field.getOptions(), path, title);
+                        } else {
+                            throw new IllegalArgumentException(
+                                    "字段 \"" + title + "\" 默认值格式错误，应为路径数组的数组");
+                        }
+                    }
+                }
+                validateCascaderProps(field);
             }
             case DATE, DATETIME, TIME -> {
                 // defaultValue 为字符串，不做严格格式校验
@@ -1292,12 +1353,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 throw new IllegalArgumentException("联动规则 #" + idx + " 缺少目标字段");
             }
 
-            List<String> validActions = Arrays.asList(
-                    "SHOW", "HIDE", "REQUIRED", "DISABLED", "ENABLED",
-                    "SET_PATTERN", "SET_SPAN", "OPTION", "VALUE"
-            );
-            if (!validActions.contains(rule.getActionType())) {
-                throw new IllegalArgumentException("联动规则 #" + idx + " 动作类型无效: " + rule.getActionType());
+            if (rule.getActionType() == null) {
+                throw new IllegalArgumentException("联动规则 #" + idx + " 动作类型不能为空");
             }
 
             if (CollectionUtils.isEmpty(rule.getConditionTree())) {
@@ -1374,10 +1431,10 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     }
 
     private void validateActionValue(DynamicFormLinkageRule rule, int idx) {
-        String actionType = rule.getActionType();
+        DynamicFormLinkageActionType actionType = rule.getActionType();
         Object actionValue = rule.getActionValue();
 
-        if ("SET_PATTERN".equals(actionType) && actionValue != null) {
+        if (actionType == DynamicFormLinkageActionType.SET_PATTERN && actionValue != null) {
             String pattern;
             if (actionValue instanceof Map) {
                 pattern = (String) ((Map<?, ?>) actionValue).get("pattern");
@@ -1393,7 +1450,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             }
         }
 
-        if ("SET_SPAN".equals(actionType) && actionValue != null) {
+        if (actionType == DynamicFormLinkageActionType.SET_SPAN && actionValue != null) {
             int span;
             try {
                 if (actionValue instanceof Map) {
@@ -1409,13 +1466,13 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             }
         }
 
-        if ("REQUIRED".equals(actionType) && actionValue != null) {
+        if (actionType == DynamicFormLinkageActionType.REQUIRED && actionValue != null) {
             if (!(actionValue instanceof Boolean)) {
                 throw new IllegalArgumentException("联动规则 #" + idx + " actionValue 必须是布尔值");
             }
         }
 
-        if ("DISABLED".equals(actionType) && actionValue != null) {
+        if (actionType == DynamicFormLinkageActionType.DISABLED && actionValue != null) {
             if (!(actionValue instanceof Boolean)) {
                 throw new IllegalArgumentException("联动规则 #" + idx + " actionValue 必须是布尔值");
             }
@@ -1469,10 +1526,12 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
     private void validateActionCompatibility(List<DynamicFormLinkageRule> rules,
                                               Map<String, DynamicFormFieldType> fieldIdToTypeMap) {
-        Set<String> commonActions = new HashSet<>(Arrays.asList(
-                "SHOW", "HIDE", "REQUIRED", "DISABLED", "ENABLED", "SET_SPAN"));
-        Set<String> withValueActions = new HashSet<>(commonActions);
-        withValueActions.add("VALUE");
+        Set<DynamicFormLinkageActionType> commonActions = new HashSet<>(Arrays.asList(
+                DynamicFormLinkageActionType.SHOW, DynamicFormLinkageActionType.HIDE,
+                DynamicFormLinkageActionType.REQUIRED, DynamicFormLinkageActionType.DISABLED,
+                DynamicFormLinkageActionType.ENABLED, DynamicFormLinkageActionType.SET_SPAN));
+        Set<DynamicFormLinkageActionType> withValueActions = new HashSet<>(commonActions);
+        withValueActions.add(DynamicFormLinkageActionType.VALUE);
 
         for (int i = 0; i < rules.size(); i++) {
             DynamicFormLinkageRule rule = rules.get(i);
@@ -1482,17 +1541,17 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 continue;
             }
 
-            Set<String> validActions = new HashSet<>(withValueActions);
+            Set<DynamicFormLinkageActionType> validActions = new HashSet<>(withValueActions);
 
             if (fieldType == DynamicFormFieldType.UPLOAD) {
                 validActions = new HashSet<>(commonActions);
             } else if (fieldType == DynamicFormFieldType.INPUT || fieldType == DynamicFormFieldType.TEXTAREA) {
-                validActions.add("SET_PATTERN");
+                validActions.add(DynamicFormLinkageActionType.SET_PATTERN);
             } else if (Set.of(DynamicFormFieldType.SELECT, DynamicFormFieldType.MULTISELECT,
                     DynamicFormFieldType.RADIO, DynamicFormFieldType.CHECKBOX,
                     DynamicFormFieldType.CASCADER, DynamicFormFieldType.MULTICASCADER)
                     .contains(fieldType)) {
-                validActions.add("OPTION");
+                validActions.add(DynamicFormLinkageActionType.OPTION);
             }
 
             if (!validActions.contains(rule.getActionType())) {

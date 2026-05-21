@@ -35,6 +35,9 @@ public class DynamicFormOption implements Serializable {
     @Schema(description = "值")
     private String value;
 
+    @Schema(description = "值")
+    private Boolean visible = true;
+
     @Schema(description = "子集")
     private List<DynamicFormOption> children;
 

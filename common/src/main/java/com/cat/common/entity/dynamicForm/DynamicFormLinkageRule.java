@@ -48,7 +48,7 @@ public class DynamicFormLinkageRule implements Serializable {
     private String targetFieldId;
 
     @Schema(description = "动作类型：SHOW(显示)/HIDE(隐藏)/REQUIRED(必填)/OPTION(设置选项)/VALUE(设置值)/DISABLED(禁用)/ENABLED(启用)/SET_PATTERN(设置正则)/SET_SPAN(设置宽度)")
-    private String actionType;
+    private DynamicFormLinkageActionType actionType;
 
     @Schema(description = "动作参数")
     @TableField(typeHandler = JsonValueTypeHandler.class)

@@ -1,5 +1,6 @@
 package com.cat.common.utils.dynamicForm;
 
+import com.cat.common.entity.dynamicForm.DynamicFormLinkageActionType;
 import com.cat.common.entity.dynamicForm.DynamicFormLinkageNode;
 import com.cat.common.entity.dynamicForm.DynamicFormLinkageRule;
 import org.springframework.util.CollectionUtils;
@@ -149,26 +150,29 @@ public class LinkageValidator {
         return isAnd; // AND: 全通过返回 true；OR: 全不通过返回 false
     }
 
-    private static void applyAction(MutableEffect effect, String actionType, Object actionValue) {
+    private static void applyAction(MutableEffect effect, DynamicFormLinkageActionType actionType, Object actionValue) {
+        if (actionType == null) {
+            return;
+        }
         switch (actionType) {
-            case "SHOW"   -> effect.visible = true;
-            case "HIDE"   -> effect.visible = false;
-            case "REQUIRED" -> {
+            case SHOW   -> effect.visible = true;
+            case HIDE   -> effect.visible = false;
+            case REQUIRED -> {
                 boolean required = actionValue == null || !Boolean.FALSE.equals(actionValue);
                 effect.required = required;
             }
-            case "DISABLED" -> {
+            case DISABLED -> {
                 boolean disabled = actionValue == null || !Boolean.FALSE.equals(actionValue);
                 effect.disabled = disabled;
             }
-            case "ENABLED"  -> effect.disabled = false;
-            case "SET_PATTERN" -> {
+            case ENABLED  -> effect.disabled = false;
+            case SET_PATTERN -> {
                 if (actionValue instanceof Map<?, ?> m) {
                     effect.pattern = (String) m.get("pattern");
                     effect.patternTips = (String) m.get("patternTips");
                 }
             }
-            case "SET_SPAN" -> {
+            case SET_SPAN -> {
                 if (actionValue instanceof Number n) {
                     effect.span = n.intValue();
                 } else if (actionValue instanceof Map<?, ?> m) {
