@@ -1635,7 +1635,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
             Set<DynamicFormLinkageActionType> validActions = new HashSet<>(withValueActions);
 
-            if (fieldType == DynamicFormFieldType.UPLOAD) {
+            if (fieldType == DynamicFormFieldType.UPLOAD
+                    || fieldType == DynamicFormFieldType.TABLE) {
                 validActions = new HashSet<>(commonActions);
             } else if (fieldType == DynamicFormFieldType.INPUT || fieldType == DynamicFormFieldType.TEXTAREA) {
                 validActions.add(DynamicFormLinkageActionType.SET_PATTERN);
