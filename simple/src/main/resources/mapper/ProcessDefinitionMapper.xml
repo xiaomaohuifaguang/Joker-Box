@@ -6,6 +6,9 @@
         SELECT * FROM cat_process_definition
         <where>
             AND deleted = 0
+            <if test="param.search != null and param.search != ''">
+                AND process_name like concat('%', #{param.search},'%')
+            </if>
         </where>
     </select>
 </mapper>

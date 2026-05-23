@@ -1,5 +1,6 @@
 package com.cat.simple.form.mapper;
 
+import com.cat.common.entity.PageParam;
 import com.cat.common.entity.dynamicForm.DynamicForm;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
@@ -18,5 +19,5 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface DynamicFormMapper extends BaseMapper<DynamicForm> {
-   Page<DynamicForm> selectPage(@Param("page") Page<DynamicForm> page);
+   Page<DynamicForm> selectPage(@Param("page") Page<DynamicForm> page, @Param("param")PageParam pageParam);
 }

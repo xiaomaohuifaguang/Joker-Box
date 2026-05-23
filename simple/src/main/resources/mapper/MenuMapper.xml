@@ -25,7 +25,7 @@
         SELECT * FROM cat_menu
         <where>
             <if test='param.search != null and param.search != ""'>
-                AND ( path LIKE CONCAT('%',#{param.search},'%') OR sdname LIKE CONCAT('%',#{param.search},'%') )
+                AND ( path LIKE CONCAT('%',#{param.search},'%') OR name LIKE CONCAT('%',#{param.search},'%') )
             </if>
             <if test='param.menuType != null and param.menuType != ""'>
                 AND menu_type = #{param.menuType}

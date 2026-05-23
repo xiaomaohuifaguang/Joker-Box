@@ -221,7 +221,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     @Override
     public Page<ProcessDefinition> queryPage(PageParam pageParam) {
         Page<ProcessDefinition> page = new Page<>(pageParam);
-        page = processDefinitionMapper.selectPage(page);
+        page = processDefinitionMapper.selectPage(page, pageParam);
 
         List<ProcessDefinition> records = page.getRecords();
         for (ProcessDefinition record : records) {

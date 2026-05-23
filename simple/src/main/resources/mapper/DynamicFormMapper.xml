@@ -7,6 +7,9 @@
         INNER JOIN cat_user cu on cdf.create_by = cu.id
         <where>
             and cdf.deleted = '0'
+        <if test="param.search != null and param.search != ''">
+            and cdf.name like concat('%',#{param.search},'%')
+        </if>
         </where>
     </select>
 </mapper>

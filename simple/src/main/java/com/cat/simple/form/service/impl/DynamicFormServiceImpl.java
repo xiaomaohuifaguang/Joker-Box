@@ -206,7 +206,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     @Override
     public Page<DynamicForm> queryPage(PageParam pageParam) {
         Page<DynamicForm> page = new Page<>(pageParam);
-        return dynamicFormMapper.selectPage(page);
+        return dynamicFormMapper.selectPage(page, pageParam);
     }
 
     @Override
