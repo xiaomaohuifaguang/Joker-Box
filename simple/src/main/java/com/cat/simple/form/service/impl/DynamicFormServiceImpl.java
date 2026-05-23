@@ -816,6 +816,40 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                                 field.getTitle() + " 日期区间必须包含开始和结束两个日期");
                     }
                 }
+                case TABLE -> {
+                    List<?> arr = extractList(value);
+                    if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 必填");
+                    }
+                    if (field.getMin() != null && !isEmptyList(arr) && arr.size() < field.getMin()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 至少需要 " + field.getMin() + " 行数据");
+                    }
+                    if (field.getMax() != null && !isEmptyList(arr) && arr.size() > field.getMax()) {
+                        throw new IllegalArgumentException(
+                                field.getTitle() + " 最多允许 " + field.getMax() + " 行数据");
+                    }
+                    if (isEmptyList(arr)) {
+                        continue;
+                    }
+                    if (!CollectionUtils.isEmpty(field.getColumns())) {
+                        Set<String> colKeys = field.getColumns().stream()
+                                .map(DynamicFormTableColumn::getKey)
+                                .collect(Collectors.toSet());
+                        for (Object row : arr) {
+                            if (!(row instanceof Map<?, ?> map)) {
+                                throw new IllegalArgumentException(
+                                        field.getTitle() + " 每行数据必须是对象");
+                            }
+                            for (Object k : map.keySet()) {
+                                if (!colKeys.contains(String.valueOf(k))) {
+                                    throw new IllegalArgumentException(
+                                            field.getTitle() + " 包含未定义的列: " + k);
+                                }
+                            }
+                        }
+                    }
+                }
                 case UPLOAD -> {
                     List<?> arr = extractList(value);
                     if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
