@@ -19,5 +19,6 @@ public enum DynamicFormFieldType {
     COLOR,
     CASCADER,
     MULTICASCADER,
-    DATERANGE
+    DATERANGE,
+    TABLE
 }
