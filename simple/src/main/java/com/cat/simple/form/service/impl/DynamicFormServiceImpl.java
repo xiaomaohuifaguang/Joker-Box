@@ -1265,6 +1265,58 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最大行数不能小于最小行数");
                 }
             }
+            case TABLE -> {
+                if (CollectionUtils.isEmpty(field.getColumns())) {
+                    throw new IllegalArgumentException("字段 \"" + title + "\" 缺少列定义");
+                }
+                Set<String> colKeys = new HashSet<>();
+                for (DynamicFormTableColumn col : field.getColumns()) {
+                    if (!StringUtils.hasText(col.getKey())) {
+                        throw new IllegalArgumentException("字段 \"" + title + "\" 列标识不能为空");
+                    }
+                    if (!col.getKey().matches("^[a-zA-Z][a-zA-Z0-9_]{0,31}$")) {
+                        throw new IllegalArgumentException(
+                                "字段 \"" + title + "\" 列标识格式错误：以字母开头，仅含字母数字下划线，最长32字符");
+                    }
+                    if (colKeys.contains(col.getKey())) {
+                        throw new IllegalArgumentException(
+                                "字段 \"" + title + "\" 列标识重复: " + col.getKey());
+                    }
+                    colKeys.add(col.getKey());
+                    if (!StringUtils.hasText(col.getTitle()) || col.getTitle().trim().isEmpty()) {
+                        throw new IllegalArgumentException("字段 \"" + title + "\" 列标题不能为空");
+                    }
+                    if (col.getTitle().trim().length() > 32) {
+                        throw new IllegalArgumentException(
+                                "字段 \"" + title + "\" 列标题长度不能超过32字符");
+                    }
+                }
+                if (field.getMin() != null && field.getMin() < 0) {
+                    throw new IllegalArgumentException("字段 \"" + title + "\" 最少行数不能为负数");
+                }
+                if (field.getMax() != null && field.getMax() < 1) {
+                    throw new IllegalArgumentException("字段 \"" + title + "\" 最多行数不能小于1");
+                }
+                if (field.getMin() != null && field.getMax() != null && field.getMax() < field.getMin()) {
+                    throw new IllegalArgumentException("字段 \"" + title + "\" 最多行数不能小于最少行数");
+                }
+                if (field.getDefaultValue() != null) {
+                    List<?> rows = extractList(field.getDefaultValue());
+                    for (Object row : rows) {
+                        if (!(row instanceof Map<?, ?> map)) {
+                            throw new IllegalArgumentException(
+                                    "字段 \"" + title + "\" 默认值每行必须是对象");
+                        }
+                        Set<String> colKeySet = colKeys;
+                        for (Object k : map.keySet()) {
+                            if (!colKeySet.contains(String.valueOf(k))) {
+                                throw new IllegalArgumentException(
+                                        "字段 \"" + title + "\" 默认值包含未定义的列: " + k);
+                            }
+                        }
+                    }
+                }
+            }
             case UPLOAD -> {
                 if (field.getMaxLength() != null && field.getMaxLength() < 1) {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最多上传数量不能小于1");
