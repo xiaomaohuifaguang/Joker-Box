@@ -824,11 +824,11 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
                         throw new IllegalArgumentException(field.getTitle() + " 必填");
                     }
-                    if (field.getMin() != null && !isEmptyList(arr) && arr.size() < field.getMin()) {
+                    if (field.getMin() != null && arr.size() < field.getMin()) {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 至少需要 " + field.getMin() + " 行数据");
                     }
-                    if (field.getMax() != null && !isEmptyList(arr) && arr.size() > field.getMax()) {
+                    if (field.getMax() != null && arr.size() > field.getMax()) {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 最多允许 " + field.getMax() + " 行数据");
                     }
@@ -838,9 +838,13 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (CollectionUtils.isEmpty(field.getColumns())) {
                         throw new IllegalArgumentException(field.getTitle() + " 缺少列定义");
                     }
-                    Set<String> colKeys = field.getColumns().stream()
-                            .map(DynamicFormTableColumn::getKey)
-                            .collect(Collectors.toSet());
+                    Set<String> colKeys = new HashSet<>();
+                    for (DynamicFormTableColumn col : field.getColumns()) {
+                        if (col == null) {
+                            throw new IllegalArgumentException(field.getTitle() + " 列定义不能为空");
+                        }
+                        colKeys.add(col.getKey());
+                    }
                     for (Object row : arr) {
                         if (!(row instanceof Map<?, ?> map)) {
                             throw new IllegalArgumentException(
@@ -1342,6 +1346,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最多行数不能小于最少行数");
                 }
                 if (field.getDefaultValue() != null) {
+                    if (!(field.getDefaultValue() instanceof List<?>)) {
+                        throw new IllegalArgumentException("字段 \"" + title + "\" 默认值格式错误，应为行对象数组");
+                    }
                     List<?> rows = extractList(field.getDefaultValue());
                     for (Object row : rows) {
                         if (!(row instanceof Map<?, ?> map)) {
