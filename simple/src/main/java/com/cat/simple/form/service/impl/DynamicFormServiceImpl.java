@@ -1271,6 +1271,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 }
                 Set<String> colKeys = new HashSet<>();
                 for (DynamicFormTableColumn col : field.getColumns()) {
+                    if (col == null) {
+                        throw new IllegalArgumentException("字段 \"" + title + "\" 列定义不能为空");
+                    }
                     if (!StringUtils.hasText(col.getKey())) {
                         throw new IllegalArgumentException("字段 \"" + title + "\" 列标识不能为空");
                     }
@@ -1307,9 +1310,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                             throw new IllegalArgumentException(
                                     "字段 \"" + title + "\" 默认值每行必须是对象");
                         }
-                        Set<String> colKeySet = colKeys;
                         for (Object k : map.keySet()) {
-                            if (!colKeySet.contains(String.valueOf(k))) {
+                            if (!colKeys.contains(String.valueOf(k))) {
                                 throw new IllegalArgumentException(
                                         "字段 \"" + title + "\" 默认值包含未定义的列: " + k);
                             }
