@@ -115,6 +115,10 @@ public class DynamicFormField implements Serializable {
     @Schema(description = "排序")
     private Integer sort;
 
+    @Schema(description = "动态表格列定义（仅 TABLE 类型使用）")
+    @TableField(typeHandler = Fastjson2TypeHandler.class)
+    private List<DynamicFormTableColumn> columns;
+
     @Schema(description = "组件额外配置")
     @TableField(typeHandler = Fastjson2TypeHandler.class)
     private Object props;
