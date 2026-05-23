@@ -28,6 +28,16 @@ import java.util.stream.Collectors;
 @Service
 public class DynamicFormServiceImpl implements DynamicFormService {
 
+    private static final String OPTION_SOURCE_TYPE_API = "API";
+    private static final String OPTION_SOURCE_TYPE_STATIC = "STATIC";
+    private static final Set<DynamicFormFieldType> OPTION_SOURCE_FIELD_TYPES = Set.of(
+            DynamicFormFieldType.SELECT,
+            DynamicFormFieldType.MULTISELECT,
+            DynamicFormFieldType.RADIO,
+            DynamicFormFieldType.CHECKBOX,
+            DynamicFormFieldType.CASCADER,
+            DynamicFormFieldType.MULTICASCADER
+    );
 
     @Resource
     private DynamicFormMapper dynamicFormMapper;
@@ -749,6 +759,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
             switch (field.getType()) {
                 case MULTISELECT, CHECKBOX -> {
+                    if (value != null && !(value instanceof List<?>)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 值格式错误，应为数组");
+                    }
                     List<?> arr = extractList(value);
                     if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
                         throw new IllegalArgumentException(field.getTitle() + " 必填");
@@ -763,6 +776,10 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (field.getMax() != null && arr.size() > field.getMax()) {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 最多选择 " + field.getMax() + " 项");
+                    }
+                    if (isApiOptionSource(field)) {
+                        validateApiOptionValueStructure(field, value, false);
+                        continue;
                     }
                     Set<String> optionValues = extractOptionValues(field.getOptions());
                     for (Object item : arr) {
@@ -773,6 +790,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     }
                 }
                 case MULTICASCADER -> {
+                    if (value != null && !(value instanceof List<?>)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 值格式错误，应为二维路径数组");
+                    }
                     List<?> arr = extractList(value);
                     if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
                         throw new IllegalArgumentException(field.getTitle() + " 必填");
@@ -787,6 +807,10 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (field.getMax() != null && arr.size() > field.getMax()) {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 最多选择 " + field.getMax() + " 项");
+                    }
+                    if (isApiOptionSource(field)) {
+                        validateApiOptionValueStructure(field, value, false);
+                        continue;
                     }
                     for (Object item : arr) {
                         if (item instanceof List<?> path) {
@@ -798,12 +822,19 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     }
                 }
                 case CASCADER -> {
+                    if (value != null && !(value instanceof List<?>)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 值格式错误，应为路径数组");
+                    }
                     List<?> path = extractList(value);
                     if ("1".equals(field.getRequired()) && isEmptyList(path)) {
                         throw new IllegalArgumentException(field.getTitle() + " 必填");
                     }
                     if (!isEmptyList(path)) {
-                        validateCascaderPath(field.getOptions(), path, field.getTitle());
+                        if (isApiOptionSource(field)) {
+                            validateApiOptionValueStructure(field, value, false);
+                        } else {
+                            validateCascaderPath(field.getOptions(), path, field.getTitle());
+                        }
                     }
                 }
                 case DATERANGE -> {
@@ -883,7 +914,11 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (!StringUtils.hasText(strVal)) {
                         continue;
                     }
-                    validateValueFormat(field, strVal);
+                    if (isApiOptionSource(field)) {
+                        validateApiOptionValueStructure(field, value, false);
+                    } else {
+                        validateValueFormat(field, strVal);
+                    }
                     if (field.getMinLength() != null && strVal.length() < field.getMinLength()) {
                         throw new IllegalArgumentException(
                                 field.getTitle() + " 长度不能小于 " + field.getMinLength());
@@ -951,6 +986,155 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             if (checkStrictly != null && !(checkStrictly instanceof Boolean)) {
                 throw new IllegalArgumentException(
                         "字段 \"" + field.getTitle() + "\" props.checkStrictly 必须是 boolean");
+            }
+        }
+    }
+
+    private boolean isApiOptionSource(DynamicFormField field) {
+        DynamicFormOptionSource optionSource = field.getOptionSource();
+        return optionSource != null && OPTION_SOURCE_TYPE_API.equalsIgnoreCase(optionSource.getType());
+    }
+
+    private void validateOptionSource(DynamicFormField field) {
+        DynamicFormOptionSource optionSource = field.getOptionSource();
+        if (optionSource == null || !StringUtils.hasText(optionSource.getType())) {
+            return;
+        }
+
+        String type = optionSource.getType().trim().toUpperCase(Locale.ROOT);
+        if (!OPTION_SOURCE_TYPE_STATIC.equals(type) && !OPTION_SOURCE_TYPE_API.equals(type)) {
+            throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" optionSource.type 只能是 STATIC 或 API");
+        }
+        if (OPTION_SOURCE_TYPE_STATIC.equals(type)) {
+            return;
+        }
+        if (!OPTION_SOURCE_FIELD_TYPES.contains(field.getType())) {
+            throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" 不支持远程选项数据源");
+        }
+        if (!StringUtils.hasText(optionSource.getUrl())) {
+            throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" optionSource.url 不能为空");
+        }
+        String url = optionSource.getUrl().trim();
+        if (!url.startsWith("/") || url.startsWith("//")
+                || url.regionMatches(true, 0, "http://", 0, "http://".length())
+                || url.regionMatches(true, 0, "https://", 0, "https://".length())) {
+            throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" optionSource.url 必须是同源相对路径");
+        }
+        if (!StringUtils.hasText(optionSource.getMethod())) {
+            throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" optionSource.method 不能为空");
+        }
+        String method = optionSource.getMethod().trim().toUpperCase(Locale.ROOT);
+        if (!"GET".equals(method) && !"POST".equals(method)) {
+            throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" optionSource.method 只能是 GET 或 POST");
+        }
+        if (optionSource.getParams() != null) {
+            validateJsonObject(optionSource.getParams(), "字段 \"" + field.getTitle() + "\" optionSource.params");
+        }
+        DynamicFormOptionMapping mapping = optionSource.getMapping();
+        if (mapping == null) {
+            throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" optionSource.mapping 不能为空");
+        }
+        validateMappingPath(field.getTitle(), "listPath", mapping.getListPath(), true);
+        validateMappingPath(field.getTitle(), "labelPath", mapping.getLabelPath(), false);
+        validateMappingPath(field.getTitle(), "valuePath", mapping.getValuePath(), false);
+        if (StringUtils.hasText(mapping.getChildrenPath())) {
+            validateMappingPath(field.getTitle(), "childrenPath", mapping.getChildrenPath(), false);
+        }
+    }
+
+    private void validateMappingPath(String title, String name, String path, boolean allowRootArray) {
+        if (!StringUtils.hasText(path)) {
+            throw new IllegalArgumentException("字段 \"" + title + "\" optionSource.mapping." + name + " 不能为空");
+        }
+        String trimmed = path.trim();
+        if (allowRootArray && "$".equals(trimmed)) {
+            return;
+        }
+        if (!trimmed.matches("^[a-zA-Z_][a-zA-Z0-9_]*(\\.[a-zA-Z_][a-zA-Z0-9_]*)*$")) {
+            throw new IllegalArgumentException("字段 \"" + title + "\" optionSource.mapping." + name + " 只支持简单点路径");
+        }
+    }
+
+    private void validateJsonObject(Map<?, ?> map, String label) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (!(entry.getKey() instanceof String) || !StringUtils.hasText((String) entry.getKey())) {
+                throw new IllegalArgumentException(label + " 参数名不能为空");
+            }
+            validateJsonValue(entry.getValue(), label + "." + entry.getKey());
+        }
+    }
+
+    private void validateJsonValue(Object value, String label) {
+        if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean) {
+            return;
+        }
+        if (value instanceof List<?> list) {
+            for (int i = 0; i < list.size(); i++) {
+                validateJsonValue(list.get(i), label + "[" + i + "]");
+            }
+            return;
+        }
+        if (value instanceof Map<?, ?> map) {
+            validateJsonObject(map, label);
+            return;
+        }
+        throw new IllegalArgumentException(label + " 只允许 JSON 基础类型、数组或对象");
+    }
+
+    private boolean isScalarOptionValue(Object value) {
+        return value instanceof String || value instanceof Number;
+    }
+
+    private void validateApiOptionValueStructure(DynamicFormField field, Object value, boolean defaultValue) {
+        String label = defaultValue ? "默认值" : "值";
+        if (value == null) {
+            return;
+        }
+        switch (field.getType()) {
+            case SELECT, RADIO -> {
+                if (!isScalarOptionValue(value)) {
+                    throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" " + label + "必须是单值");
+                }
+            }
+            case MULTISELECT, CHECKBOX -> {
+                if (!(value instanceof List<?> list)) {
+                    throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" " + label + "必须是数组");
+                }
+                for (Object item : list) {
+                    if (!isScalarOptionValue(item)) {
+                        throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" " + label + "数组项必须是单值");
+                    }
+                }
+            }
+            case CASCADER -> {
+                if (!(value instanceof List<?> path)) {
+                    throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" " + label + "必须是一维路径数组");
+                }
+                validateApiCascaderPathStructure(field.getTitle(), path, label);
+            }
+            case MULTICASCADER -> {
+                if (!(value instanceof List<?> paths)) {
+                    throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" " + label + "必须是二维路径数组");
+                }
+                for (Object item : paths) {
+                    if (item instanceof List<?> path) {
+                        validateApiCascaderPathStructure(field.getTitle(), path, label);
+                    } else {
+                        throw new IllegalArgumentException("字段 \"" + field.getTitle() + "\" " + label + "必须是二维路径数组");
+                    }
+                }
+            }
+            default -> {}
+        }
+    }
+
+    private void validateApiCascaderPathStructure(String title, List<?> path, String label) {
+        if (path.isEmpty()) {
+            throw new IllegalArgumentException("字段 \"" + title + "\" " + label + "路径不能为空");
+        }
+        for (Object node : path) {
+            if (!isScalarOptionValue(node)) {
+                throw new IllegalArgumentException("字段 \"" + title + "\" " + label + "路径节点必须是单值");
             }
         }
     }
@@ -1184,6 +1368,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             throw new IllegalArgumentException("占位提示长度不能超过128字符");
         }
 
+        validateOptionSource(field);
+
         // 按类型差异化校验
         switch (type) {
             case INPUT -> {
@@ -1211,6 +1397,10 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 }
             }
             case SELECT, RADIO -> {
+                if (isApiOptionSource(field)) {
+                    validateApiOptionValueStructure(field, field.getDefaultValue(), true);
+                    break;
+                }
                 if (CollectionUtils.isEmpty(field.getOptions())) {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
                 }
@@ -1224,10 +1414,14 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 }
             }
             case MULTISELECT, CHECKBOX -> {
-                if (CollectionUtils.isEmpty(field.getOptions())) {
-                    throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
+                if (isApiOptionSource(field)) {
+                    validateApiOptionValueStructure(field, field.getDefaultValue(), true);
+                } else {
+                    if (CollectionUtils.isEmpty(field.getOptions())) {
+                        throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
+                    }
+                    validateOptions(field.getOptions(), title);
                 }
-                validateOptions(field.getOptions(), title);
                 if (field.getMin() != null && field.getMin() < 0) {
                     throw new IllegalArgumentException("字段 \"" + title + "\" 最少勾选数不能为负数");
                 }
@@ -1239,29 +1433,37 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 }
             }
             case CASCADER -> {
-                if (CollectionUtils.isEmpty(field.getOptions())) {
-                    throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
-                }
-                validateCascaderOptions(field.getOptions(), title, 0);
-                if (field.getDefaultValue() != null) {
-                    List<?> path = extractList(field.getDefaultValue());
-                    validateCascaderPath(field.getOptions(), path, title);
+                if (isApiOptionSource(field)) {
+                    validateApiOptionValueStructure(field, field.getDefaultValue(), true);
+                } else {
+                    if (CollectionUtils.isEmpty(field.getOptions())) {
+                        throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
+                    }
+                    validateCascaderOptions(field.getOptions(), title, 0);
+                    if (field.getDefaultValue() != null) {
+                        List<?> path = extractList(field.getDefaultValue());
+                        validateCascaderPath(field.getOptions(), path, title);
+                    }
                 }
                 validateCascaderProps(field);
             }
             case MULTICASCADER -> {
-                if (CollectionUtils.isEmpty(field.getOptions())) {
-                    throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
-                }
-                validateCascaderOptions(field.getOptions(), title, 0);
-                if (field.getDefaultValue() != null) {
-                    List<?> arr = extractList(field.getDefaultValue());
-                    for (Object item : arr) {
-                        if (item instanceof List<?> path) {
-                            validateCascaderPath(field.getOptions(), path, title);
-                        } else {
-                            throw new IllegalArgumentException(
-                                    "字段 \"" + title + "\" 默认值格式错误，应为路径数组的数组");
+                if (isApiOptionSource(field)) {
+                    validateApiOptionValueStructure(field, field.getDefaultValue(), true);
+                } else {
+                    if (CollectionUtils.isEmpty(field.getOptions())) {
+                        throw new IllegalArgumentException("字段 \"" + title + "\" 缺少选项");
+                    }
+                    validateCascaderOptions(field.getOptions(), title, 0);
+                    if (field.getDefaultValue() != null) {
+                        List<?> arr = extractList(field.getDefaultValue());
+                        for (Object item : arr) {
+                            if (item instanceof List<?> path) {
+                                validateCascaderPath(field.getOptions(), path, title);
+                            } else {
+                                throw new IllegalArgumentException(
+                                        "字段 \"" + title + "\" 默认值格式错误，应为路径数组的数组");
+                            }
                         }
                     }
                 }

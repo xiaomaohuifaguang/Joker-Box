@@ -75,6 +75,10 @@ public class DynamicFormField implements Serializable {
     @TableField(typeHandler = Fastjson2TypeHandler.class)
     private List<DynamicFormOption> options = new ArrayList<>();
 
+    @Schema(description = "选项远程数据源配置")
+    @TableField(typeHandler = Fastjson2TypeHandler.class)
+    private DynamicFormOptionSource optionSource;
+
     @Schema(description = "最小长度")
     private Integer minLength;
 
