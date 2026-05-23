@@ -817,6 +817,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     }
                 }
                 case TABLE -> {
+                    if (value != null && !(value instanceof List<?>)) {
+                        throw new IllegalArgumentException(field.getTitle() + " 值格式错误，应为行对象数组");
+                    }
                     List<?> arr = extractList(value);
                     if ("1".equals(field.getRequired()) && isEmptyList(arr)) {
                         throw new IllegalArgumentException(field.getTitle() + " 必填");
@@ -832,9 +835,10 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (isEmptyList(arr)) {
                         continue;
                     }
-                    Set<String> colKeys = CollectionUtils.isEmpty(field.getColumns())
-                            ? Collections.emptySet()
-                            : field.getColumns().stream()
+                    if (CollectionUtils.isEmpty(field.getColumns())) {
+                        throw new IllegalArgumentException(field.getTitle() + " 缺少列定义");
+                    }
+                    Set<String> colKeys = field.getColumns().stream()
                             .map(DynamicFormTableColumn::getKey)
                             .collect(Collectors.toSet());
                     for (Object row : arr) {
@@ -843,7 +847,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                                     field.getTitle() + " 每行数据必须是对象");
                         }
                         for (Object k : map.keySet()) {
-                            if (!colKeys.isEmpty() && !colKeys.contains(String.valueOf(k))) {
+                            if (!colKeys.contains(String.valueOf(k))) {
                                 throw new IllegalArgumentException(
                                         field.getTitle() + " 包含未定义的列: " + k);
                             }
