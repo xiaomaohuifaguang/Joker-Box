@@ -832,20 +832,20 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                     if (isEmptyList(arr)) {
                         continue;
                     }
-                    if (!CollectionUtils.isEmpty(field.getColumns())) {
-                        Set<String> colKeys = field.getColumns().stream()
-                                .map(DynamicFormTableColumn::getKey)
-                                .collect(Collectors.toSet());
-                        for (Object row : arr) {
-                            if (!(row instanceof Map<?, ?> map)) {
+                    Set<String> colKeys = CollectionUtils.isEmpty(field.getColumns())
+                            ? Collections.emptySet()
+                            : field.getColumns().stream()
+                            .map(DynamicFormTableColumn::getKey)
+                            .collect(Collectors.toSet());
+                    for (Object row : arr) {
+                        if (!(row instanceof Map<?, ?> map)) {
+                            throw new IllegalArgumentException(
+                                    field.getTitle() + " 每行数据必须是对象");
+                        }
+                        for (Object k : map.keySet()) {
+                            if (!colKeys.isEmpty() && !colKeys.contains(String.valueOf(k))) {
                                 throw new IllegalArgumentException(
-                                        field.getTitle() + " 每行数据必须是对象");
-                            }
-                            for (Object k : map.keySet()) {
-                                if (!colKeys.contains(String.valueOf(k))) {
-                                    throw new IllegalArgumentException(
-                                            field.getTitle() + " 包含未定义的列: " + k);
-                                }
+                                        field.getTitle() + " 包含未定义的列: " + k);
                             }
                         }
                     }
