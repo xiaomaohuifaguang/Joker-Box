@@ -38,7 +38,7 @@
             LEFT JOIN cat_user_role cur ON cu.id = cur.user_id
         </if>
         <if test='param.orgId != null and param.orgId != ""'>
-            LEFT JOIN cat_org_user cou  ON cu.id = cou.org_id
+            LEFT JOIN cat_org_user cou  ON cu.id = cou.user_id
         </if>
         where cu.deleted = '0'
         <if test='param.search != null and param.search != ""'>

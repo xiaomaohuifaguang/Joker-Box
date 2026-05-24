@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.io.Serial;
-import java.io.Serializable;
 import java.util.Objects;
 
 
@@ -21,26 +20,34 @@ import java.util.Objects;
 @EqualsAndHashCode(callSuper = false)
 public class ProcessInstancePageParam extends PageParam {
 
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-    @Schema(description = "查询类型 0 草稿 1 全部 2 待办 3 待认领 ")
+    @Schema(description = "查询类型 0 草稿 1 我发起的(进行中) 2 待办 3 待认领 4 我已办的 5 我发起的(全部)")
     private String type;
 
-
-
-    @Schema(description = "用户id")
+    @Schema(description = "用户id（服务端自动填充）")
     private String userId;
 
+    @Schema(description = "流程定义id")
+    private Integer processDefinitionId;
 
-    public void init(){
+    @Schema(description = "流程状态")
+    private String processStatus;
+
+    @Schema(description = "创建时间起始")
+    private String startTime;
+
+    @Schema(description = "创建时间结束")
+    private String endTime;
+
+    public void init() {
         type = Objects.isNull(type) ? "" : type;
-        switch (type){
-            case "0","1", "2", "3":break;
-            default:{
+        switch (type) {
+            case "0", "1", "2", "3", "4", "5":
+                break;
+            default:
                 setType("-1");
-            }
         }
     }
-
-
-
 }

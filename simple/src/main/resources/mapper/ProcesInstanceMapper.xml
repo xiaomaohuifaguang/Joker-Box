@@ -2,62 +2,159 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cat.simple.process.mapper.ProcessInstanceMapper">
 
+    <!-- 公共筛选条件片段：search、processDefinitionId、processStatus、时间范围 -->
+    <sql id="commonFilters">
+        <if test="param.search != null and param.search != ''">
+            AND (
+                cpi.title LIKE CONCAT('%', #{param.search}, '%')
+                OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
+            )
+        </if>
+        <if test="param.processDefinitionId != null">
+            AND cpi.process_definition_id = #{param.processDefinitionId}
+        </if>
+        <if test="param.processStatus != null and param.processStatus != ''">
+            AND cpi.process_status = #{param.processStatus}
+        </if>
+        <if test="param.startTime != null and param.startTime != ''">
+            AND cpi.create_time &gt;= #{param.startTime}
+        </if>
+        <if test="param.endTime != null and param.endTime != ''">
+            AND cpi.create_time &lt;= #{param.endTime}
+        </if>
+    </sql>
+
     <select id="selectPage" resultType="com.cat.common.entity.process.ProcessInstance">
-        SELECT
-            cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName
-        FROM cat_process_instance cpi
-        INNER JOIN cat_user cu on cpi.create_by = cu.id
         <choose>
-            <!-- 0 草稿：当前用户创建且尚未真正提交到引擎 -->
+            <!-- 0 草稿：当前用户创建且尚未提交到引擎，无需关联 Flowable 表 -->
             <when test='param.type != null and param.type == "0"'>
-                LEFT JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ AND task.ASSIGNEE_ = #{param.userId}
+                SELECT cpi.*, cu.nickname createByName
+                FROM cat_process_instance cpi
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE cpi.deleted = '0'
                   AND cpi.process_status = '0'
                   AND cpi.create_by = #{param.userId}
+                <include refid="commonFilters"/>
+                ORDER BY cpi.update_time DESC
             </when>
-            <!-- 1 全部：当前用户创建过 或 历史上以处理人身份参与过 -->
+
+            <!-- 1 我发起的(进行中)：当前用户创建的活跃流程，不关联任务表避免重复行 -->
             <when test='param.type != null and param.type == "1"'>
-                LEFT JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ AND task.ASSIGNEE_ = #{param.userId}
+                SELECT cpi.*, cu.nickname createByName
+                FROM cat_process_instance cpi
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE cpi.deleted = '0'
-                  AND (
-                    cpi.create_by = #{param.userId}
-                    OR EXISTS (
-                        SELECT 1 FROM ACT_HI_TASKINST hti
-                        WHERE hti.PROC_INST_ID_ = cpi.process_instance_id
-                          AND hti.ASSIGNEE_ = #{param.userId}
-                    )
-                  )
+                  AND cpi.create_by = #{param.userId}
+                  AND cpi.process_status = '1'
+                <include refid="commonFilters"/>
+                ORDER BY cpi.update_time DESC
             </when>
-            <!-- 2 待办：当前用户已签收的活动任务 -->
+
+            <!-- 2 待办：从 Flowable 运行时任务表驱动，每个任务一行，分页准确 -->
             <when test='param.type != null and param.type == "2"'>
-                INNER JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_ AND task.ASSIGNEE_ = #{param.userId}
-                WHERE cpi.deleted = '0'
+                SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName
+                FROM ACT_RU_TASK task
+                INNER JOIN cat_process_instance cpi
+                    ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
+                WHERE task.ASSIGNEE_ = #{param.userId}
+                <if test="param.search != null and param.search != ''">
+                    AND (
+                        cpi.title LIKE CONCAT('%', #{param.search}, '%')
+                        OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
+                    )
+                </if>
+                <if test="param.processDefinitionId != null">
+                    AND cpi.process_definition_id = #{param.processDefinitionId}
+                </if>
+                ORDER BY task.CREATE_TIME_ DESC
             </when>
-            <!-- 3 待认领：当前用户作为候选人但还未签收 -->
+
+            <!-- 3 待认领：从 Flowable 任务+身份关联驱动，候选人且未签收 -->
             <when test='param.type != null and param.type == "3"'>
-                INNER JOIN ACT_RU_TASK task ON cpi.process_instance_id = task.PROC_INST_ID_
-                INNER JOIN ACT_RU_IDENTITYLINK il ON il.TASK_ID_ = task.ID_
+                SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName
+                FROM ACT_RU_TASK task
+                INNER JOIN ACT_RU_IDENTITYLINK il
+                    ON il.TASK_ID_ = task.ID_
                     AND il.TYPE_ = 'candidate'
                     AND il.USER_ID_ = #{param.userId}
-                WHERE cpi.deleted = '0'
-                  AND task.ASSIGNEE_ IS NULL
+                INNER JOIN cat_process_instance cpi
+                    ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
+                WHERE task.ASSIGNEE_ IS NULL
+                <if test="param.search != null and param.search != ''">
+                    AND (
+                        cpi.title LIKE CONCAT('%', #{param.search}, '%')
+                        OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
+                    )
+                </if>
+                <if test="param.processDefinitionId != null">
+                    AND cpi.process_definition_id = #{param.processDefinitionId}
+                </if>
+                ORDER BY task.CREATE_TIME_ DESC
             </when>
+
+            <!-- 4 我已办的：从 Flowable 历史任务表驱动，按结束时间倒序，必须有时间范围 -->
+            <when test='param.type != null and param.type == "4"'>
+                SELECT cpi.*, hti.ID_ AS task_id, hti.NAME_ AS taskName, cu.nickname createByName
+                FROM ACT_HI_TASKINST hti
+                INNER JOIN cat_process_instance cpi
+                    ON cpi.process_instance_id = hti.PROC_INST_ID_ AND cpi.deleted = '0'
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
+                WHERE hti.ASSIGNEE_ = #{param.userId}
+                  AND hti.END_TIME_ IS NOT NULL
+                  <if test="param.startTime != null and param.startTime != ''">
+                      AND hti.START_TIME_ &gt;= #{param.startTime}
+                  </if>
+                  <if test="param.endTime != null and param.endTime != ''">
+                      AND hti.START_TIME_ &lt;= #{param.endTime}
+                  </if>
+                  <if test="param.startTime == null or param.startTime == ''">
+                      AND hti.START_TIME_ &gt;= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                  </if>
+                <if test="param.search != null and param.search != ''">
+                    AND (
+                        cpi.title LIKE CONCAT('%', #{param.search}, '%')
+                        OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
+                    )
+                </if>
+                <if test="param.processDefinitionId != null">
+                    AND cpi.process_definition_id = #{param.processDefinitionId}
+                </if>
+                <if test="param.processStatus != null and param.processStatus != ''">
+                    AND cpi.process_status = #{param.processStatus}
+                </if>
+                ORDER BY hti.END_TIME_ DESC
+            </when>
+
+            <!-- 5 我发起的(全部)：当前用户创建的所有流程实例 -->
+            <when test='param.type != null and param.type == "5"'>
+                SELECT cpi.*, cu.nickname createByName
+                FROM cat_process_instance cpi
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
+                WHERE cpi.deleted = '0'
+                  AND cpi.create_by = #{param.userId}
+                <include refid="commonFilters"/>
+                ORDER BY cpi.update_time DESC
+            </when>
+
             <!-- -1 非法/默认：返回空集 -->
             <otherwise>
+                SELECT cpi.*, cu.nickname createByName
+                FROM cat_process_instance cpi
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE 1 = 2
             </otherwise>
         </choose>
-        ORDER BY cpi.update_time desc
-    </select>
-    <select id="selectInfoById" resultType="com.cat.common.entity.process.ProcessInstance">
-        SELECT cpi.*, cu.nickname createByName,cpd.id processDefinitionId, cpd.process_name processDefinitionName FROM cat_process_instance cpi
-        INNER JOIN cat_user cu on cpi.create_by = cu.id
-        INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
-        <where>
-            cpi.deleted = '0'
-            AND cpi.id = #{id}
-        </where>
     </select>
 
+    <select id="selectInfoById" resultType="com.cat.common.entity.process.ProcessInstance">
+        SELECT cpi.*, cu.nickname createByName, cpd.id processDefinitionId, cpd.process_name processDefinitionName
+        FROM cat_process_instance cpi
+        INNER JOIN cat_user cu ON cpi.create_by = cu.id
+        INNER JOIN cat_process_definition cpd ON cpi.process_definition_id = cpd.id
+        WHERE cpi.deleted = '0'
+          AND cpi.id = #{id}
+    </select>
 
 </mapper>
