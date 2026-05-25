@@ -80,4 +80,8 @@ public class ProcessDefinition implements Serializable {
     @TableField(exist = false,typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> rawData;
 
+    @Schema(description = "是否可删除（从未部署过的草稿才可删除）")
+    @TableField(exist = false)
+    private Boolean deletable;
+
 }

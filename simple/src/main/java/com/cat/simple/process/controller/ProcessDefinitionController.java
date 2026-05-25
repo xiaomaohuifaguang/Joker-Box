@@ -2,6 +2,7 @@ package com.cat.simple.process.controller;
 
 import com.cat.common.entity.*;
 import com.cat.common.entity.process.ProcessDefinition;
+import com.cat.common.entity.process.ProcessDefinitionBytearray;
 import com.cat.simple.process.service.ProcessDefinitionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,87 +21,81 @@ import java.util.List;
 @Tag(name = "流程引擎")
 public class ProcessDefinitionController {
 
-@Resource
-private ProcessDefinitionService processDefinitionService;
+    @Resource
+    private ProcessDefinitionService processDefinitionService;
 
     @Operation(summary = "添加")
-    @RequestMapping(value = "/add",method = RequestMethod.POST)
+    @RequestMapping(value = "/add", method = RequestMethod.POST)
     public HttpResult<?> add(@RequestBody ProcessDefinition processDefinition) throws ParserConfigurationException, IOException, SAXException {
         return HttpResult.back(processDefinitionService.add(processDefinition) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
-
     @Operation(summary = "保存")
-    @RequestMapping(value = "/save",method = RequestMethod.POST)
+    @RequestMapping(value = "/save", method = RequestMethod.POST)
     public HttpResult<?> save(@RequestBody ProcessDefinition processDefinition) throws ParserConfigurationException, IOException, SAXException {
         return HttpResult.back(processDefinitionService.save(processDefinition) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
     @Operation(summary = "发布部署")
-    @RequestMapping(value = "/deploy",method = RequestMethod.POST)
+    @RequestMapping(value = "/deploy", method = RequestMethod.POST)
     @Parameters({
-            @Parameter(name = "id", description = "流程定义id",required = true)
+            @Parameter(name = "id", description = "流程定义id", required = true)
     })
-    public HttpResult<?> save(@RequestParam(required = true) Integer id){
+    public HttpResult<?> deploy(@RequestParam(required = true) Integer id) {
         return HttpResult.back(processDefinitionService.deploy(id));
     }
 
     @Operation(summary = "删除")
-    @RequestMapping(value = "/remove",method = RequestMethod.POST)
+    @RequestMapping(value = "/remove", method = RequestMethod.POST)
     public HttpResult<?> remove(@RequestBody ProcessDefinition processDefinition) {
         return HttpResult.back(processDefinitionService.delete(processDefinition) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
     @Operation(summary = "停用")
-    @RequestMapping(value = "/stop",method = RequestMethod.POST)
+    @RequestMapping(value = "/stop", method = RequestMethod.POST)
     public HttpResult<?> stop(@RequestBody ProcessDefinition processDefinition) {
         return HttpResult.back(processDefinitionService.stop(processDefinition) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
     @Operation(summary = "详情")
-    @RequestMapping(value = "/info",method = RequestMethod.POST)
-    public HttpResult<ProcessDefinition> info(@RequestBody ProcessDefinition processDefinition) {
-        return HttpResult.back(processDefinitionService.info(processDefinition));
+    @Parameters({
+            @Parameter(name = "version", description = "版本号（不传默认DRAFT或当前发布版本）")
+    })
+    @RequestMapping(value = "/info", method = RequestMethod.POST)
+    public HttpResult<ProcessDefinition> info(@RequestBody ProcessDefinition processDefinition,
+                                              @RequestParam(required = false) String version) {
+        return HttpResult.back(processDefinitionService.info(processDefinition, version));
     }
 
     @Operation(summary = "分页")
-    @RequestMapping(value = "/queryPage",method = RequestMethod.POST)
+    @RequestMapping(value = "/queryPage", method = RequestMethod.POST)
     public HttpResult<Page<ProcessDefinition>> queryPage(@RequestBody PageParam pageParam) {
         return HttpResult.back(processDefinitionService.queryPage(pageParam));
     }
 
-
     @Operation(summary = "已部署流程列表")
-    @RequestMapping(value = "/deployList",method = RequestMethod.POST)
+    @RequestMapping(value = "/deployList", method = RequestMethod.POST)
     public HttpResult<List<ProcessDefinition>> deployList() {
         return HttpResult.back(processDefinitionService.deployList());
     }
 
+    @Operation(summary = "版本列表")
+    @Parameters({
+            @Parameter(name = "processDefinitionId", description = "流程定义id", required = true)
+    })
+    @RequestMapping(value = "/versionList", method = RequestMethod.POST)
+    public HttpResult<List<ProcessDefinitionBytearray>> versionList(@RequestParam Integer processDefinitionId) {
+        return HttpResult.back(processDefinitionService.versionList(processDefinitionId));
+    }
 
-
-
-
-
-//    @Operation(summary = "test")
-//    @RequestMapping(value = "/test",method = RequestMethod.POST)
-//    public HttpResult<?> test(@RequestParam(value = "processId",required = true) String processId) {
-//        return HttpResult.back(processDefinitionService.test(processId));
-//    }
-//
-//    @Operation(summary = "test/go")
-//    @RequestMapping(value = "test/go",method = RequestMethod.POST)
-//    public HttpResult<?> testGo(@RequestParam(value = "processInstanceId",required = true) String processInstanceId) {
-//        return HttpResult.back(processDefinitionService.testGo(processInstanceId));
-//    }
-//
-//
-//    @Operation(summary = "test/back")
-//    @RequestMapping(value = "test/back",method = RequestMethod.POST)
-//    public HttpResult<?> testBack(@RequestParam(value = "processInstanceId",required = true) String processInstanceId) {
-//        return HttpResult.back(processDefinitionService.testBack(processInstanceId));
-//    }
-
-
-
-
+    @Operation(summary = "回滚到指定版本")
+    @Parameters({
+            @Parameter(name = "processDefinitionId", description = "流程定义id", required = true),
+            @Parameter(name = "targetVersion", description = "目标版本号", required = true)
+    })
+    @RequestMapping(value = "/rollback", method = RequestMethod.POST)
+    public HttpResult<?> rollback(@RequestParam Integer processDefinitionId,
+                                  @RequestParam String targetVersion) {
+        return HttpResult.back(processDefinitionService.rollback(processDefinitionId, targetVersion) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
+    }
 }

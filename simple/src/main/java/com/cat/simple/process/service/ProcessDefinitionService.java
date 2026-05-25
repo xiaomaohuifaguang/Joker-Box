@@ -5,6 +5,7 @@ import com.cat.common.entity.DTO;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.process.ProcessDefinition;
+import com.cat.common.entity.process.ProcessDefinitionBytearray;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -27,14 +28,13 @@ public interface ProcessDefinitionService {
 
     ProcessDefinition info(ProcessDefinition processDefinition);
 
+    ProcessDefinition info(ProcessDefinition processDefinition, String version);
+
     Page<ProcessDefinition> queryPage(PageParam pageParam);
 
     List<ProcessDefinition> deployList();
 
-//    String test(String processId);
-//
-//    boolean testGo(String processInstanceId);
-//
-//    boolean testBack(String processInstanceId);
+    List<ProcessDefinitionBytearray> versionList(Integer processDefinitionId);
 
+    boolean rollback(Integer processDefinitionId, String targetVersion);
 }

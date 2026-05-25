@@ -2,4 +2,22 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cat.simple.process.mapper.ProcessDefinitionBytearrayMapper">
 
+    <delete id="deletePhysicsByDefAndVersion">
+        DELETE FROM cat_process_definition_bytearray
+        WHERE process_definition_id = #{processDefinitionId}
+        <if test="version != null and version != ''">
+            AND version = #{version}
+        </if>
+    </delete>
+
+    <insert id="copyVersion">
+        INSERT INTO cat_process_definition_bytearray
+            (process_definition_id, version, xml, raw_data, create_by, create_time)
+        SELECT
+            process_definition_id, #{targetVersion}, xml, raw_data, create_by, NOW()
+        FROM cat_process_definition_bytearray
+        WHERE process_definition_id = #{processDefinitionId}
+          AND version = #{sourceVersion}
+    </insert>
+
 </mapper>
