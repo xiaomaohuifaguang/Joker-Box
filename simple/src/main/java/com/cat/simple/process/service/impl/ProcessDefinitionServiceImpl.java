@@ -6,10 +6,14 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessDefinitionBytearray;
+import com.cat.common.entity.process.ProcessDefinitionForm;
+import com.cat.common.entity.process.ProcessNodeFieldPermission;
 import com.cat.common.utils.flowable.FlowableUtils;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.process.mapper.ProcessDefinitionBytearrayMapper;
+import com.cat.simple.process.mapper.ProcessDefinitionFormMapper;
 import com.cat.simple.process.mapper.ProcessDefinitionMapper;
+import com.cat.simple.process.mapper.ProcessNodeFieldPermissionMapper;
 import com.cat.simple.system.mapper.UserMapper;
 import com.cat.simple.process.service.ProcessDefinitionService;
 import jakarta.annotation.Resource;
@@ -38,6 +42,10 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     private ProcessDefinitionMapper processDefinitionMapper;
     @Resource
     private ProcessDefinitionBytearrayMapper processDefinitionBytearrayMapper;
+    @Resource
+    private ProcessDefinitionFormMapper processDefinitionFormMapper;
+    @Resource
+    private ProcessNodeFieldPermissionMapper processNodeFieldPermissionMapper;
     @Resource
     private RepositoryService repositoryService;
     @Resource
@@ -116,6 +124,11 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             processDefinitionBytearrayMapper.updateById(draft);
         }
 
+        // 保存节点配置（全量覆盖，null = 清空）
+        saveGlobalFormBinding(processDefinitionOri.getId(), processDefinition.getGlobalFormBinding());
+        saveNodeFormBindings(processDefinitionOri.getId(), processDefinition.getNodeFormBindings());
+        saveNodeFieldPermissions(processDefinitionOri.getId(), processDefinition.getNodeFieldPermissions());
+
         return update == 1;
     }
 
@@ -154,9 +167,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         // 复制 DRAFT → 版本号
         processDefinitionBytearrayMapper.copyVersion(id, "DRAFT", newVersion);
+        processDefinitionFormMapper.copyVersion(id, "DRAFT", newVersion);
+        processNodeFieldPermissionMapper.copyVersion(id, "DRAFT", newVersion);
 
         // 删除 DRAFT
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(id, "DRAFT");
+        processDefinitionFormMapper.deletePhysicsByDefAndVersion(id, "DRAFT");
+        processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(id, "DRAFT");
 
         processDefinition.setStatus("1");
         processDefinition.setUpdateTime(LocalDateTime.now());
@@ -184,16 +201,20 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         if (publishedCount > 0) {
             return false;
         }
-        // 删除所有版本的 bytearray
+        // 删除所有版本的 bytearray 和节点配置
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
+        processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
+        processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         return processDefinitionMapper.deleteById(processDefinition) == 1;
     }
 
     @Override
     public boolean destroy(ProcessDefinition processDefinition) {
         processDefinition = processDefinitionMapper.selectById(processDefinition.getId());
-        // 删除所有版本的 bytearray
+        // 删除所有版本的 bytearray 和节点配置
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
+        processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
+        processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         return processDefinitionMapper.deleteById(processDefinition) == 1;
     }
 
@@ -209,10 +230,14 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         // 删除旧 DRAFT（如果存在）
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), "DRAFT");
+        processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), "DRAFT");
+        processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), "DRAFT");
 
         // 复制最新版本回 DRAFT
         if (StringUtils.hasText(latestVersion)) {
             processDefinitionBytearrayMapper.copyVersion(processDefinition.getId(), latestVersion, "DRAFT");
+            processDefinitionFormMapper.copyVersion(processDefinition.getId(), latestVersion, "DRAFT");
+            processNodeFieldPermissionMapper.copyVersion(processDefinition.getId(), latestVersion, "DRAFT");
         }
 
         processDefinition.setStatus("-1");
@@ -246,6 +271,30 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             processDefinition.setXmlStr(new String(bytearray.getXml()));
             processDefinition.setRawData(bytearray.getRawData());
         }
+
+        // 查询全局表单绑定（同版本）
+        ProcessDefinitionForm globalBinding = processDefinitionFormMapper.selectOne(
+                new LambdaQueryWrapper<ProcessDefinitionForm>()
+                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinition.getId())
+                        .eq(ProcessDefinitionForm::getVersion, queryVersion)
+                        .eq(ProcessDefinitionForm::getBindType, "GLOBAL"));
+        processDefinition.setGlobalFormBinding(globalBinding);
+
+        // 查询节点表单绑定（同版本）
+        List<ProcessDefinitionForm> nodeBindings = processDefinitionFormMapper.selectList(
+                new LambdaQueryWrapper<ProcessDefinitionForm>()
+                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinition.getId())
+                        .eq(ProcessDefinitionForm::getVersion, queryVersion)
+                        .eq(ProcessDefinitionForm::getBindType, "NODE"));
+        processDefinition.setNodeFormBindings(nodeBindings);
+
+        // 查询节点字段权限（同版本）
+        List<ProcessNodeFieldPermission> fieldPermissions = processNodeFieldPermissionMapper.selectList(
+                new LambdaQueryWrapper<ProcessNodeFieldPermission>()
+                        .eq(ProcessNodeFieldPermission::getProcessDefinitionId, processDefinition.getId())
+                        .eq(ProcessNodeFieldPermission::getVersion, queryVersion));
+        processDefinition.setNodeFieldPermissions(fieldPermissions);
+
         processDefinition.setDeletable(isDeletable(processDefinition));
         return processDefinition;
     }
@@ -295,9 +344,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         // 删除旧 DRAFT
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
+        processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
+        processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
 
         // 复制目标版本回 DRAFT
         processDefinitionBytearrayMapper.copyVersion(processDefinitionId, targetVersion, "DRAFT");
+        processDefinitionFormMapper.copyVersion(processDefinitionId, targetVersion, "DRAFT");
+        processNodeFieldPermissionMapper.copyVersion(processDefinitionId, targetVersion, "DRAFT");
 
         processDefinition.setStatus("0");
         processDefinition.setUpdateTime(LocalDateTime.now());
@@ -308,6 +361,57 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
 
     // ========== private helpers ==========
+
+    private void saveGlobalFormBinding(Integer processDefinitionId, ProcessDefinitionForm binding) {
+        processDefinitionFormMapper.delete(
+                new LambdaQueryWrapper<ProcessDefinitionForm>()
+                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessDefinitionForm::getVersion, "DRAFT")
+                        .eq(ProcessDefinitionForm::getBindType, "GLOBAL"));
+        if (binding == null || !StringUtils.hasText(binding.getFormId())) {
+            return; // null 或空值 = 清空配置
+        }
+        binding.setProcessDefinitionId(processDefinitionId);
+        binding.setVersion("DRAFT");
+        binding.setBindType("GLOBAL");
+        binding.setNodeId(null);
+        binding.setCreateTime(LocalDateTime.now());
+        processDefinitionFormMapper.insert(binding);
+    }
+
+    private void saveNodeFormBindings(Integer processDefinitionId, List<ProcessDefinitionForm> bindings) {
+        processDefinitionFormMapper.delete(
+                new LambdaQueryWrapper<ProcessDefinitionForm>()
+                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessDefinitionForm::getVersion, "DRAFT")
+                        .eq(ProcessDefinitionForm::getBindType, "NODE"));
+        if (org.springframework.util.CollectionUtils.isEmpty(bindings)) {
+            return; // null 或空数组 = 清空配置
+        }
+        for (ProcessDefinitionForm binding : bindings) {
+            binding.setProcessDefinitionId(processDefinitionId);
+            binding.setVersion("DRAFT");
+            binding.setBindType("NODE");
+            binding.setCreateTime(LocalDateTime.now());
+            processDefinitionFormMapper.insert(binding);
+        }
+    }
+
+    private void saveNodeFieldPermissions(Integer processDefinitionId, List<ProcessNodeFieldPermission> permissions) {
+        processNodeFieldPermissionMapper.delete(
+                new LambdaQueryWrapper<ProcessNodeFieldPermission>()
+                        .eq(ProcessNodeFieldPermission::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessNodeFieldPermission::getVersion, "DRAFT"));
+        if (org.springframework.util.CollectionUtils.isEmpty(permissions)) {
+            return; // null 或空数组 = 清空配置
+        }
+        for (ProcessNodeFieldPermission permission : permissions) {
+            permission.setProcessDefinitionId(processDefinitionId);
+            permission.setVersion("DRAFT");
+            permission.setCreateTime(LocalDateTime.now());
+            processNodeFieldPermissionMapper.insert(permission);
+        }
+    }
 
     private ProcessDefinitionBytearray selectBytearray(Integer processDefinitionId, String version) {
         return processDefinitionBytearrayMapper.selectOne(

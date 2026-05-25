@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
 import java.io.Serial;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -83,5 +84,17 @@ public class ProcessDefinition implements Serializable {
     @Schema(description = "是否可删除（从未部署过的草稿才可删除）")
     @TableField(exist = false)
     private Boolean deletable;
+
+    @Schema(description = "全局表单绑定（保存时传入）")
+    @TableField(exist = false)
+    private ProcessDefinitionForm globalFormBinding;
+
+    @Schema(description = "节点表单绑定列表（保存时传入，全量覆盖）")
+    @TableField(exist = false)
+    private List<ProcessDefinitionForm> nodeFormBindings;
+
+    @Schema(description = "节点字段权限列表（保存时传入，全量覆盖）")
+    @TableField(exist = false)
+    private List<ProcessNodeFieldPermission> nodeFieldPermissions;
 
 }

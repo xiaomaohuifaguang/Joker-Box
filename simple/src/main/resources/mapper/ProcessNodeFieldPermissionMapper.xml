@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.process.mapper.ProcessNodeFieldPermissionMapper">
+
+    <delete id="deletePhysicsByDefAndVersion">
+        DELETE FROM cat_process_node_field_permission
+        WHERE process_definition_id = #{processDefinitionId}
+        <if test="version != null and version != ''">
+            AND version = #{version}
+        </if>
+    </delete>
+
+    <insert id="copyVersion">
+        INSERT INTO cat_process_node_field_permission
+            (process_definition_id, version, node_id, field_key, permission, create_by, create_time)
+        SELECT
+            process_definition_id, #{targetVersion}, node_id, field_key, permission, create_by, NOW()
+        FROM cat_process_node_field_permission
+        WHERE process_definition_id = #{processDefinitionId}
+          AND version = #{sourceVersion}
+    </insert>
+
+</mapper>
