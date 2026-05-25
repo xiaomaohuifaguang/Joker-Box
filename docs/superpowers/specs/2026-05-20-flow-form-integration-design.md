@@ -63,9 +63,170 @@
 
 ---
 
-## 三、数据模型设计
+## 三、流程定义版本管理
 
-### 3.1 流程-表单绑定表
+### 3.1 问题
+
+当前 `cat_process_definition_bytearray` 与 `cat_process_definition` 是 1:1 关系（id 相同），每次保存直接覆盖，历史 BPMN XML 丢失。而表单已有完善的版本管理（DRAFT → 版本号快照），流程定义缺少对应能力，导致：
+
+- 无法回看历史版本
+- 无法回滚到上一版本
+- 后续绑定表单后，无法追溯"当时绑的是哪套配置"
+
+### 3.2 方案：与表单版本管理对齐
+
+**核心改动：给 `cat_process_definition_bytearray` 加 `version` 列，复用表单的 DRAFT + 版本号快照模式。**
+
+#### 改造后的表结构
+
+```sql
+-- 改造前
+cat_process_definition_bytearray
+  id      (INT, PK, = process_definition.id)   -- 1:1 绑定，无版本
+  xml     (LONGBLOB)
+  raw_data (JSON)
+
+-- 改造后
+cat_process_definition_bytearray
+  id                      BIGINT PRIMARY KEY AUTO_INCREMENT,
+  process_definition_id   INT NOT NULL COMMENT '关联流程定义ID（逻辑关联，无外键）',
+  version                 VARCHAR(32) NOT NULL COMMENT 'DRAFT / 1 / 2 / 3 ...',
+  xml                     LONGBLOB NOT NULL,
+  raw_data                JSON COMMENT 'logicFlow data',
+  create_by               VARCHAR(64),
+  create_time             DATETIME,
+  UNIQUE KEY uk_def_version (process_definition_id, version)
+```
+
+#### 版本生命周期
+
+```
+创建流程
+  │
+  ▼
+主表：version="DRAFT", status="0"
+bytearray：process_definition_id=1, version="DRAFT"  ← 编辑态，可反复覆盖保存
+  │
+  │  点击发布
+  ▼
+主表：version="1", status="1"
+bytearray：
+  - process_definition_id=1, version="1"   ← 发布快照，不可修改
+  - process_definition_id=1, version="DRAFT" ← 删除
+  │
+  │  修改后再次发布
+  ▼
+主表：version="2", status="1"
+bytearray：
+  - process_definition_id=1, version="1"   ← 历史快照
+  - process_definition_id=1, version="2"   ← 最新发布
+  - process_definition_id=1, version="DRAFT" ← 删除
+  │
+  │  停用
+  ▼
+主表：version="2", status="-1"
+bytearray：
+  - process_definition_id=1, version="1"   ← 历史快照
+  - process_definition_id=1, version="2"   ← 最后发布
+  - process_definition_id=1, version="DRAFT" ← 从 version=2 复制回来，可继续编辑
+```
+
+#### 各操作行为
+
+| 操作 | 改造后的行为 |
+|---|---|
+| **新增** | 主表插入，bytearray 插入 version="DRAFT" |
+| **保存** | 覆盖 version="DRAFT" 的 bytearray |
+| **发布** | 复制 DRAFT → 新版本号 → 部署到 Flowable → 删除 DRAFT |
+| **停用** | 复制最新版本回 DRAFT → 改状态为 -1 |
+| **查看详情** | 读指定 version 的 bytearray（默认 DRAFT） |
+| **版本列表** | 查询该 process_definition_id 的所有版本 |
+| **回滚到V1** | 复制 version="1" 的数据回 DRAFT → 重新发布 |
+
+#### 与表单操作代码对比
+
+两者逻辑一致：
+
+```java
+// 表单发布（现有）
+dynamicFormFieldMapper.copyVersion(formId, "DRAFT", newVersion);
+dynamicFormFieldMapper.deletePhysicsByFormIdAndVersion(formId, "DRAFT");
+dynamicForm.setVersion(newVersion);
+
+// 流程发布（改造后）
+bytearrayMapper.copyVersion(processDefinitionId, "DRAFT", newVersion);
+bytearrayMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
+processDefinition.setVersion(newVersion);
+```
+
+#### 与 Flowable 版本的映射
+
+```
+cat_process_definition_bytearray  version="1"  ↔  ACT_RE_PROCDEF  VERSION_ = 1
+cat_process_definition_bytearray  version="2"  ↔  ACT_RE_PROCDEF  VERSION_ = 2
+```
+
+主表的 `version` 字段与 Flowable 版本号一致，bytearray 的版本号也与之对应。
+
+#### 实体类改动
+
+```java
+// ProcessDefinitionBytearray 改造后
+@Data
+@TableName("cat_process_definition_bytearray")
+public class ProcessDefinitionBytearray implements Serializable {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private Integer processDefinitionId;  // 逻辑关联，无外键
+    private String version;               // "DRAFT" / "1" / "2"
+    private byte[] xml;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, Object> rawData;
+    private String createBy;
+    private LocalDateTime createTime;
+}
+```
+
+#### 数据迁移
+
+```sql
+-- 1. 备份
+CREATE TABLE cat_process_definition_bytearray_bak AS
+  SELECT * FROM cat_process_definition_bytearray;
+
+-- 2. 新建表（原表结构不支持直接 ALTER 加唯一索引，建议重建）
+CREATE TABLE cat_process_definition_bytearray_new (
+    id                      BIGINT PRIMARY KEY AUTO_INCREMENT,
+    process_definition_id   INT NOT NULL,
+    version                 VARCHAR(32) NOT NULL,
+    xml                     LONGBLOB NOT NULL,
+    raw_data                JSON,
+    create_by               VARCHAR(64),
+    create_time             DATETIME,
+    UNIQUE KEY uk_def_version (process_definition_id, version)
+);
+
+-- 3. 迁移数据
+-- 已发布的流程：version 取 process_definition.version
+-- 草稿流程：version = 'DRAFT'
+INSERT INTO cat_process_definition_bytearray_new (process_definition_id, version, xml, raw_data, create_by, create_time)
+SELECT id,
+       CASE WHEN status = '0' THEN 'DRAFT'
+            WHEN status IN ('1', '-1') THEN version
+       END,
+       xml, raw_data, create_by, NOW()
+FROM cat_process_definition_bytearray;
+
+-- 4. 替换原表
+DROP TABLE cat_process_definition_bytearray;
+RENAME TABLE cat_process_definition_bytearray_new TO cat_process_definition_bytearray;
+```
+
+---
+
+## 四、数据模型设计
+
+### 4.1 流程-表单绑定表（所有表均无外键，仅逻辑关联）
 
 ```sql
 CREATE TABLE cat_process_form_binding (
@@ -83,7 +244,7 @@ CREATE TABLE cat_process_form_binding (
 );
 ```
 
-### 3.2 节点表单配置表
+### 4.2 节点表单配置表
 
 ```sql
 CREATE TABLE cat_process_node_form_config (
@@ -105,7 +266,7 @@ CREATE TABLE cat_process_node_form_config (
 );
 ```
 
-### 3.3 字段→变量映射表
+### 4.3 字段→变量映射表
 
 ```sql
 CREATE TABLE cat_process_form_field_mapping (
@@ -124,7 +285,7 @@ CREATE TABLE cat_process_form_field_mapping (
 );
 ```
 
-### 3.4 表单实例表（扩展）
+### 4.4 表单实例表（扩展）
 
 在现有 `cat_dynamic_form_instance` 基础上扩展：
 
@@ -138,7 +299,7 @@ ALTER TABLE cat_dynamic_form_instance ADD COLUMN (
 );
 ```
 
-### 3.5 表单快照表
+### 4.5 表单快照表
 
 ```sql
 CREATE TABLE cat_form_snapshot (
@@ -156,9 +317,9 @@ CREATE TABLE cat_form_snapshot (
 
 ---
 
-## 四、三层条件路由体系
+## 五、三层条件路由体系
 
-### 4.1 第一层：原生 JUEL 表达式（80% 场景）
+### 5.1 第一层：原生 JUEL 表达式（80% 场景）
 
 BPMN 写法：
 ```xml
@@ -171,7 +332,7 @@ BPMN 写法：
 - `amount`、`level` 等字段已同步到 Flowable 变量表
 - 纯内存计算，性能最优
 
-### 4.2 第二层：Spring Bean 方法调用（15% 场景）
+### 5.2 第二层：Spring Bean 方法调用（15% 场景）
 
 BPMN 写法：
 ```xml
@@ -211,7 +372,7 @@ public class DeptRouteService {
 }
 ```
 
-### 4.3 第三层：统一路由服务（5% 场景）
+### 5.3 第三层：统一路由服务（5% 场景）
 
 BPMN 写法：
 ```xml
@@ -230,7 +391,7 @@ BPMN 写法：
 - 必须加 Redis 缓存（防止每次查库）
 - 必须记录审计日志（因为条件不透明）
 
-### 4.4 混合使用
+### 5.4 混合使用
 
 三层可以混合在同一条表达式中：
 ```xml
@@ -243,9 +404,9 @@ JUEL 的短路求值机制确保性能：如果 `amount <= 10000` 且 `urgent !=
 
 ---
 
-## 五、数据流转机制
+## 六、数据流转机制
 
-### 5.1 表单实例生命周期
+### 6.1 表单实例生命周期
 
 ```
 流程启动
@@ -272,7 +433,7 @@ JUEL 的短路求值机制确保性能：如果 `amount <= 10000` 且 `urgent !=
         └── 用户看到带有权限控制的表单
 ```
 
-### 5.2 数据继承策略
+### 6.2 数据继承策略
 
 | 策略 | 说明 | 配置值 |
 |---|---|---|
@@ -300,7 +461,7 @@ public void inheritFormData(FormInstance target, FormInstance source, NodeFormCo
 }
 ```
 
-### 5.3 变量同步时机
+### 6.3 变量同步时机
 
 | 时机 | 说明 | 适用场景 |
 |---|---|---|
@@ -338,9 +499,9 @@ public class FormSyncService {
 
 ---
 
-## 六、节点表单配置
+## 七、节点表单配置
 
-### 6.1 字段权限控制
+### 7.1 字段权限控制
 
 节点配置决定用户在该节点看到的表单形态：
 
@@ -358,7 +519,7 @@ public class FormSyncService {
 - 字段在 `editable_fields` 中 → 可编辑，否则只读
 - 字段在 `required_fields` 中 → 强制必填（覆盖表单模板的 `required` 配置）
 
-### 6.2 前端数据结构
+### 7.2 前端数据结构
 
 节点激活时，后端返回：
 ```json
@@ -393,9 +554,9 @@ public class FormSyncService {
 
 ---
 
-## 七、列表检索设计
+## 八、列表检索设计
 
-### 7.1 检索字段配置
+### 8.1 检索字段配置
 
 流程定义中标记哪些表单字段可作为列表检索条件：
 
@@ -407,7 +568,7 @@ ALTER TABLE cat_process_form_field_mapping ADD COLUMN (
 );
 ```
 
-### 7.2 检索实现
+### 8.2 检索实现
 
 列表查询走表单实例表联查：
 
@@ -433,7 +594,7 @@ WHERE pi.deleted = '0'
 ORDER BY pi.create_time DESC
 ```
 
-### 7.3 性能优化（后续迭代）
+### 8.3 性能优化（后续迭代）
 
 高频检索字段建立冗余索引表：
 
@@ -449,9 +610,9 @@ CREATE TABLE cat_process_instance_index (
 
 ---
 
-## 八、回退与并行处理策略
+## 九、回退与并行处理策略
 
-### 8.1 回退时的表单数据
+### 9.1 回退时的表单数据
 
 回退触发时：
 
@@ -473,7 +634,7 @@ public void onBack(ProcessHandleParam param) {
 }
 ```
 
-### 8.2 并行节点数据合并
+### 9.2 并行节点数据合并
 
 并行汇聚时，根据 `parallel_merge_strategy` 合并各分支的表单数据：
 
@@ -499,9 +660,9 @@ public Object mergeFieldValues(List<FormInstance> parallelInstances,
 
 ---
 
-## 九、API 接口设计
+## 十、API 接口设计
 
-### 9.1 流程定义-表单绑定管理
+### 10.1 流程定义-表单绑定管理
 
 ```java
 // 绑定表单到流程（全局或节点）
@@ -544,7 +705,7 @@ POST /processDefinition/fieldMapping
 }
 ```
 
-### 9.2 流程实例-表单交互
+### 10.2 流程实例-表单交互
 
 ```java
 // 获取当前节点的表单（含权限控制）
@@ -575,7 +736,7 @@ POST /processInstance/formSnapshots
 }
 ```
 
-### 9.3 列表检索
+### 10.3 列表检索
 
 ```java
 // 流程实例列表（支持表单字段检索）
@@ -602,9 +763,9 @@ POST /processInstance/queryPage
 
 ---
 
-## 十、关键业务流程时序
+## 十一、关键业务流程时序
 
-### 10.1 流程启动 + 填写启动表单
+### 11.1 流程启动 + 填写启动表单
 
 ```
 用户                  前端                  后端                  Flowable                 数据库
@@ -647,7 +808,7 @@ POST /processInstance/queryPage
  │◀────────────────────│ 跳转待办列表        │                        │                        │
 ```
 
-### 10.2 审批节点处理
+### 11.2 审批节点处理
 
 ```
 用户                  前端                  后端                  Flowable                 数据库
@@ -682,7 +843,7 @@ POST /processInstance/queryPage
 
 ---
 
-## 十一、后续迭代规划
+## 十二、后续迭代规划
 
 | 优先级 | 功能 | 说明 |
 |---|---|---|
@@ -699,7 +860,7 @@ POST /processInstance/queryPage
 
 ---
 
-## 十二、风险与应对
+## 十三、风险与应对
 
 | 风险 | 影响 | 应对 |
 |---|---|---|
