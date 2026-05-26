@@ -5,6 +5,9 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.dynamicForm.DynamicForm;
 import com.cat.common.entity.dynamicForm.FormData;
+import com.cat.common.entity.dynamicForm.DynamicFormPublishedVersion;
+
+import java.util.List;
 
 public interface DynamicFormService {
 
@@ -23,5 +26,7 @@ public interface DynamicFormService {
     boolean stop(String formId);
 
     boolean submit(FormData formData);
+
+    List<DynamicFormPublishedVersion> publishedForms();
 
 }

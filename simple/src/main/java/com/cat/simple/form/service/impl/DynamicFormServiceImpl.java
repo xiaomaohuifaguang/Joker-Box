@@ -11,6 +11,7 @@ import com.cat.common.utils.dynamicForm.LinkageValidator;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.form.mapper.*;
 import com.cat.simple.form.service.DynamicFormService;
+import com.cat.common.entity.dynamicForm.DynamicFormPublishedVersion;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     private DynamicFormLinkageNodeMapper dynamicFormLinkageNodeMapper;
     @Resource
     private DynamicFormFieldGroupMapper dynamicFormFieldGroupMapper;
+    @Resource
+    private DynamicFormPublishHistoryMapper dynamicFormPublishHistoryMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -252,7 +255,19 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         dynamicForm.setVersion(newVersion);
         dynamicForm.setStatus("1");
         dynamicForm.setUpdateTime(LocalDateTime.now());
-        return dynamicFormMapper.updateById(dynamicForm) == 1;
+        int update = dynamicFormMapper.updateById(dynamicForm);
+
+        // 记录发布历史
+        if (update == 1) {
+            DynamicFormPublishHistory history = new DynamicFormPublishHistory()
+                    .setFormId(formId)
+                    .setVersion(newVersion)
+                    .setCreateBy(currentUserId())
+                    .setCreateTime(LocalDateTime.now());
+            dynamicFormPublishHistoryMapper.insert(history);
+        }
+
+        return update == 1;
     }
 
     @Override
@@ -355,6 +370,47 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
         dynamicFormFieldInstanceMapper.insertOrUpdate(toSave);
         return true;
+    }
+
+    @Override
+    public List<DynamicFormPublishedVersion> publishedForms() {
+        List<DynamicForm> publishedForms = dynamicFormMapper.selectList(
+                new LambdaQueryWrapper<DynamicForm>()
+                        .eq(DynamicForm::getStatus, "1")
+                        .orderByAsc(DynamicForm::getName));
+
+        if (CollectionUtils.isEmpty(publishedForms)) {
+            return List.of();
+        }
+
+        List<DynamicFormPublishedVersion> result = new ArrayList<>();
+        for (DynamicForm form : publishedForms) {
+            List<DynamicFormPublishHistory> histories = dynamicFormPublishHistoryMapper.selectList(
+                    new LambdaQueryWrapper<DynamicFormPublishHistory>()
+                            .eq(DynamicFormPublishHistory::getFormId, form.getId())
+                            .orderByDesc(DynamicFormPublishHistory::getVersion));
+
+            if (CollectionUtils.isEmpty(histories)) {
+                continue;
+            }
+
+            DynamicFormPublishedVersion vo = new DynamicFormPublishedVersion();
+            vo.setFormId(form.getId());
+            vo.setFormName(form.getName());
+            vo.setLatestVersion(histories.get(0).getVersion());
+
+            List<DynamicFormPublishedVersion.Version> versions = new ArrayList<>();
+            for (DynamicFormPublishHistory h : histories) {
+                DynamicFormPublishedVersion.Version v = new DynamicFormPublishedVersion.Version();
+                v.setVersion(h.getVersion());
+                v.setPublishTime(h.getCreateTime() != null
+                        ? h.getCreateTime().toString() : null);
+                versions.add(v);
+            }
+            vo.setVersions(versions);
+            result.add(vo);
+        }
+        return result;
     }
 
     // ---------- private helpers ----------

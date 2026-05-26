@@ -4,7 +4,9 @@ import com.cat.common.entity.*;
 import com.cat.common.entity.dynamicForm.DynamicForm;
 import com.cat.common.entity.dynamicForm.FormData;
 import com.cat.simple.form.service.DynamicFormService;
+import com.cat.common.entity.dynamicForm.DynamicFormPublishedVersion;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -74,5 +76,10 @@ private DynamicFormService dynamicFormService;
         return HttpResult.back(dynamicFormService.submit(formData)  ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
+    @Operation(summary = "已发布表单列表（含历史版本）")
+    @RequestMapping(value = "/publishedForms", method = RequestMethod.POST)
+    public HttpResult<List<DynamicFormPublishedVersion>> publishedForms() {
+        return HttpResult.back(dynamicFormService.publishedForms());
+    }
 
 }
