@@ -81,6 +81,11 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .setCreateTime(now);
         int insertByte = processDefinitionBytearrayMapper.insert(bytearray) > 0 ? 1 : 0;
 
+        // 新增节点配置（全量覆盖，null = 清空）
+        saveGlobalFormBinding(processDefinition.getId(), processDefinition.getGlobalFormBinding());
+        saveNodeFormBindings(processDefinition.getId(), processDefinition.getNodeFormBindings());
+        saveNodeFieldPermissions(processDefinition.getId(), processDefinition.getNodeFieldPermissions());
+
         return insert == 1 && insertByte == 1;
     }
 
