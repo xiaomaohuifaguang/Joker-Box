@@ -1,11 +1,11 @@
 package com.cat.simple.service;
 
 import com.cat.common.entity.auth.LoginUser;
-import com.cat.common.entity.auth.Role;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.common.entity.process.ProcessInstancePageParam;
 import com.cat.common.entity.Page;
 import com.cat.simple.config.security.UserDetailsImpl;
+import com.cat.simple.process.service.ProcessInstanceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -44,22 +44,102 @@ public class ProcessInstanceServiceTest {
     }
 
     @Test
-    void testQueryPage() {
+    void testQueryPageDraft() {
         ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
         pageParam.setCurrent(1);
         pageParam.setSize(10);
+        pageParam.setType("0");
 
         Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
         assertNotNull(page);
     }
 
+    @Test
+    void testQueryPageMyStartedActive() {
+        ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
+        pageParam.setCurrent(1);
+        pageParam.setSize(10);
+        pageParam.setType("1");
+
+        Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
+        assertNotNull(page);
+    }
+
+    @Test
+    void testQueryPageTodo() {
+        ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
+        pageParam.setCurrent(1);
+        pageParam.setSize(10);
+        pageParam.setType("2");
+
+        Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
+        assertNotNull(page);
+    }
+
+    @Test
+    void testQueryPageToClaim() {
+        ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
+        pageParam.setCurrent(1);
+        pageParam.setSize(10);
+        pageParam.setType("3");
+
+        Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
+        assertNotNull(page);
+    }
+
+    @Test
+    void testQueryPageHandled() {
+        ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
+        pageParam.setCurrent(1);
+        pageParam.setSize(10);
+        pageParam.setType("4");
+
+        Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
+        assertNotNull(page);
+    }
+
+    @Test
+    void testQueryPageMyStartedAll() {
+        ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
+        pageParam.setCurrent(1);
+        pageParam.setSize(10);
+        pageParam.setType("5");
+
+        Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
+        assertNotNull(page);
+    }
+
+    @Test
+    void testQueryPageWithFilters() {
+        ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
+        pageParam.setCurrent(1);
+        pageParam.setSize(10);
+        pageParam.setType("5");
+        pageParam.setSearch("测试");
+        pageParam.setProcessDefinitionId(1);
+        pageParam.setProcessStatus("1");
+
+        Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
+        assertNotNull(page);
+    }
+
+    @Test
+    void testQueryPageInvalidType() {
+        ProcessInstancePageParam pageParam = new ProcessInstancePageParam();
+        pageParam.setCurrent(1);
+        pageParam.setSize(10);
+        pageParam.setType("99");
+
+        Page<ProcessInstance> page = processInstanceService.queryPage(pageParam);
+        assertNotNull(page);
+        assertTrue(page.getRecords() == null || page.getRecords().isEmpty());
+    }
 
     @Disabled("需要数据库中存在的流程定义 ID")
     @Test
     void testStart() {
-        // 请先替换为数据库中存在的流程定义 ID
         Integer processDefinitionId = 48;
-        ProcessInstance instance = processInstanceService.start(processDefinitionId, null);
+        ProcessInstance instance = processInstanceService.start(processDefinitionId, null, null);
         assertNotNull(instance);
     }
 
@@ -78,5 +158,4 @@ public class ProcessInstanceServiceTest {
         var targets = processInstanceService.getAvailableBackTargets(taskId);
         assertNotNull(targets);
     }
-
 }
