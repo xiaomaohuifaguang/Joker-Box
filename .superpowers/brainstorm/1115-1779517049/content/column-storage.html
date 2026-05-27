@@ -1,0 +1,90 @@
+<h2>动态表格列定义存储方案</h2>
+<p class="subtitle">列定义是动态表格的核心配置，选择存储位置决定了数据模型和校验方式</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>复用 options 字段（推荐）</h3>
+      <p>列定义存入 <code>DynamicFormField.options</code>，每个 DynamicFormOption 表示一列：</p>
+      <div class="mockup">
+        <div class="mockup-body">
+          <pre style="font-size:13px;margin:0">
+// field.options = [
+//   { label: "姓名", value: "name" },
+//   { label: "年龄", value: "age" },
+//   { label: "电话", value: "phone" }
+// ]
+//
+// 优点：
+// ✓ 无需新增数据库字段
+// ✓ label/value 天然对应 列标题/列key
+// ✓ 前端已有 options 渲染逻辑，适配成本低
+// ✓ 发布校验可复用 validateOptions 逻辑
+//
+// 缺点：
+// ✗ value 字段语义从"选项值"变为"列key"，略不直观
+// ✗ children 字段无意义（TABLE不用嵌套）</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>复用 props 字段</h3>
+      <p>列定义存入 <code>DynamicFormField.props</code> 的 <code>columns</code> 属性：</p>
+      <div class="mockup">
+        <div class="mockup-body">
+          <pre style="font-size:13px;margin:0">
+// field.props = {
+//   columns: [
+//     { key: "name",  title: "姓名" },
+//     { key: "age",   title: "年龄" },
+//     { key: "phone", title: "电话" }
+//   ]
+// }
+//
+// 优点：
+// ✓ key/title 语义更准确
+// ✓ props 本就是扩展配置位，符合设计意图
+// ✓ 不影响 options 的原有语义
+//
+// 缺点：
+// ✗ 校验逻辑需单独编写（不能复用 validateOptions）
+// ✗ columns 与 options 并存时前端需区分处理
+// ✗ 列定义和选项列表是两套数据结构</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>新建专用字段 columns</h3>
+      <p>在 DynamicFormField 和数据库表中新增 <code>columns</code> JSON 字段：</p>
+      <div class="mockup">
+        <div class="mockup-body">
+          <pre style="font-size:13px;margin:0">
+// 新增字段: cat_dynamic_form_field.columns (JSON)
+// field.columns = [
+//   { key: "name",  title: "姓名" },
+//   { key: "age",   title: "年龄" },
+//   { key: "phone", title: "电话" }
+// ]
+//
+// 优点：
+// ✓ 语义最清晰，专列专用
+// ✓ 校验独立，不影响其他类型
+//
+// 缺点：
+// ✗ 需要数据库 DDL 变更
+// ✗ 需要新增 TypeHandler 和校验逻辑
+// ✗ 仅 TABLE 类型使用，字段利用率低</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

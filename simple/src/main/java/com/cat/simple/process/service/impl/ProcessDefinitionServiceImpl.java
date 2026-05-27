@@ -51,6 +51,8 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     private RepositoryService repositoryService;
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private com.cat.simple.process.service.ProcessFormService processFormService;
 
 
     @Override
@@ -452,5 +454,48 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
     private String modifyProcessId(String originalXml, String oldProcessId, String newProcessId) {
         return originalXml.replaceAll(oldProcessId, newProcessId);
+    }
+
+    @Override
+    public ProcessDefinition startInfo(Integer processDefinitionId) {
+        ProcessDefinition definition = processDefinitionMapper.selectById(processDefinitionId);
+        if (definition == null) {
+            return null;
+        }
+
+        // 解析 BPMN 获取 startEvent 的 nodeId
+        String startNodeId = resolveStartEventNodeId(definition.getId());
+        com.cat.common.entity.process.TaskFormVO startForm =
+                processFormService.buildStartForm(processDefinitionId, startNodeId);
+        definition.setStartForm(startForm);
+
+        return definition;
+    }
+
+    /**
+     * 从 BPMN XML 中解析 startEvent 节点的 ID。
+     */
+    private String resolveStartEventNodeId(Integer processDefinitionId) {
+        ProcessDefinitionBytearray bytearray = processDefinitionBytearrayMapper.selectOne(
+                new LambdaQueryWrapper<ProcessDefinitionBytearray>()
+                        .eq(ProcessDefinitionBytearray::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessDefinitionBytearray::getVersion, "DRAFT")
+                        .last("LIMIT 1"));
+        if (bytearray == null || bytearray.getXml() == null) {
+            return null;
+        }
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new ByteArrayInputStream(bytearray.getXml()));
+            var startEvents = doc.getElementsByTagNameNS("http://www.omg.org/spec/BPMN/20100524/MODEL", "startEvent");
+            if (startEvents.getLength() > 0) {
+                return startEvents.item(0).getAttributes().getNamedItem("id").getNodeValue();
+            }
+        } catch (Exception e) {
+            // 解析失败则返回 null
+        }
+        return null;
     }
 }

@@ -37,4 +37,12 @@ public interface ProcessDefinitionService {
     List<ProcessDefinitionBytearray> versionList(Integer processDefinitionId);
 
     boolean rollback(Integer processDefinitionId, String targetVersion);
+
+    /**
+     * 获取发起流程时的定义信息 + 表单模板配置。
+     *
+     * @param processDefinitionId 流程定义ID
+     * @return 流程定义信息（含 startForm）
+     */
+    ProcessDefinition startInfo(Integer processDefinitionId);
 }

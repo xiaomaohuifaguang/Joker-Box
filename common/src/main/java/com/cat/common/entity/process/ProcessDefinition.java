@@ -97,4 +97,8 @@ public class ProcessDefinition implements Serializable {
     @TableField(exist = false)
     private List<ProcessNodeFieldPermission> nodeFieldPermissions;
 
+    @Schema(description = "发起流程时的表单模板配置")
+    @TableField(exist = false)
+    private TaskFormVO startForm;
+
 }

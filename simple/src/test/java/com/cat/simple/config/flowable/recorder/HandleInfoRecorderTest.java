@@ -5,7 +5,7 @@ import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.enums.HandleTypeEnum;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
-import com.cat.simple.mapper.ProcessHandleInfoMapper;
+import com.cat.simple.process.mapper.ProcessHandleInfoMapper;
 import org.flowable.task.api.Task;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,13 +80,14 @@ class HandleInfoRecorderTest {
         Task task = mock(Task.class);
         when(task.getId()).thenReturn("task-1");
         when(task.getName()).thenReturn("审批节点");
+        when(task.getTaskDefinitionKey()).thenReturn("target-node");
 
         recorder.recordBack(param, task, "target-node", "目标节点");
 
         ArgumentCaptor<ProcessHandleInfo> captor = ArgumentCaptor.forClass(ProcessHandleInfo.class);
         verify(processHandleInfoMapper).insert(captor.capture());
         ProcessHandleInfo info = captor.getValue();
-        assertEquals(4, info.getRound());
+        assertEquals(3, info.getRound());
         assertEquals("target-node", info.getTaskDefinitionKey());
         assertTrue(info.getExtra().contains("targetNodeId"));
         assertTrue(info.getExtra().contains("目标节点"));

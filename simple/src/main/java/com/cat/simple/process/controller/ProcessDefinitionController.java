@@ -99,4 +99,13 @@ public class ProcessDefinitionController {
         return HttpResult.back(processDefinitionService.rollback(processDefinitionId, targetVersion) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
+    @Operation(summary = "发起流程时的定义信息+表单配置")
+    @Parameters({
+            @Parameter(name = "processDefinitionId", description = "流程定义id", required = true)
+    })
+    @RequestMapping(value = "/startInfo", method = RequestMethod.POST)
+    public HttpResult<ProcessDefinition> startInfo(@RequestParam Integer processDefinitionId) {
+        return HttpResult.back(processDefinitionService.startInfo(processDefinitionId));
+    }
+
 }

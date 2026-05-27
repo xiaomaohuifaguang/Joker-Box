@@ -226,44 +226,68 @@ RENAME TABLE cat_process_definition_bytearray_new TO cat_process_definition_byte
 
 ## 四、数据模型设计
 
-### 4.1 流程-表单绑定表（所有表均无外键，仅逻辑关联）
+> **版本管理统一原则**：所有跟随流程定义的配置表（流程-表单绑定、节点字段权限）均增加 `version` 字段，与 `cat_process_definition_bytearray` 保持一致的版本生命周期：`DRAFT`（编辑态）→ 发布时复制到版本号 → 停用/回滚时从版本号复制回 `DRAFT`。
+
+### 4.1 流程定义-表单绑定表（所有表均无外键，仅逻辑关联）
 
 ```sql
-CREATE TABLE cat_process_form_binding (
-    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
-    process_definition_id INT NOT NULL COMMENT '自建流程定义ID',
-    node_key            VARCHAR(64) COMMENT '节点ID（NULL表示全局默认）',
-    form_id             VARCHAR(64) NOT NULL COMMENT '表单ID',
-    form_version        VARCHAR(32) NOT NULL COMMENT '绑定时的表单版本（快照）',
-    bind_time           DATETIME NOT NULL COMMENT '绑定时间',
-    create_by           VARCHAR(64) NOT NULL,
-    create_time         DATETIME NOT NULL,
-    update_time         DATETIME NOT NULL,
-    deleted             VARCHAR(1) DEFAULT '0',
-    UNIQUE KEY uk_process_node (process_definition_id, node_key)
+CREATE TABLE cat_process_definition_form (
+    id                      BIGINT PRIMARY KEY AUTO_INCREMENT,
+    process_definition_id   INT NOT NULL COMMENT '自建流程定义ID',
+    version                 VARCHAR(32) NOT NULL COMMENT 'DRAFT / 1 / 2 / 3 ...',
+    form_id                 VARCHAR(64) NOT NULL COMMENT '表单ID',
+    bind_type               VARCHAR(32) NOT NULL COMMENT 'GLOBAL-全局默认 / NODE-节点绑定',
+    node_id                 VARCHAR(64) COMMENT 'BPMN节点ID，GLOBAL时为空',
+    inherit_main_form       VARCHAR(1) DEFAULT '0' COMMENT '节点是否继承主表单字段',
+    create_by               VARCHAR(64),
+    create_time             DATETIME,
+    UNIQUE KEY uk_def_version_node (process_definition_id, version, node_id)
 );
 ```
 
-### 4.2 节点表单配置表
+### 4.2 节点字段权限表
 
 ```sql
-CREATE TABLE cat_process_node_form_config (
+CREATE TABLE cat_process_node_field_permission (
     id                      BIGINT PRIMARY KEY AUTO_INCREMENT,
     process_definition_id   INT NOT NULL,
-    node_key                VARCHAR(64) NOT NULL COMMENT 'BPMN节点ID',
-    form_id                 VARCHAR(64) NOT NULL,
-    read_mode               VARCHAR(32) DEFAULT 'EDITABLE' COMMENT 'READONLY/EDITABLE/PARTIAL',
-    visible_fields          JSON COMMENT '可见字段白名单（NULL表示全部可见）',
-    editable_fields         JSON COMMENT '可编辑字段白名单（NULL表示按表单配置）',
-    required_fields         JSON COMMENT '强制必填字段（覆盖表单原配置）',
-    data_inherit_from       VARCHAR(64) COMMENT '数据继承来源节点（NULL表示上一节点）',
-    parallel_merge_strategy VARCHAR(32) DEFAULT 'LAST_SUBMIT' COMMENT '并行合并策略',
-    create_by               VARCHAR(64) NOT NULL,
-    create_time             DATETIME NOT NULL,
-    update_time             DATETIME NOT NULL,
-    deleted                 VARCHAR(1) DEFAULT '0',
-    UNIQUE KEY uk_process_node (process_definition_id, node_key)
+    version                 VARCHAR(32) NOT NULL COMMENT 'DRAFT / 1 / 2 / 3 ...',
+    node_id                 VARCHAR(64) NOT NULL COMMENT 'BPMN节点ID',
+    field_key               VARCHAR(128) NOT NULL COMMENT '字段标识（对应表单 field.key）',
+    permission              VARCHAR(32) NOT NULL COMMENT 'VISIBLE / READONLY / HIDDEN / EDITABLE / REQUIRED',
+    create_by               VARCHAR(64),
+    create_time             DATETIME,
+    UNIQUE KEY uk_def_version_node_field (process_definition_id, version, node_id, field_key)
 );
+```
+
+### 版本生命周期（新增配置表）
+
+```
+创建流程
+  │
+  ▼
+bytearray：version="DRAFT"
+node_form：version="DRAFT"  （空配置）
+node_permission：version="DRAFT" （空配置）
+  │
+  │  点击发布
+  ▼
+bytearray：复制 DRAFT → "1"，删除 DRAFT
+node_form：复制 DRAFT → "1"，删除 DRAFT
+node_permission：复制 DRAFT → "1"，删除 DRAFT
+  │
+  │  停用
+  ▼
+bytearray：复制 "1" → DRAFT
+node_form：复制 "1" → DRAFT
+node_permission：复制 "1" → DRAFT
+  │
+  │  回滚到 V1
+  ▼
+bytearray：复制 "1" → DRAFT
+node_form：复制 "1" → DRAFT
+node_permission：复制 "1" → DRAFT
 ```
 
 ### 4.3 字段→变量映射表
