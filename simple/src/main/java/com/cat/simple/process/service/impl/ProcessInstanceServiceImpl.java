@@ -11,6 +11,7 @@ import com.cat.simple.config.flowable.guard.ProcessGuard;
 import com.cat.simple.process.mapper.ProcessInstanceMapper;
 import com.cat.simple.process.mapper.ProcessHandleInfoMapper;
 import com.cat.simple.process.service.ProcessInstanceService;
+import com.cat.simple.process.service.ProcessFormService;
 import com.cat.simple.system.mapper.UserMapper;
 import jakarta.annotation.Resource;
 import org.flowable.engine.TaskService;
@@ -34,13 +35,14 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private BackConfigReader backConfigReader;
     @Resource private BackTargetResolver backTargetResolver;
     @Resource private TaskService taskService;
+    @Resource private ProcessFormService processFormService;
     @Autowired
     private UserMapper userMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ProcessInstance start(Integer processDefinitionId, String title) {
-        return commandBus.execute(new StartProcessCommand(processDefinitionId, title));
+    public ProcessInstance start(Integer processDefinitionId, String title, Map<String, Object> formData) {
+        return commandBus.execute(new StartProcessCommand(processDefinitionId, title, formData));
     }
 
     @Override
@@ -70,10 +72,18 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                         .taskId(taskId)
                         .taskCandidateUser(userId)
                         .singleResult() != null;
-                if (isAssignee || isCandidate) {
+                boolean editable = isAssignee || isCandidate;
+
+                if (editable) {
                     instance.setTaskId(taskId);
                     instance.setTaskName(task.getName());
                 }
+
+                // 组装 taskForm
+                TaskFormVO taskForm = processFormService.buildTaskForm(
+                        id, instance.getProcessDefinitionId(),
+                        task.getTaskDefinitionKey(), editable);
+                instance.setTaskForm(taskForm);
             }
         }
         return instance;
@@ -228,7 +238,8 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ProcessInstance saveDraft(Integer id, Integer processDefinitionId, String title) {
+    public ProcessInstance saveDraft(Integer id, Integer processDefinitionId,
+                                      String title, Map<String, Object> formData) {
         String currentUserId = guard.getCurrentUserId();
         com.cat.common.entity.process.ProcessDefinition definition =
                 guard.assertDefinitionPublished(processDefinitionId);
@@ -244,6 +255,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     .set(ProcessInstance::getProcessDefinitionId, definition.getId())
                     .set(ProcessInstance::getTitle, title)
                     .set(ProcessInstance::getUpdateTime, now));
+
+            // 创建表单实例（如需）并写入数据（草稿跳过必填校验）
+            processFormService.createFormInstanceIfNeeded(id, definition.getId(), null);
+            processFormService.writeFormData(id, definition.getId(), null, formData, true);
+
             return exist.setProcessDefinitionId(definition.getId()).setTitle(title).setUpdateTime(now);
         }
 
@@ -255,6 +271,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .setCreateTime(now)
                 .setUpdateTime(now);
         processInstanceMapper.insert(instance);
+
+        // 创建表单实例（如需）并写入数据（草稿跳过必填校验）
+        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), null);
+        processFormService.writeFormData(instance.getId(), definition.getId(), null, formData, true);
+
         return instance;
     }
 

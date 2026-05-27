@@ -8,6 +8,8 @@ import com.cat.common.entity.process.ProcessInstance;
 import com.cat.common.entity.process.BackConfig;
 import com.cat.common.entity.process.BackTargetNode;
 import com.cat.common.entity.process.ProcessInstancePageParam;
+import com.cat.common.entity.process.StartProcessParam;
+import com.cat.common.entity.process.SaveDraftParam;
 import com.cat.simple.process.service.ProcessInstanceService;
 import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,14 +33,10 @@ public class ProcessInstanceController {
 
 
     @Operation(summary = "发起流程")
-    @Parameters({
-            @Parameter(name = "processDefinitionId", description = "自建流程定义id", required = true),
-            @Parameter(name = "title", description = "流程标题")
-    })
     @RequestMapping(value = "/start", method = RequestMethod.POST)
-    public HttpResult<ProcessInstance> start(@RequestParam("processDefinitionId") Integer processDefinitionId,
-                                              @RequestParam(value = "title", required = false) String title) {
-        return HttpResult.back(processInstanceService.start(processDefinitionId, title));
+    public HttpResult<ProcessInstance> start(@RequestBody StartProcessParam param) {
+        return HttpResult.back(processInstanceService.start(
+                param.getProcessDefinitionId(), param.getTitle(), param.getFormData()));
     }
 
 
@@ -84,16 +82,10 @@ public class ProcessInstanceController {
 
 
     @Operation(summary = "保存草稿")
-    @Parameters({
-            @Parameter(name = "id", description = "草稿流程实例id，传则更新，不传则新建"),
-            @Parameter(name = "processDefinitionId", description = "自建流程定义id", required = true),
-            @Parameter(name = "title", description = "流程标题")
-    })
     @RequestMapping(value = "/saveDraft", method = RequestMethod.POST)
-    public HttpResult<ProcessInstance> saveDraft(@RequestParam(value = "id", required = false) Integer id,
-                                                  @RequestParam("processDefinitionId") Integer processDefinitionId,
-                                                  @RequestParam(value = "title", required = false) String title) {
-        return HttpResult.back(processInstanceService.saveDraft(id, processDefinitionId, title));
+    public HttpResult<ProcessInstance> saveDraft(@RequestBody SaveDraftParam param) {
+        return HttpResult.back(processInstanceService.saveDraft(
+                param.getId(), param.getProcessDefinitionId(), param.getTitle(), param.getFormData()));
     }
 
     @Operation(summary = "驳回")

@@ -10,6 +10,7 @@ import com.cat.common.entity.process.ProcessInstancePageParam;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 
 import java.util.List;
+import java.util.Map;
 
 
 
@@ -33,7 +34,7 @@ public interface ProcessInstanceService {
      * @param title 流程标题，可为空
      * @return 自建 {@link ProcessInstance}
      */
-    ProcessInstance start(Integer processDefinitionId, String title);
+    ProcessInstance start(Integer processDefinitionId, String title, Map<String, Object> formData);
 
 
     /**
@@ -90,7 +91,7 @@ public interface ProcessInstanceService {
      * @param title               流程标题，可为空
      * @return 保存后的流程实例
      */
-    ProcessInstance saveDraft(Integer id, Integer processDefinitionId, String title);
+    ProcessInstance saveDraft(Integer id, Integer processDefinitionId, String title, Map<String, Object> formData);
 
     /**
      * 执行驳回

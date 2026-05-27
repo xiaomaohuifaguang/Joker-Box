@@ -15,4 +15,5 @@ public class StartContext {
     private String title;
     private String applicantId;
     private Map<String, Object> initialVariables;
+    private Map<String, Object> formData;
 }
