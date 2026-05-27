@@ -94,4 +94,8 @@ public class ProcessInstance implements Serializable {
     @TableField(exist = false)
     private List<ProcessTimelineNode> timeline;
 
+    @Schema(description = "任务表单渲染数据")
+    @TableField(exist = false)
+    private TaskFormVO taskForm;
+
 }

@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * <p>
@@ -38,5 +39,8 @@ public class ProcessHandleParam implements Serializable {
 
     @Schema(description = "目标节点id（驳回方式为用户自选时必填）")
     private String targetNodeId;
+
+    @Schema(description = "表单数据")
+    private Map<String, Object> formData;
 
 }
