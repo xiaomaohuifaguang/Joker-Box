@@ -14,5 +14,6 @@ public class PassContext {
     private Integer processInstanceId;
     private String taskId;
     private String remark;
-    private Map<String, Object> formData;
+    private Map<String, Object> nodeFormData;
+    private Map<String, Object> globalFormData;
 }

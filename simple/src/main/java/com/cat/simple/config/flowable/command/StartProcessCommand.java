@@ -19,15 +19,19 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
     @Resource private ProcessCodeGenerator codeGenerator;
     @Resource private com.cat.simple.process.mapper.ProcessInstanceMapper processInstanceMapper;
     @Resource private ProcessFormService processFormService;
+    @Resource private com.cat.simple.process.service.ProcessDefinitionService processDefinitionService;
 
     private final Integer processDefinitionId;
     private final String title;
-    private final Map<String, Object> formData;
+    private final Map<String, Object> nodeFormData;
+    private final Map<String, Object> globalFormData;
 
-    public StartProcessCommand(Integer processDefinitionId, String title, Map<String, Object> formData) {
+    public StartProcessCommand(Integer processDefinitionId, String title,
+                               Map<String, Object> nodeFormData, Map<String, Object> globalFormData) {
         this.processDefinitionId = processDefinitionId;
         this.title = title;
-        this.formData = formData;
+        this.nodeFormData = nodeFormData;
+        this.globalFormData = globalFormData;
     }
 
     @Override
@@ -57,8 +61,10 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
         processInstanceMapper.insert(instance);
 
         // 创建表单实例并写入数据
-        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), null);
-        processFormService.writeFormData(instance.getId(), definition.getId(), null, formData, false);
+        String startNodeId = processDefinitionService.resolveStartEventNodeId(processDefinitionId);
+        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), startNodeId);
+        processFormService.writeFormData(instance.getId(), definition.getId(), startNodeId,
+                nodeFormData, globalFormData, false);
 
         // 兜底：trivial 流程立即结束
         if (runtimeService.createProcessInstanceQuery()
@@ -80,7 +86,7 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 
     @Override
     protected void beforeHook() {
-        StartContext ctx = new StartContext(processDefinitionId, title, guard.getCurrentUserId(), null, formData);
+        StartContext ctx = new StartContext(processDefinitionId, title, guard.getCurrentUserId(), null, nodeFormData, globalFormData);
         lifecycleHook.beforeStart(ctx);
     }
 

@@ -40,7 +40,16 @@ public class ProcessHandleParam implements Serializable {
     @Schema(description = "目标节点id（驳回方式为用户自选时必填）")
     private String targetNodeId;
 
-    @Schema(description = "表单数据")
-    private Map<String, Object> formData;
+    @Schema(description = "流程定义id（发起/保存草稿时必填）")
+    private Integer processDefinitionId;
+
+    @Schema(description = "流程标题（发起/保存草稿时使用）")
+    private String title;
+
+    @Schema(description = "节点表单数据")
+    private Map<String, Object> nodeFormData;
+
+    @Schema(description = "全局表单数据")
+    private Map<String, Object> globalFormData;
 
 }

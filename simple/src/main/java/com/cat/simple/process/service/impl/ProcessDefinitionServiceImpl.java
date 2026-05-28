@@ -474,24 +474,44 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
     /**
      * 从 BPMN XML 中解析 startEvent 节点的 ID。
+     * 优先匹配 bpmn:startEvent，其次 startEvent。
      */
-    private String resolveStartEventNodeId(Integer processDefinitionId) {
+    @Override
+    public String resolveStartEventNodeId(Integer processDefinitionId) {
+        ProcessDefinition processDefinition = processDefinitionMapper.selectById(processDefinitionId);
+        if (processDefinition == null) {
+            return null;
+        }
+
+        String effectiveVersion = "1".equals(processDefinition.getStatus()) && StringUtils.hasText(processDefinition.getVersion())
+                ? processDefinition.getVersion()
+                : "DRAFT";
+
         ProcessDefinitionBytearray bytearray = processDefinitionBytearrayMapper.selectOne(
                 new LambdaQueryWrapper<ProcessDefinitionBytearray>()
                         .eq(ProcessDefinitionBytearray::getProcessDefinitionId, processDefinitionId)
-                        .eq(ProcessDefinitionBytearray::getVersion, "DRAFT")
+                        .eq(ProcessDefinitionBytearray::getVersion, effectiveVersion)
                         .last("LIMIT 1"));
         if (bytearray == null || bytearray.getXml() == null) {
             return null;
         }
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
+            factory.setNamespaceAware(false);
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(new ByteArrayInputStream(bytearray.getXml()));
-            var startEvents = doc.getElementsByTagNameNS("http://www.omg.org/spec/BPMN/20100524/MODEL", "startEvent");
+
+            // 先尝试 bpmn:startEvent
+            var startEvents = doc.getElementsByTagName("bpmn:startEvent");
+            if (startEvents.getLength() == 0) {
+                // 再尝试 startEvent
+                startEvents = doc.getElementsByTagName("startEvent");
+            }
             if (startEvents.getLength() > 0) {
-                return startEvents.item(0).getAttributes().getNamedItem("id").getNodeValue();
+                var idAttr = startEvents.item(0).getAttributes().getNamedItem("id");
+                if (idAttr != null) {
+                    return idAttr.getNodeValue();
+                }
             }
         } catch (Exception e) {
             // 解析失败则返回 null

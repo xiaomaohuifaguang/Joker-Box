@@ -31,11 +31,13 @@ public interface ProcessFormService {
      * @param processInstanceId  流程实例ID
      * @param processDefinitionId 流程定义ID
      * @param nodeId             BPMN节点ID
-     * @param formData           前端提交的表单数据 key-value
+     * @param nodeFormData       节点表单数据 key-value
+     * @param globalFormData     全局表单数据 key-value
      * @param skipRequired       是否跳过必填校验
      */
     void writeFormData(Integer processInstanceId, Integer processDefinitionId,
-                       String nodeId, Map<String, Object> formData, boolean skipRequired);
+                       String nodeId, Map<String, Object> nodeFormData,
+                       Map<String, Object> globalFormData, boolean skipRequired);
 
     /**
      * 组装任务表单渲染数据（含字段定义、权限、已填值、分组、继承）。

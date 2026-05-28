@@ -15,5 +15,6 @@ public class StartContext {
     private String title;
     private String applicantId;
     private Map<String, Object> initialVariables;
-    private Map<String, Object> formData;
+    private Map<String, Object> nodeFormData;
+    private Map<String, Object> globalFormData;
 }

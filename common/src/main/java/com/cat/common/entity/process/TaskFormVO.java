@@ -1,11 +1,11 @@
 package com.cat.common.entity.process;
 
+import com.cat.common.entity.dynamicForm.DynamicForm;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -19,21 +19,9 @@ public class TaskFormVO implements Serializable {
     @Schema(description = "当前用户是否可编辑（是否为任务处理人）")
     private boolean editable;
 
-    @Schema(description = "当前节点绑定的表单ID")
-    private String formId;
+    @Schema(description = "节点表单（含字段定义、权限、当前值、分组、联动规则）")
+    private DynamicForm nodeForm;
 
-    @Schema(description = "表单版本")
-    private String formVersion;
-
-    @Schema(description = "表单实例ID")
-    private String formInstanceId;
-
-    @Schema(description = "未分组字段列表")
-    private List<TaskFormFieldVO> formFields;
-
-    @Schema(description = "分组字段列表")
-    private List<TaskFormGroupVO> groups;
-
-    @Schema(description = "继承的主表单数据（仅 inheritMainForm=1 时有值）")
-    private TaskFormInheritedVO inherited;
+    @Schema(description = "继承的全局表单（仅 inheritMainForm=1 且与节点表单不同时有值）")
+    private DynamicForm globalForm;
 }

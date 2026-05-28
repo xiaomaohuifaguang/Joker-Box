@@ -36,13 +36,16 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private BackTargetResolver backTargetResolver;
     @Resource private TaskService taskService;
     @Resource private ProcessFormService processFormService;
+    @Resource private com.cat.simple.process.service.ProcessDefinitionService processDefinitionService;
     @Autowired
     private UserMapper userMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ProcessInstance start(Integer processDefinitionId, String title, Map<String, Object> formData) {
-        return commandBus.execute(new StartProcessCommand(processDefinitionId, title, formData));
+    public ProcessInstance start(ProcessHandleParam param) {
+        return commandBus.execute(new StartProcessCommand(
+                param.getProcessDefinitionId(), param.getTitle(),
+                param.getNodeFormData(), param.getGlobalFormData()));
     }
 
     @Override
@@ -84,6 +87,14 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                         id, instance.getProcessDefinitionId(),
                         task.getTaskDefinitionKey(), editable);
                 instance.setTaskForm(taskForm);
+            }
+        } else if (ProcessStatusEnum.DRAFT.getStatus().equals(instance.getProcessStatus())) {
+            String startNodeId = processDefinitionService.resolveStartEventNodeId(
+                    instance.getProcessDefinitionId());
+            if (startNodeId != null) {
+                TaskFormVO draftForm = processFormService.buildTaskForm(
+                        id, instance.getProcessDefinitionId(), startNodeId, true);
+                instance.setTaskForm(draftForm);
             }
         }
         return instance;
@@ -238,12 +249,16 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ProcessInstance saveDraft(Integer id, Integer processDefinitionId,
-                                      String title, Map<String, Object> formData) {
+    public ProcessInstance saveDraft(ProcessHandleParam param) {
+        Integer id = param.getProcessInstanceId();
+        Integer processDefinitionId = param.getProcessDefinitionId();
+        String title = param.getTitle();
+
         String currentUserId = guard.getCurrentUserId();
         com.cat.common.entity.process.ProcessDefinition definition =
                 guard.assertDefinitionPublished(processDefinitionId);
         LocalDateTime now = LocalDateTime.now();
+        String startNodeId = processDefinitionService.resolveStartEventNodeId(processDefinitionId);
 
         if (id != null) {
             ProcessInstance exist = guard.assertInstanceDraft(id);
@@ -256,9 +271,9 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     .set(ProcessInstance::getTitle, title)
                     .set(ProcessInstance::getUpdateTime, now));
 
-            // 创建表单实例（如需）并写入数据（草稿跳过必填校验）
-            processFormService.createFormInstanceIfNeeded(id, definition.getId(), null);
-            processFormService.writeFormData(id, definition.getId(), null, formData, true);
+            processFormService.createFormInstanceIfNeeded(id, definition.getId(), startNodeId);
+            processFormService.writeFormData(id, definition.getId(), startNodeId,
+                    param.getNodeFormData(), param.getGlobalFormData(), true);
 
             return exist.setProcessDefinitionId(definition.getId()).setTitle(title).setUpdateTime(now);
         }
@@ -272,9 +287,9 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .setUpdateTime(now);
         processInstanceMapper.insert(instance);
 
-        // 创建表单实例（如需）并写入数据（草稿跳过必填校验）
-        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), null);
-        processFormService.writeFormData(instance.getId(), definition.getId(), null, formData, true);
+        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), startNodeId);
+        processFormService.writeFormData(instance.getId(), definition.getId(), startNodeId,
+                param.getNodeFormData(), param.getGlobalFormData(), true);
 
         return instance;
     }

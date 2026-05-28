@@ -27,6 +27,16 @@ public interface DynamicFormService {
 
     boolean submit(FormData formData);
 
+    /**
+     * 保存表单实例数据（弱校验，适用于流程层）。
+     * 不校验表单发布状态，只做字段存在性和必填校验（可跳过）。
+     *
+     * @param formData     表单数据
+     * @param skipRequired 是否跳过必填校验
+     * @return 是否成功
+     */
+    boolean saveFormData(FormData formData, boolean skipRequired);
+
     List<DynamicFormPublishedVersion> publishedForms();
 
 }

@@ -373,6 +373,99 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean saveFormData(FormData formData, boolean skipRequired) {
+        DynamicForm dynamicForm = dynamicFormMapper.selectById(formData.getFormId());
+        if (dynamicForm == null) {
+            throw new IllegalArgumentException("表单不存在: " + formData.getFormId());
+        }
+
+        String version = dynamicForm.getVersion();
+        if (StringUtils.hasText(formData.getVersion()) && !"DRAFT".equals(formData.getVersion())) {
+            version = formData.getVersion();
+        }
+
+        List<DynamicFormField> fields = dynamicFormFieldMapper.selectList(
+                new LambdaQueryWrapper<DynamicFormField>()
+                        .eq(DynamicFormField::getFormId, dynamicForm.getId())
+                        .eq(DynamicFormField::getVersion, version));
+        if (CollectionUtils.isEmpty(fields)) {
+            throw new IllegalStateException("表单模板为空: " + formData.getFormId());
+        }
+
+        if (!skipRequired) {
+            for (DynamicFormField field : fields) {
+                if (formData.getData() == null || !formData.getData().containsKey(field.getFieldId())) {
+                    continue;
+                }
+                Object value = formData.getData().get(field.getFieldId());
+                if ("1".equals(field.getRequired()) && isEmptyValue(value)) {
+                    throw new IllegalArgumentException(field.getTitle() + " 必填");
+                }
+            }
+        }
+
+        String userId = currentUserId();
+        LocalDateTime now = LocalDateTime.now();
+
+        DynamicFormInstance instance = dynamicFormInstanceMapper.selectById(formData.getFormInstanceId());
+        if (instance == null) {
+            throw new IllegalArgumentException("表单实例不存在: " + formData.getFormInstanceId());
+        }
+        instance.setUpdateTime(now);
+        dynamicFormInstanceMapper.updateById(instance);
+
+        List<DynamicFormFieldInstance> existInstances = dynamicFormFieldInstanceMapper.selectList(
+                new LambdaQueryWrapper<DynamicFormFieldInstance>()
+                        .eq(DynamicFormFieldInstance::getFormInstanceId, instance.getId()));
+        Map<String, DynamicFormFieldInstance> existMap = existInstances.stream()
+                .collect(Collectors.toMap(
+                        DynamicFormFieldInstance::getFormFieldId,
+                        Function.identity(),
+                        (a, b) -> a));
+
+        String finalInstanceId = instance.getId();
+        List<DynamicFormFieldInstance> toSave = new ArrayList<>();
+
+        for (DynamicFormField field : fields) {
+            if (formData.getData() == null || !formData.getData().containsKey(field.getFieldId())) {
+                continue;
+            }
+            DynamicFormFieldInstance fieldInstance = existMap.get(field.getId());
+            if (fieldInstance == null) {
+                fieldInstance = new DynamicFormFieldInstance()
+                        .setVersion(version)
+                        .setCreateBy(userId)
+                        .setCreateTime(now)
+                        .setDeleted("0");
+            }
+            fieldInstance.setFormFieldId(field.getId())
+                    .setFormInstanceId(finalInstanceId)
+                    .setVal(formData.getData().get(field.getFieldId()))
+                    .setUpdateTime(now);
+            toSave.add(fieldInstance);
+        }
+
+        if (!toSave.isEmpty()) {
+            dynamicFormFieldInstanceMapper.insertOrUpdate(toSave);
+        }
+        return true;
+    }
+
+    private boolean isEmptyValue(Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (value instanceof CharSequence) {
+            return !StringUtils.hasText((CharSequence) value);
+        }
+        if (value instanceof Collection) {
+            return ((Collection<?>) value).isEmpty();
+        }
+        return false;
+    }
+
+    @Override
     public List<DynamicFormPublishedVersion> publishedForms() {
         List<DynamicForm> publishedForms = dynamicFormMapper.selectList(
                 new LambdaQueryWrapper<DynamicForm>()

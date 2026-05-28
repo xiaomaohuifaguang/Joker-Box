@@ -30,11 +30,10 @@ public interface ProcessInstanceService {
      * 并把申请动作落到 {@link com.cat.common.entity.process.ProcessHandleInfo} 中,
      * 便于后续业务扩展(审批轨迹/转办/抄送等)。
      *
-     * @param processDefinitionId 自建表 cat_process_definition 主键
-     * @param title 流程标题，可为空
+     * @param param 流程操作参数，需包含 processDefinitionId、title、formData
      * @return 自建 {@link ProcessInstance}
      */
-    ProcessInstance start(Integer processDefinitionId, String title, Map<String, Object> formData);
+    ProcessInstance start(ProcessHandleParam param);
 
 
     /**
@@ -86,12 +85,10 @@ public interface ProcessInstanceService {
      * 保存草稿
      * 新建或更新草稿流程实例，不启动 Flowable 引擎。
      *
-     * @param id                  草稿流程实例id，传则更新，不传则新建
-     * @param processDefinitionId 自建流程定义id
-     * @param title               流程标题，可为空
+     * @param param 流程操作参数，需包含 processInstanceId（传则更新）、processDefinitionId、title、formData
      * @return 保存后的流程实例
      */
-    ProcessInstance saveDraft(Integer id, Integer processDefinitionId, String title, Map<String, Object> formData);
+    ProcessInstance saveDraft(ProcessHandleParam param);
 
     /**
      * 执行驳回

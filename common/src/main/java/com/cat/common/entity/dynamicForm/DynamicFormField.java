@@ -127,6 +127,14 @@ public class DynamicFormField implements Serializable {
     @TableField(typeHandler = Fastjson2TypeHandler.class)
     private Object props;
 
+    @Schema(description = "字段权限（运行时由流程节点权限注入，不持久化）")
+    @TableField(exist = false)
+    private String permission;
+
+    @Schema(description = "当前实例值（运行时由表单实例数据回填，不持久化）")
+    @TableField(exist = false)
+    private Object value;
+
     public boolean validate() {
         if (!StringUtils.hasText(this.title)) {
             return false;

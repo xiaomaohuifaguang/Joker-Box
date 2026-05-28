@@ -31,13 +31,16 @@ public class PassTaskCommand extends ProcessCommand<Void> {
         this.task = guard.getTask(param.getTaskId());
 
         // 校验并写入表单数据
-        if (param.getFormData() != null && !param.getFormData().isEmpty()) {
+        boolean hasNodeData = param.getNodeFormData() != null && !param.getNodeFormData().isEmpty();
+        boolean hasGlobalData = param.getGlobalFormData() != null && !param.getGlobalFormData().isEmpty();
+        if (hasNodeData || hasGlobalData) {
             ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
             processFormService.writeFormData(
                     param.getProcessInstanceId(),
                     instance.getProcessDefinitionId(),
                     task.getTaskDefinitionKey(),
-                    param.getFormData(),
+                    param.getNodeFormData(),
+                    param.getGlobalFormData(),
                     false);
         }
 
@@ -53,7 +56,7 @@ public class PassTaskCommand extends ProcessCommand<Void> {
     @Override
     protected void beforeHook() {
         PassContext ctx = new PassContext(param.getProcessInstanceId(), param.getTaskId(),
-                param.getRemark(), param.getFormData());
+                param.getRemark(), param.getNodeFormData(), param.getGlobalFormData());
         lifecycleHook.beforePass(ctx);
     }
 

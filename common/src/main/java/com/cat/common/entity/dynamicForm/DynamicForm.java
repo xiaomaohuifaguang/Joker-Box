@@ -79,5 +79,9 @@ public class DynamicForm implements Serializable {
     @TableField(exist = false)
     private List<DynamicFormLinkageRule> linkageRules;
 
+    @Schema(description = "表单实例ID（运行时回填，不持久化到本表）")
+    @TableField(exist = false)
+    private String formInstanceId;
+
 
 }

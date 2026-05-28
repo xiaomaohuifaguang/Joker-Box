@@ -45,4 +45,11 @@ public interface ProcessDefinitionService {
      * @return 流程定义信息（含 startForm）
      */
     ProcessDefinition startInfo(Integer processDefinitionId);
+
+    /**
+     * 从 BPMN XML 中解析 startEvent 节点的 ID。
+     * @param processDefinitionId 流程定义ID
+     * @return startEvent 节点 ID，解析失败返回 null
+     */
+    String resolveStartEventNodeId(Integer processDefinitionId);
 }

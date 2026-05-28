@@ -8,8 +8,6 @@ import com.cat.common.entity.process.ProcessInstance;
 import com.cat.common.entity.process.BackConfig;
 import com.cat.common.entity.process.BackTargetNode;
 import com.cat.common.entity.process.ProcessInstancePageParam;
-import com.cat.common.entity.process.StartProcessParam;
-import com.cat.common.entity.process.SaveDraftParam;
 import com.cat.simple.process.service.ProcessInstanceService;
 import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,9 +32,8 @@ public class ProcessInstanceController {
 
     @Operation(summary = "发起流程")
     @RequestMapping(value = "/start", method = RequestMethod.POST)
-    public HttpResult<ProcessInstance> start(@RequestBody StartProcessParam param) {
-        return HttpResult.back(processInstanceService.start(
-                param.getProcessDefinitionId(), param.getTitle(), param.getFormData()));
+    public HttpResult<ProcessInstance> start(@RequestBody ProcessHandleParam param) {
+        return HttpResult.back(processInstanceService.start(param));
     }
 
 
@@ -83,9 +80,8 @@ public class ProcessInstanceController {
 
     @Operation(summary = "保存草稿")
     @RequestMapping(value = "/saveDraft", method = RequestMethod.POST)
-    public HttpResult<ProcessInstance> saveDraft(@RequestBody SaveDraftParam param) {
-        return HttpResult.back(processInstanceService.saveDraft(
-                param.getId(), param.getProcessDefinitionId(), param.getTitle(), param.getFormData()));
+    public HttpResult<ProcessInstance> saveDraft(@RequestBody ProcessHandleParam param) {
+        return HttpResult.back(processInstanceService.saveDraft(param));
     }
 
     @Operation(summary = "驳回")
