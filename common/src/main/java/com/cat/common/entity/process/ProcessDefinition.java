@@ -97,6 +97,10 @@ public class ProcessDefinition implements Serializable {
     @TableField(exist = false)
     private List<ProcessNodeFieldPermission> nodeFieldPermissions;
 
+    @Schema(description = "网关条件配置列表（保存时传入，全量覆盖）")
+    @TableField(exist = false)
+    private List<ProcessGatewayCondition> gatewayConditions;
+
     @Schema(description = "发起流程时的表单模板配置")
     @TableField(exist = false)
     private TaskFormVO startForm;
