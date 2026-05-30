@@ -7,14 +7,19 @@ import com.cat.common.entity.PageParam;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessDefinitionBytearray;
 import com.cat.common.entity.process.ProcessDefinitionForm;
+import com.cat.common.entity.process.ProcessGatewayCondition;
+import com.cat.common.entity.process.ProcessGatewayConditionNode;
 import com.cat.common.entity.process.ProcessNodeFieldPermission;
 import com.cat.common.utils.flowable.FlowableUtils;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.process.mapper.ProcessDefinitionBytearrayMapper;
 import com.cat.simple.process.mapper.ProcessDefinitionFormMapper;
 import com.cat.simple.process.mapper.ProcessDefinitionMapper;
+import com.cat.simple.process.mapper.ProcessGatewayConditionMapper;
+import com.cat.simple.process.mapper.ProcessGatewayConditionNodeMapper;
 import com.cat.simple.process.mapper.ProcessNodeFieldPermissionMapper;
 import com.cat.simple.system.mapper.UserMapper;
+import com.cat.simple.config.flowable.gateway.GatewayConditionValidator;
 import com.cat.simple.process.service.ProcessDefinitionService;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RepositoryService;
@@ -48,11 +53,17 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     @Resource
     private ProcessNodeFieldPermissionMapper processNodeFieldPermissionMapper;
     @Resource
+    private ProcessGatewayConditionMapper gatewayConditionMapper;
+    @Resource
     private RepositoryService repositoryService;
     @Resource
     private UserMapper userMapper;
     @Resource
     private com.cat.simple.process.service.ProcessFormService processFormService;
+    @Resource
+    private ProcessGatewayConditionNodeMapper gatewayConditionNodeMapper;
+    @Resource
+    private GatewayConditionValidator gatewayConditionValidator;
 
 
     @Override
@@ -88,6 +99,12 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 processDefinition.getGlobalFormBinding(),
                 processDefinition.getNodeFormBindings(),
                 processDefinition.getNodeFieldPermissions());
+
+        // 保存网关条件配置（全量覆盖）
+        if (processDefinition.getGatewayConditions() != null) {
+            gatewayConditionValidator.validate(processDefinition.getGatewayConditions());
+            saveGatewayConditions(processDefinition.getId(), "DRAFT", processDefinition.getGatewayConditions());
+        }
 
         return insert == 1 && insertByte == 1;
     }
@@ -139,6 +156,12 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 processDefinition.getNodeFormBindings(),
                 processDefinition.getNodeFieldPermissions());
 
+        // 保存网关条件配置（全量覆盖）
+        if (processDefinition.getGatewayConditions() != null) {
+            gatewayConditionValidator.validate(processDefinition.getGatewayConditions());
+            saveGatewayConditions(processDefinitionOri.getId(), "DRAFT", processDefinition.getGatewayConditions());
+        }
+
         return update == 1;
     }
 
@@ -179,11 +202,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionBytearrayMapper.copyVersion(id, "DRAFT", newVersion);
         processDefinitionFormMapper.copyVersion(id, "DRAFT", newVersion);
         processNodeFieldPermissionMapper.copyVersion(id, "DRAFT", newVersion);
+        gatewayConditionMapper.copyVersion(id, "DRAFT", newVersion);
 
         // 删除 DRAFT
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(id, "DRAFT");
         processDefinitionFormMapper.deletePhysicsByDefAndVersion(id, "DRAFT");
         processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(id, "DRAFT");
+        gatewayConditionMapper.deletePhysicsByDefAndVersion(id, "DRAFT");
 
         processDefinition.setStatus("1");
         processDefinition.setUpdateTime(LocalDateTime.now());
@@ -215,6 +240,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
+        gatewayConditionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         return processDefinitionMapper.deleteById(processDefinition) == 1;
     }
 
@@ -225,6 +251,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
+        gatewayConditionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), null);
         return processDefinitionMapper.deleteById(processDefinition) == 1;
     }
 
@@ -242,12 +269,14 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), "DRAFT");
         processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), "DRAFT");
         processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), "DRAFT");
+        gatewayConditionMapper.deletePhysicsByDefAndVersion(processDefinition.getId(), "DRAFT");
 
         // 复制最新版本回 DRAFT
         if (StringUtils.hasText(latestVersion)) {
             processDefinitionBytearrayMapper.copyVersion(processDefinition.getId(), latestVersion, "DRAFT");
             processDefinitionFormMapper.copyVersion(processDefinition.getId(), latestVersion, "DRAFT");
             processNodeFieldPermissionMapper.copyVersion(processDefinition.getId(), latestVersion, "DRAFT");
+            gatewayConditionMapper.copyVersion(processDefinition.getId(), latestVersion, "DRAFT");
         }
 
         processDefinition.setStatus("-1");
@@ -356,11 +385,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinitionBytearrayMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
         processDefinitionFormMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
         processNodeFieldPermissionMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
+        gatewayConditionMapper.deletePhysicsByDefAndVersion(processDefinitionId, "DRAFT");
 
         // 复制目标版本回 DRAFT
         processDefinitionBytearrayMapper.copyVersion(processDefinitionId, targetVersion, "DRAFT");
         processDefinitionFormMapper.copyVersion(processDefinitionId, targetVersion, "DRAFT");
         processNodeFieldPermissionMapper.copyVersion(processDefinitionId, targetVersion, "DRAFT");
+        gatewayConditionMapper.copyVersion(processDefinitionId, targetVersion, "DRAFT");
 
         processDefinition.setStatus("0");
         processDefinition.setUpdateTime(LocalDateTime.now());
@@ -405,6 +436,55 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
     private String modifyProcessId(String originalXml, String oldProcessId, String newProcessId) {
         return originalXml.replaceAll(oldProcessId, newProcessId);
+    }
+
+    private void saveGatewayConditions(Integer processDefinitionId, String version,
+                                       List<ProcessGatewayCondition> conditions) {
+        // 1. 删除旧数据
+        List<ProcessGatewayCondition> oldConditions = gatewayConditionMapper.selectList(
+                new LambdaQueryWrapper<ProcessGatewayCondition>()
+                        .eq(ProcessGatewayCondition::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessGatewayCondition::getVersion, version));
+        for (ProcessGatewayCondition old : oldConditions) {
+            List<ProcessGatewayConditionNode> oldNodes = gatewayConditionNodeMapper.selectList(
+                    new LambdaQueryWrapper<ProcessGatewayConditionNode>()
+                            .eq(ProcessGatewayConditionNode::getConditionId, old.getId()));
+            for (ProcessGatewayConditionNode oldNode : oldNodes) {
+                gatewayConditionNodeMapper.deleteById(oldNode.getId());
+            }
+            gatewayConditionMapper.deleteById(old.getId());
+        }
+
+        // 2. 插入新数据
+        for (ProcessGatewayCondition condition : conditions) {
+            condition.setProcessDefinitionId(processDefinitionId);
+            condition.setVersion(version);
+            condition.setId(null);
+            condition.setCreateBy(SecurityUtils.getLoginUser() != null
+                    ? SecurityUtils.getLoginUser().getUserId() : null);
+            condition.setCreateTime(LocalDateTime.now());
+            gatewayConditionMapper.insert(condition);
+
+            // 3. 递归保存 ruleTree
+            if ("CUSTOM".equals(condition.getConditionType())
+                    && !org.springframework.util.CollectionUtils.isEmpty(condition.getRuleTree())) {
+                for (ProcessGatewayConditionNode root : condition.getRuleTree()) {
+                    saveNodeRecursive(root, null, condition.getId());
+                }
+            }
+        }
+    }
+
+    private void saveNodeRecursive(ProcessGatewayConditionNode node, Long parentId, Long conditionId) {
+        node.setId(null);
+        node.setParentId(parentId);
+        node.setConditionId(conditionId);
+        gatewayConditionNodeMapper.insert(node);
+        if (!org.springframework.util.CollectionUtils.isEmpty(node.getChildren())) {
+            for (ProcessGatewayConditionNode child : node.getChildren()) {
+                saveNodeRecursive(child, node.getId(), conditionId);
+            }
+        }
     }
 
     @Override
