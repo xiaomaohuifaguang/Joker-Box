@@ -21,6 +21,7 @@ import com.cat.simple.process.mapper.ProcessNodeFieldPermissionMapper;
 import com.cat.simple.system.mapper.UserMapper;
 import com.cat.simple.config.flowable.gateway.GatewayConditionEngine;
 import com.cat.simple.config.flowable.gateway.GatewayConditionValidator;
+import com.cat.simple.config.flowable.gateway.GatewayConditionXmlInjector;
 import com.cat.simple.process.service.ProcessDefinitionService;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RepositoryService;
@@ -67,6 +68,8 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     private GatewayConditionValidator gatewayConditionValidator;
     @Resource
     private GatewayConditionEngine gatewayConditionEngine;
+    @Resource
+    private GatewayConditionXmlInjector gatewayConditionXmlInjector;
 
 
     @Override
@@ -183,6 +186,19 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         }
 
         processDefinition.setXmlStr(new String(draft.getXml()));
+
+        // 注入网关条件到 BPMN XML
+        List<ProcessGatewayCondition> draftConditions = gatewayConditionMapper.selectList(
+                new LambdaQueryWrapper<ProcessGatewayCondition>()
+                        .eq(ProcessGatewayCondition::getProcessDefinitionId, id)
+                        .eq(ProcessGatewayCondition::getVersion, "DRAFT"));
+        try {
+            String injectedXml = gatewayConditionXmlInjector.inject(processDefinition.getXmlStr(), draftConditions);
+            processDefinition.setXmlStr(injectedXml);
+        } catch (Exception e) {
+            return DTO.error("BPMN 条件注入失败: " + e.getMessage());
+        }
+
         DTO<?> dto = FlowableUtils.validateBpmnXml(processDefinition.getXmlStr());
         if (!dto.flag) {
             return dto;
