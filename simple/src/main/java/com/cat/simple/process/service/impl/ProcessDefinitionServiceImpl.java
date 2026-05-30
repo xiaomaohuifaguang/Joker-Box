@@ -19,6 +19,7 @@ import com.cat.simple.process.mapper.ProcessGatewayConditionMapper;
 import com.cat.simple.process.mapper.ProcessGatewayConditionNodeMapper;
 import com.cat.simple.process.mapper.ProcessNodeFieldPermissionMapper;
 import com.cat.simple.system.mapper.UserMapper;
+import com.cat.simple.config.flowable.gateway.GatewayConditionEngine;
 import com.cat.simple.config.flowable.gateway.GatewayConditionValidator;
 import com.cat.simple.process.service.ProcessDefinitionService;
 import jakarta.annotation.Resource;
@@ -64,6 +65,8 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     private ProcessGatewayConditionNodeMapper gatewayConditionNodeMapper;
     @Resource
     private GatewayConditionValidator gatewayConditionValidator;
+    @Resource
+    private GatewayConditionEngine gatewayConditionEngine;
 
 
     @Override
@@ -333,6 +336,18 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                         .eq(ProcessNodeFieldPermission::getProcessDefinitionId, processDefinition.getId())
                         .eq(ProcessNodeFieldPermission::getVersion, queryVersion));
         processDefinition.setNodeFieldPermissions(fieldPermissions);
+
+        // 查询网关条件配置（同版本）
+        List<ProcessGatewayCondition> gatewayConditions = gatewayConditionMapper.selectList(
+                new LambdaQueryWrapper<ProcessGatewayCondition>()
+                        .eq(ProcessGatewayCondition::getProcessDefinitionId, processDefinition.getId())
+                        .eq(ProcessGatewayCondition::getVersion, queryVersion));
+        for (ProcessGatewayCondition condition : gatewayConditions) {
+            if ("CUSTOM".equals(condition.getConditionType())) {
+                condition.setRuleTree(gatewayConditionEngine.loadRuleTree(condition.getId()));
+            }
+        }
+        processDefinition.setGatewayConditions(gatewayConditions);
 
         processDefinition.setDeletable(isDeletable(processDefinition));
         return processDefinition;
