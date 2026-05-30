@@ -83,10 +83,11 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 .setCreateTime(now);
         int insertByte = processDefinitionBytearrayMapper.insert(bytearray) > 0 ? 1 : 0;
 
-        // 新增节点配置（全量覆盖，null = 清空）
-        saveGlobalFormBinding(processDefinition.getId(), processDefinition.getGlobalFormBinding());
-        saveNodeFormBindings(processDefinition.getId(), processDefinition.getNodeFormBindings());
-        saveNodeFieldPermissions(processDefinition.getId(), processDefinition.getNodeFieldPermissions());
+        // 保存 DRAFT 版本的表单绑定与字段权限
+        processFormService.saveDraftBindings(processDefinition.getId(),
+                processDefinition.getGlobalFormBinding(),
+                processDefinition.getNodeFormBindings(),
+                processDefinition.getNodeFieldPermissions());
 
         return insert == 1 && insertByte == 1;
     }
@@ -132,10 +133,11 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             processDefinitionBytearrayMapper.updateById(draft);
         }
 
-        // 保存节点配置（全量覆盖，null = 清空）
-        saveGlobalFormBinding(processDefinitionOri.getId(), processDefinition.getGlobalFormBinding());
-        saveNodeFormBindings(processDefinitionOri.getId(), processDefinition.getNodeFormBindings());
-        saveNodeFieldPermissions(processDefinitionOri.getId(), processDefinition.getNodeFieldPermissions());
+        // 保存 DRAFT 版本的表单绑定与字段权限
+        processFormService.saveDraftBindings(processDefinitionOri.getId(),
+                processDefinition.getGlobalFormBinding(),
+                processDefinition.getNodeFormBindings(),
+                processDefinition.getNodeFieldPermissions());
 
         return update == 1;
     }
@@ -368,57 +370,6 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     }
 
     // ========== private helpers ==========
-
-    private void saveGlobalFormBinding(Integer processDefinitionId, ProcessDefinitionForm binding) {
-        processDefinitionFormMapper.delete(
-                new LambdaQueryWrapper<ProcessDefinitionForm>()
-                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinitionId)
-                        .eq(ProcessDefinitionForm::getVersion, "DRAFT")
-                        .eq(ProcessDefinitionForm::getBindType, "GLOBAL"));
-        if (binding == null || !StringUtils.hasText(binding.getFormId())) {
-            return; // null 或空值 = 清空配置
-        }
-        binding.setProcessDefinitionId(processDefinitionId);
-        binding.setVersion("DRAFT");
-        binding.setBindType("GLOBAL");
-        binding.setNodeId(null);
-        binding.setCreateTime(LocalDateTime.now());
-        processDefinitionFormMapper.insert(binding);
-    }
-
-    private void saveNodeFormBindings(Integer processDefinitionId, List<ProcessDefinitionForm> bindings) {
-        processDefinitionFormMapper.delete(
-                new LambdaQueryWrapper<ProcessDefinitionForm>()
-                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinitionId)
-                        .eq(ProcessDefinitionForm::getVersion, "DRAFT")
-                        .eq(ProcessDefinitionForm::getBindType, "NODE"));
-        if (org.springframework.util.CollectionUtils.isEmpty(bindings)) {
-            return; // null 或空数组 = 清空配置
-        }
-        for (ProcessDefinitionForm binding : bindings) {
-            binding.setProcessDefinitionId(processDefinitionId);
-            binding.setVersion("DRAFT");
-            binding.setBindType("NODE");
-            binding.setCreateTime(LocalDateTime.now());
-            processDefinitionFormMapper.insert(binding);
-        }
-    }
-
-    private void saveNodeFieldPermissions(Integer processDefinitionId, List<ProcessNodeFieldPermission> permissions) {
-        processNodeFieldPermissionMapper.delete(
-                new LambdaQueryWrapper<ProcessNodeFieldPermission>()
-                        .eq(ProcessNodeFieldPermission::getProcessDefinitionId, processDefinitionId)
-                        .eq(ProcessNodeFieldPermission::getVersion, "DRAFT"));
-        if (org.springframework.util.CollectionUtils.isEmpty(permissions)) {
-            return; // null 或空数组 = 清空配置
-        }
-        for (ProcessNodeFieldPermission permission : permissions) {
-            permission.setProcessDefinitionId(processDefinitionId);
-            permission.setVersion("DRAFT");
-            permission.setCreateTime(LocalDateTime.now());
-            processNodeFieldPermissionMapper.insert(permission);
-        }
-    }
 
     private ProcessDefinitionBytearray selectBytearray(Integer processDefinitionId, String version) {
         return processDefinitionBytearrayMapper.selectOne(

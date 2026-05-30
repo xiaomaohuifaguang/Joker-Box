@@ -163,7 +163,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             return null;
         }
         String version;
-        if ("1".equals(form.getStatus())) {
+        if ("1".equals(form.getStatus()) || "-1".equals(form.getStatus())) {
+            // 已发布或已停用：允许按传入版本查询历史数据
             version = StringUtils.hasText(dynamicForm.getVersion())
                     ? dynamicForm.getVersion() : form.getVersion();
         } else {
@@ -469,7 +470,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     public List<DynamicFormPublishedVersion> publishedForms() {
         List<DynamicForm> publishedForms = dynamicFormMapper.selectList(
                 new LambdaQueryWrapper<DynamicForm>()
-                        .eq(DynamicForm::getStatus, "1")
+//                        .eq(DynamicForm::getStatus, "1")
                         .orderByAsc(DynamicForm::getName));
 
         if (CollectionUtils.isEmpty(publishedForms)) {

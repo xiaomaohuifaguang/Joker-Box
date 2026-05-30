@@ -1,8 +1,11 @@
 package com.cat.simple.process.service;
 
+import com.cat.common.entity.process.ProcessDefinitionForm;
 import com.cat.common.entity.process.ProcessInstanceForm;
+import com.cat.common.entity.process.ProcessNodeFieldPermission;
 import com.cat.common.entity.process.TaskFormVO;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,4 +63,18 @@ public interface ProcessFormService {
      * @return 表单模板配置，无绑定表单时返回 null
      */
     TaskFormVO buildStartForm(Integer processDefinitionId, String startNodeId);
+
+    /**
+     * 保存流程定义的 DRAFT 版本表单绑定与字段权限配置。
+     * 全量覆盖：null 或空数组表示清空对应配置。
+     *
+     * @param processDefinitionId   流程定义ID
+     * @param globalFormBinding     全局表单绑定，null 表示清空
+     * @param nodeFormBindings      节点表单绑定列表，null/空 表示清空
+     * @param nodeFieldPermissions  节点字段权限列表，null/空 表示清空
+     */
+    void saveDraftBindings(Integer processDefinitionId,
+                           ProcessDefinitionForm globalFormBinding,
+                           List<ProcessDefinitionForm> nodeFormBindings,
+                           List<ProcessNodeFieldPermission> nodeFieldPermissions);
 }

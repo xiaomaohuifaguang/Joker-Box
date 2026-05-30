@@ -7,6 +7,7 @@ import com.cat.simple.config.flowable.guard.ProcessGuard;
 import com.cat.simple.form.mapper.DynamicFormFieldInstanceMapper;
 import com.cat.simple.form.mapper.DynamicFormFieldMapper;
 import com.cat.simple.form.mapper.DynamicFormInstanceMapper;
+import com.cat.simple.form.mapper.DynamicFormMapper;
 import com.cat.simple.form.service.DynamicFormService;
 import com.cat.simple.process.mapper.ProcessDefinitionFormMapper;
 import com.cat.simple.process.mapper.ProcessDefinitionMapper;
@@ -50,6 +51,8 @@ public class ProcessFormServiceImpl implements ProcessFormService {
     private ProcessGuard guard;
     @Resource
     private DynamicFormService dynamicFormService;
+    @Resource
+    private DynamicFormMapper dynamicFormMapper;
 
     // ========== 表单配置内部类 ==========
 
@@ -75,17 +78,26 @@ public class ProcessFormServiceImpl implements ProcessFormService {
             return null;
         }
 
-        ProcessDefinitionForm effectiveBinding = config.getNodeBinding() != null
+        ProcessDefinitionForm effectiveBinding = (config.getNodeBinding() != null
+                && StringUtils.hasText(config.getNodeBinding().getFormId()))
                 ? config.getNodeBinding()
                 : config.getGlobalBinding();
-        if (effectiveBinding == null) {
+        if (effectiveBinding == null || !StringUtils.hasText(effectiveBinding.getFormId())) {
             return null;
         }
 
-        ProcessInstanceForm existingRelation = processInstanceFormMapper.selectOne(
-                new LambdaQueryWrapper<ProcessInstanceForm>()
-                        .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
-                        .eq(ProcessInstanceForm::getNodeId, nodeId));
+        ProcessInstanceForm existingRelation;
+        if (config.getNodeBinding() != null && StringUtils.hasText(config.getNodeBinding().getFormId())) {
+            existingRelation = processInstanceFormMapper.selectOne(
+                    new LambdaQueryWrapper<ProcessInstanceForm>()
+                            .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
+                            .eq(ProcessInstanceForm::getNodeId, nodeId));
+        } else {
+            existingRelation = processInstanceFormMapper.selectOne(
+                    new LambdaQueryWrapper<ProcessInstanceForm>()
+                            .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
+                            .isNull(ProcessInstanceForm::getNodeId));
+        }
         if (existingRelation != null) {
             return existingRelation;
         }
@@ -100,7 +112,7 @@ public class ProcessFormServiceImpl implements ProcessFormService {
 
         ProcessInstanceForm relation = new ProcessInstanceForm()
                 .setProcessInstanceId(processInstanceId)
-                .setNodeId(nodeId)
+                .setNodeId((config.getNodeBinding() != null && StringUtils.hasText(config.getNodeBinding().getFormId())) ? nodeId : null)
                 .setFormId(effectiveBinding.getFormId())
                 .setFormVersion(effectiveBinding.getFormVersion())
                 .setFormInstanceId(formInstanceId)
@@ -155,14 +167,23 @@ public class ProcessFormServiceImpl implements ProcessFormService {
 
         // 1. 节点表单数据
         if (!CollectionUtils.isEmpty(nodeFormData)) {
-            ProcessDefinitionForm effectiveBinding = config.getNodeBinding() != null
+            ProcessDefinitionForm effectiveBinding = (config.getNodeBinding() != null
+                    && StringUtils.hasText(config.getNodeBinding().getFormId()))
                     ? config.getNodeBinding()
                     : config.getGlobalBinding();
-            if (effectiveBinding != null) {
-                ProcessInstanceForm relation = processInstanceFormMapper.selectOne(
-                        new LambdaQueryWrapper<ProcessInstanceForm>()
-                                .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
-                                .eq(ProcessInstanceForm::getNodeId, nodeId));
+            if (effectiveBinding != null && StringUtils.hasText(effectiveBinding.getFormId())) {
+                ProcessInstanceForm relation;
+                if (config.getNodeBinding() != null && StringUtils.hasText(config.getNodeBinding().getFormId())) {
+                    relation = processInstanceFormMapper.selectOne(
+                            new LambdaQueryWrapper<ProcessInstanceForm>()
+                                    .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
+                                    .eq(ProcessInstanceForm::getNodeId, nodeId));
+                } else {
+                    relation = processInstanceFormMapper.selectOne(
+                            new LambdaQueryWrapper<ProcessInstanceForm>()
+                                    .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
+                                    .isNull(ProcessInstanceForm::getNodeId));
+                }
                 if (relation != null) {
                     FormData data = new FormData();
                     data.setFormId(effectiveBinding.getFormId());
@@ -202,27 +223,28 @@ public class ProcessFormServiceImpl implements ProcessFormService {
             return null;
         }
 
-        ProcessDefinitionForm effectiveBinding = config.getNodeBinding() != null
+        ProcessDefinitionForm effectiveBinding = (config.getNodeBinding() != null
+                && StringUtils.hasText(config.getNodeBinding().getFormId()))
                 ? config.getNodeBinding()
                 : config.getGlobalBinding();
-        if (effectiveBinding == null) {
+        if (effectiveBinding == null || !StringUtils.hasText(effectiveBinding.getFormId())) {
             return null;
         }
 
         ProcessInstanceForm relation;
-        if (config.getNodeBinding() != null) {
+        if (config.getNodeBinding() != null && StringUtils.hasText(config.getNodeBinding().getFormId())) {
             relation = processInstanceFormMapper.selectOne(
                     new LambdaQueryWrapper<ProcessInstanceForm>()
                             .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
                             .eq(ProcessInstanceForm::getNodeId, nodeId));
-            if (relation == null) {
-                relation = createFormInstanceIfNeeded(processInstanceId, processDefinitionId, nodeId);
-            }
         } else {
             relation = processInstanceFormMapper.selectOne(
                     new LambdaQueryWrapper<ProcessInstanceForm>()
                             .eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId)
                             .isNull(ProcessInstanceForm::getNodeId));
+        }
+        if (relation == null) {
+            relation = createFormInstanceIfNeeded(processInstanceId, processDefinitionId, nodeId);
         }
         if (relation == null) {
             return null;
@@ -268,10 +290,11 @@ public class ProcessFormServiceImpl implements ProcessFormService {
             return null;
         }
 
-        ProcessDefinitionForm effectiveBinding = config.getNodeBinding() != null
+        ProcessDefinitionForm effectiveBinding = (config.getNodeBinding() != null
+                && StringUtils.hasText(config.getNodeBinding().getFormId()))
                 ? config.getNodeBinding()
                 : config.getGlobalBinding();
-        if (effectiveBinding == null) {
+        if (effectiveBinding == null || !StringUtils.hasText(effectiveBinding.getFormId())) {
             return null;
         }
 
@@ -299,6 +322,87 @@ public class ProcessFormServiceImpl implements ProcessFormService {
         }
 
         return taskFormVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveDraftBindings(Integer processDefinitionId,
+                                  ProcessDefinitionForm globalFormBinding,
+                                  List<ProcessDefinitionForm> nodeFormBindings,
+                                  List<ProcessNodeFieldPermission> nodeFieldPermissions) {
+        // 1. 全局表单绑定
+        processDefinitionFormMapper.delete(
+                new LambdaQueryWrapper<ProcessDefinitionForm>()
+                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessDefinitionForm::getVersion, "DRAFT")
+                        .eq(ProcessDefinitionForm::getBindType, "GLOBAL"));
+        if (globalFormBinding != null && StringUtils.hasText(globalFormBinding.getFormId())) {
+            validateFormBinding(globalFormBinding);
+            globalFormBinding.setProcessDefinitionId(processDefinitionId);
+            globalFormBinding.setVersion("DRAFT");
+            globalFormBinding.setBindType("GLOBAL");
+            globalFormBinding.setNodeId(null);
+            globalFormBinding.setCreateTime(LocalDateTime.now());
+            processDefinitionFormMapper.insert(globalFormBinding);
+        }
+
+        // 2. 节点表单绑定
+        processDefinitionFormMapper.delete(
+                new LambdaQueryWrapper<ProcessDefinitionForm>()
+                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessDefinitionForm::getVersion, "DRAFT")
+                        .eq(ProcessDefinitionForm::getBindType, "NODE"));
+        if (!CollectionUtils.isEmpty(nodeFormBindings)) {
+            for (ProcessDefinitionForm binding : nodeFormBindings) {
+                validateFormBinding(binding);
+                binding.setProcessDefinitionId(processDefinitionId);
+                binding.setVersion("DRAFT");
+                binding.setBindType("NODE");
+                binding.setCreateTime(LocalDateTime.now());
+                processDefinitionFormMapper.insert(binding);
+            }
+        }
+
+        // 3. 节点字段权限
+        processNodeFieldPermissionMapper.delete(
+                new LambdaQueryWrapper<ProcessNodeFieldPermission>()
+                        .eq(ProcessNodeFieldPermission::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessNodeFieldPermission::getVersion, "DRAFT"));
+        if (!CollectionUtils.isEmpty(nodeFieldPermissions)) {
+            for (ProcessNodeFieldPermission permission : nodeFieldPermissions) {
+                permission.setProcessDefinitionId(processDefinitionId);
+                permission.setVersion("DRAFT");
+                permission.setCreateTime(LocalDateTime.now());
+                processNodeFieldPermissionMapper.insert(permission);
+            }
+        }
+    }
+
+    /**
+     * 验证表单绑定：禁止绑定 DRAFT 版本，且表单及版本必须真实存在。
+     */
+    private void validateFormBinding(ProcessDefinitionForm binding) {
+        if (binding == null || !StringUtils.hasText(binding.getFormId())) {
+            return;
+        }
+        String formVersion = binding.getFormVersion();
+        if (!StringUtils.hasText(formVersion)) {
+            throw new IllegalArgumentException("表单版本不能为空");
+        }
+        if ("DRAFT".equals(formVersion)) {
+            throw new IllegalArgumentException("禁止绑定DRAFT版本表单");
+        }
+        DynamicForm form = dynamicFormMapper.selectById(binding.getFormId());
+        if (form == null) {
+            throw new IllegalArgumentException("绑定的表单不存在: " + binding.getFormId());
+        }
+        long count = dynamicFormFieldMapper.selectCount(
+                new LambdaQueryWrapper<DynamicFormField>()
+                        .eq(DynamicFormField::getFormId, binding.getFormId())
+                        .eq(DynamicFormField::getVersion, formVersion));
+        if (count == 0) {
+            throw new IllegalArgumentException("绑定的表单版本不存在: " + binding.getFormId() + "@" + formVersion);
+        }
     }
 
     // ========== 私有辅助方法 ==========
