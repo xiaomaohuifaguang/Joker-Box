@@ -13,7 +13,7 @@ public class ProcessCodeGenerator {
     @Resource
     private RedisService redisService;
 
-    private static final String PREFIX = "LC";
+    private static final String PREFIX = "JB";
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final String REDIS_KEY_TEMPLATE = "process:code:seq:%s";
 

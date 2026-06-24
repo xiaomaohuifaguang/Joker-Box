@@ -44,7 +44,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Transactional(rollbackFor = Exception.class)
     public ProcessInstance start(ProcessHandleParam param) {
         return commandBus.execute(new StartProcessCommand(
-                param.getProcessDefinitionId(), param.getTitle(),
+                param.getProcessDefinitionId(), param.getProcessInstanceId(),param.getTitle(),
                 param.getNodeFormData(), param.getGlobalFormData()));
     }
 
@@ -85,6 +85,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 // 组装 taskForm
                 TaskFormVO taskForm = processFormService.buildTaskForm(
                         id, instance.getProcessDefinitionId(),
+                        instance.getProcessDefinitionVersion(),
                         task.getTaskDefinitionKey(), editable);
                 instance.setTaskForm(taskForm);
             }
@@ -93,7 +94,9 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     instance.getProcessDefinitionId());
             if (startNodeId != null) {
                 TaskFormVO draftForm = processFormService.buildTaskForm(
-                        id, instance.getProcessDefinitionId(), startNodeId, true);
+                        id, instance.getProcessDefinitionId(),
+                        instance.getProcessDefinitionVersion(),
+                        startNodeId, true);
                 instance.setTaskForm(draftForm);
             }
         }
@@ -268,18 +271,22 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             processInstanceMapper.update(new LambdaUpdateWrapper<ProcessInstance>()
                     .eq(ProcessInstance::getId, id)
                     .set(ProcessInstance::getProcessDefinitionId, definition.getId())
+//                    .set(ProcessInstance::getProcessDefinitionVersion, definition.getVersion())
                     .set(ProcessInstance::getTitle, title)
                     .set(ProcessInstance::getUpdateTime, now));
 
-            processFormService.createFormInstanceIfNeeded(id, definition.getId(), startNodeId);
-            processFormService.writeFormData(id, definition.getId(), startNodeId,
+            processFormService.createFormInstanceIfNeeded(id, definition.getId(), definition.getVersion(), startNodeId);
+            processFormService.writeFormData(id, definition.getId(), definition.getVersion(), startNodeId,
                     param.getNodeFormData(), param.getGlobalFormData(), true);
 
-            return exist.setProcessDefinitionId(definition.getId()).setTitle(title).setUpdateTime(now);
+            return exist.setProcessDefinitionId(definition.getId())
+                    .setProcessDefinitionVersion(definition.getVersion())
+                    .setTitle(title).setUpdateTime(now);
         }
 
         ProcessInstance instance = new ProcessInstance()
                 .setProcessDefinitionId(definition.getId())
+                .setProcessDefinitionVersion(definition.getVersion())
                 .setTitle(title)
                 .setProcessStatus(ProcessStatusEnum.DRAFT.getStatus())
                 .setCreateBy(currentUserId)
@@ -287,8 +294,8 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .setUpdateTime(now);
         processInstanceMapper.insert(instance);
 
-        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), startNodeId);
-        processFormService.writeFormData(instance.getId(), definition.getId(), startNodeId,
+        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), definition.getVersion(), startNodeId);
+        processFormService.writeFormData(instance.getId(), definition.getId(), definition.getVersion(), startNodeId,
                 param.getNodeFormData(), param.getGlobalFormData(), true);
 
         return instance;

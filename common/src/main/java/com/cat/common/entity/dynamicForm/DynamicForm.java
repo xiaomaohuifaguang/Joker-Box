@@ -69,7 +69,7 @@ public class DynamicForm implements Serializable {
 
     @Schema(description = "表单项信息")
     @TableField(exist = false)
-    private List<DynamicFormField> formFields;
+    private List<DynamicFormField> fields;
 
     @Schema(description = "字段分组")
     @TableField(exist = false)

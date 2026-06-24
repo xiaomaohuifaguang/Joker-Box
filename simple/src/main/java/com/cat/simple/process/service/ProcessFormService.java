@@ -17,13 +17,15 @@ public interface ProcessFormService {
      * 创建表单实例并初始化字段实例，写入关联表。
      * 如果关联表已存在该节点的记录，则复用已有的表单实例（驳回场景）。
      *
-     * @param processInstanceId  流程实例ID
-     * @param processDefinitionId 流程定义ID
-     * @param nodeId             BPMN节点ID
+     * @param processInstanceId       流程实例ID
+     * @param processDefinitionId     流程定义ID
+     * @param processDefinitionVersion 流程定义版本（实例锁定版本，可为null则取定义表当前版本）
+     * @param nodeId                  BPMN节点ID
      * @return 关联记录，无绑定配置时返回 null
      */
     ProcessInstanceForm createFormInstanceIfNeeded(Integer processInstanceId,
                                                    Integer processDefinitionId,
+                                                   String processDefinitionVersion,
                                                    String nodeId);
 
     /**
@@ -31,28 +33,31 @@ public interface ProcessFormService {
      * start/saveDraft 场景：skipRequired=true（不校验必填）。
      * pass 场景：skipRequired=false（校验必填）。
      *
-     * @param processInstanceId  流程实例ID
-     * @param processDefinitionId 流程定义ID
-     * @param nodeId             BPMN节点ID
-     * @param nodeFormData       节点表单数据 key-value
-     * @param globalFormData     全局表单数据 key-value
-     * @param skipRequired       是否跳过必填校验
+     * @param processInstanceId       流程实例ID
+     * @param processDefinitionId     流程定义ID
+     * @param processDefinitionVersion 流程定义版本（实例锁定版本，可为null则取定义表当前版本）
+     * @param nodeId                  BPMN节点ID
+     * @param nodeFormData            节点表单数据 key-value
+     * @param globalFormData          全局表单数据 key-value
+     * @param skipRequired            是否跳过必填校验
      */
     void writeFormData(Integer processInstanceId, Integer processDefinitionId,
-                       String nodeId, Map<String, Object> nodeFormData,
+                       String processDefinitionVersion, String nodeId,
+                       Map<String, Object> nodeFormData,
                        Map<String, Object> globalFormData, boolean skipRequired);
 
     /**
      * 组装任务表单渲染数据（含字段定义、权限、已填值、分组、继承）。
      *
-     * @param processInstanceId  流程实例ID
-     * @param processDefinitionId 流程定义ID
-     * @param nodeId             BPMN节点ID
-     * @param editable           当前用户是否可编辑
+     * @param processInstanceId       流程实例ID
+     * @param processDefinitionId     流程定义ID
+     * @param processDefinitionVersion 流程定义版本（实例锁定版本，可为null则取定义表当前版本）
+     * @param nodeId                  BPMN节点ID
+     * @param editable                当前用户是否可编辑
      * @return 任务表单渲染数据，无绑定配置时返回 null
      */
     TaskFormVO buildTaskForm(Integer processInstanceId, Integer processDefinitionId,
-                             String nodeId, boolean editable);
+                             String processDefinitionVersion, String nodeId, boolean editable);
 
     /**
      * 组装发起流程时的表单模板配置（无已填值）。

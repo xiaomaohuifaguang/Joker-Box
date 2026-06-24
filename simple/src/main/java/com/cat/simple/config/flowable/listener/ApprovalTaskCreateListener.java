@@ -122,7 +122,8 @@ public class ApprovalTaskCreateListener implements TaskListener {
             }
             String nodeId = delegateTask.getTaskDefinitionKey();
             processFormService.createFormInstanceIfNeeded(
-                    instance.getId(), instance.getProcessDefinitionId(), nodeId);
+                    instance.getId(), instance.getProcessDefinitionId(),
+                    instance.getProcessDefinitionVersion(), nodeId);
         } catch (Exception e) {
             log.error("创建节点表单实例失败, taskId={}", delegateTask.getId(), e);
         }

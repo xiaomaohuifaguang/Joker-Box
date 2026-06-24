@@ -20,7 +20,12 @@ public enum VariableNames {
     BACK_NODE_ID("backNodeId"),
     BACK_ASSIGNEE_POLICY("backAssigneePolicy"),
     FORM_DATA("formData"),
-    BACK_ASSIGNEES_PREFIX("__back_assignees_");
+    BACK_ASSIGNEES_PREFIX("__back_assignees_"),
+    GATEWAY_RESULTS("gatewayResults"),
+    HANDLER_DEPT("__handler_dept"),
+    HANDLER_ROLE("__handler_role"),
+    PREV_HANDLER_DEPT("__prev_handler_dept"),
+    PREV_HANDLER_ROLE("__prev_handler_role");
 
     private final String key;
 }

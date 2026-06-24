@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.process.mapper.ProcessGatewayConditionMapper">
+
+    <insert id="copyVersion">
+        INSERT INTO cat_process_gateway_condition
+            (process_definition_id, version, sequence_flow_id, source_node_id, target_node_id,
+             condition_type, is_default, native_expression, create_by, create_time)
+        SELECT
+            process_definition_id, #{targetVersion}, sequence_flow_id, source_node_id, target_node_id,
+            condition_type, is_default, native_expression, create_by, NOW()
+        FROM cat_process_gateway_condition
+        WHERE process_definition_id = #{processDefinitionId}
+          AND version = #{sourceVersion}
+    </insert>
+
+    <delete id="deletePhysicsByDefAndVersion">
+        DELETE FROM cat_process_gateway_condition
+        WHERE process_definition_id = #{processDefinitionId}
+        <if test="version != null and version != ''">
+            AND version = #{version}
+        </if>
+    </delete>
+
+</mapper>

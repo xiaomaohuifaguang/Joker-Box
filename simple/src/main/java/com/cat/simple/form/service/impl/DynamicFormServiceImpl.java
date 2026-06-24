@@ -81,7 +81,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         }
 
         // 保存未分组字段
-        List<DynamicFormField> ungroupedFields = dynamicForm.getFormFields();
+        List<DynamicFormField> ungroupedFields = dynamicForm.getFields();
         if (!CollectionUtils.isEmpty(ungroupedFields)) {
             for (DynamicFormField field : ungroupedFields) {
                 field.setGroupId(null);
@@ -144,7 +144,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         }
 
         // 保存未分组字段
-        List<DynamicFormField> ungroupedFields = dynamicForm.getFormFields();
+        List<DynamicFormField> ungroupedFields = dynamicForm.getFields();
         if (!CollectionUtils.isEmpty(ungroupedFields)) {
             for (DynamicFormField field : ungroupedFields) {
                 field.setGroupId(null);
@@ -166,7 +166,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         if ("1".equals(form.getStatus()) || "-1".equals(form.getStatus())) {
             // 已发布或已停用：允许按传入版本查询历史数据
             version = StringUtils.hasText(dynamicForm.getVersion())
-                    ? dynamicForm.getVersion() : form.getVersion();
+                    ? dynamicForm.getVersion() : "DRAFT";
         } else {
             version = "DRAFT";
         }
@@ -206,9 +206,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         }
 
         if (!CollectionUtils.isEmpty(ungroupedFields)) {
-            form.setFormFields(ungroupedFields);
+            form.setFields(ungroupedFields);
         } else {
-            form.setFormFields(null);
+            form.setFields(null);
         }
 
         List<DynamicFormLinkageRule> rules = loadLinkageRules(form.getId(), version);
@@ -536,8 +536,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 }
             }
         }
-        if (!CollectionUtils.isEmpty(form.getFormFields())) {
-            fields.addAll(form.getFormFields());
+        if (!CollectionUtils.isEmpty(form.getFields())) {
+            fields.addAll(form.getFields());
         }
 
         Set<String> fieldIds = fields.stream().map(DynamicFormField::getFieldId).collect(Collectors.toSet());
@@ -1350,9 +1350,9 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         }
 
         if (!CollectionUtils.isEmpty(ungroupedFields)) {
-            form.setFormFields(ungroupedFields);
+            form.setFields(ungroupedFields);
         } else {
-            form.setFormFields(null);
+            form.setFields(null);
         }
 
         List<DynamicFormLinkageRule> rules = loadLinkageRules(formId, version);
@@ -1376,8 +1376,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 }
             }
         }
-        if (!CollectionUtils.isEmpty(form.getFormFields())) {
-            allFields.addAll(form.getFormFields());
+        if (!CollectionUtils.isEmpty(form.getFields())) {
+            allFields.addAll(form.getFields());
         }
         if (allFields.isEmpty()) {
             throw new IllegalArgumentException("至少需要配置一个表单字段");

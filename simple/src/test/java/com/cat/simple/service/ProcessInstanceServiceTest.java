@@ -1,6 +1,7 @@
 package com.cat.simple.service;
 
 import com.cat.common.entity.auth.LoginUser;
+import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.common.entity.process.ProcessInstancePageParam;
 import com.cat.common.entity.Page;
@@ -15,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -139,7 +141,10 @@ public class ProcessInstanceServiceTest {
     @Test
     void testStart() {
         Integer processDefinitionId = 48;
-        ProcessInstance instance = processInstanceService.start(processDefinitionId, null, null);
+        ProcessHandleParam param = new ProcessHandleParam();
+        param.setProcessDefinitionId(processDefinitionId);
+        param.setNodeFormData(Map.of());
+        ProcessInstance instance = processInstanceService.start(param);
         assertNotNull(instance);
     }
 

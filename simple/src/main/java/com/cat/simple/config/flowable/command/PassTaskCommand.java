@@ -1,14 +1,11 @@
 package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.auth.LoginUser;
-import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
-import com.cat.simple.config.flowable.gateway.GatewayConditionEngine;
 import com.cat.simple.config.flowable.hook.PassContext;
 import com.cat.simple.config.flowable.variable.VariableNames;
 import com.cat.simple.config.security.SecurityUtils;
-import com.cat.simple.process.mapper.ProcessDefinitionMapper;
 import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.Resource;
 import org.flowable.engine.TaskService;
@@ -23,8 +20,6 @@ public class PassTaskCommand extends ProcessCommand<Void> {
 
     @Resource private TaskService taskService;
     @Resource private ProcessFormService processFormService;
-    @Resource private GatewayConditionEngine gatewayConditionEngine;
-    @Resource private ProcessDefinitionMapper processDefinitionMapper;
 
     private final ProcessHandleParam param;
     private Task task;
@@ -51,6 +46,7 @@ public class PassTaskCommand extends ProcessCommand<Void> {
             processFormService.writeFormData(
                     param.getProcessInstanceId(),
                     instance.getProcessDefinitionId(),
+                    instance.getProcessDefinitionVersion(),
                     task.getTaskDefinitionKey(),
                     param.getNodeFormData(),
                     param.getGlobalFormData(),
@@ -87,17 +83,8 @@ public class PassTaskCommand extends ProcessCommand<Void> {
             }
         }
 
-        // Evaluate gateway conditions before completing the task
-        ProcessDefinition definition = processDefinitionMapper.selectById(instance.getProcessDefinitionId());
-        if (definition != null) {
-            Map<String, Boolean> results = gatewayConditionEngine.evaluateAll(
-                    instance.getProcessDefinitionId(),
-                    definition.getVersion(),
-                    task.getTaskDefinitionKey(),
-                    instance.getId(),
-                    task.getTaskDefinitionKey());
-            variableStore.set(instance.getProcessInstanceId(), VariableNames.GATEWAY_RESULTS, results);
-        }
+        // 网关 CUSTOM 条件由 GatewayConditionEvaluator 在 Flowable 评估出线时懒加载计算
+        // 这里不再预计算，避免错误地以当前任务节点作为 sourceNodeId 导致漏算
 
         taskService.complete(task.getId());
         return null;

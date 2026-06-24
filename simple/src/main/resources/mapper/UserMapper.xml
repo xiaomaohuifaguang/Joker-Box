@@ -123,4 +123,20 @@
             </foreach>
         </where>
     </select>
+
+    <select id="selectRolesByUserId" resultType="com.cat.common.entity.auth.Role">
+        SELECT cr.*
+        FROM cat_role cr
+        INNER JOIN cat_user_role cur ON cr.id = cur.role_id
+        WHERE cur.user_id = #{userId}
+          AND cr.deleted = 0
+    </select>
+
+    <select id="selectOrgsByUserId" resultType="com.cat.common.entity.auth.Org">
+        SELECT co.*
+        FROM cat_org co
+        INNER JOIN cat_org_user cou ON co.id = cou.org_id
+        WHERE cou.user_id = #{userId}
+          AND co.deleted = 0
+    </select>
 </mapper>

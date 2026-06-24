@@ -97,7 +97,9 @@ public class GatewayConditionXmlInjector {
             if ("NATIVE".equals(condition.getConditionType())) {
                 expression = condition.getNativeExpression();
             } else if ("CUSTOM".equals(condition.getConditionType())) {
-                expression = "${gatewayConditionEvaluator.evaluate('" + flowId + "')}";
+                // sourceNodeId 作为 gatewayId 注入，运行时用作缓存 key 避免反查
+                expression = "${gatewayConditionEvaluator.evaluate(execution, '"
+                        + condition.getSourceNodeId() + "', '" + flowId + "')}";
             } else {
                 continue;
             }

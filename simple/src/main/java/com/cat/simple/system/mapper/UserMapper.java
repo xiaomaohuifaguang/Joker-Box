@@ -2,6 +2,8 @@ package com.cat.simple.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cat.common.entity.Page;
+import com.cat.common.entity.auth.Org;
+import com.cat.common.entity.auth.Role;
 import com.cat.common.entity.auth.User;
 import com.cat.common.entity.auth.UserPageParam;
 import org.apache.ibatis.annotations.Mapper;
@@ -30,6 +32,10 @@ public interface UserMapper extends BaseMapper<User> {
     int userCountByRole(@Param("roleId") String roleId);
 
     List<User> selectListByIds(@Param("userIds") List<String> userIds);
+
+    List<Role> selectRolesByUserId(@Param("userId") String userId);
+
+    List<Org> selectOrgsByUserId(@Param("userId") String userId);
 
     List<User> selectListByRole(@Param("roleId") Integer roleId);
 

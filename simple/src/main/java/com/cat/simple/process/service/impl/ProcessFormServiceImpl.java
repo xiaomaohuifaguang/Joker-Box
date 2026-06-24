@@ -72,8 +72,9 @@ public class ProcessFormServiceImpl implements ProcessFormService {
     @Transactional
     public ProcessInstanceForm createFormInstanceIfNeeded(Integer processInstanceId,
                                                           Integer processDefinitionId,
+                                                          String processDefinitionVersion,
                                                           String nodeId) {
-        FormConfig config = resolveFormConfig(processDefinitionId, nodeId);
+        FormConfig config = resolveFormConfig(processDefinitionId, processDefinitionVersion, nodeId);
         if (config == null) {
             return null;
         }
@@ -152,9 +153,10 @@ public class ProcessFormServiceImpl implements ProcessFormService {
     @Override
     @Transactional
     public void writeFormData(Integer processInstanceId, Integer processDefinitionId,
-                              String nodeId, Map<String, Object> nodeFormData,
+                              String processDefinitionVersion, String nodeId,
+                              Map<String, Object> nodeFormData,
                               Map<String, Object> globalFormData, boolean skipRequired) {
-        FormConfig config = resolveFormConfig(processDefinitionId, nodeId);
+        FormConfig config = resolveFormConfig(processDefinitionId, processDefinitionVersion, nodeId);
         if (config == null) {
             return;
         }
@@ -217,8 +219,8 @@ public class ProcessFormServiceImpl implements ProcessFormService {
 
     @Override
     public TaskFormVO buildTaskForm(Integer processInstanceId, Integer processDefinitionId,
-                                    String nodeId, boolean editable) {
-        FormConfig config = resolveFormConfig(processDefinitionId, nodeId);
+                                    String processDefinitionVersion, String nodeId, boolean editable) {
+        FormConfig config = resolveFormConfig(processDefinitionId, processDefinitionVersion, nodeId);
         if (config == null) {
             return null;
         }
@@ -244,7 +246,7 @@ public class ProcessFormServiceImpl implements ProcessFormService {
                             .isNull(ProcessInstanceForm::getNodeId));
         }
         if (relation == null) {
-            relation = createFormInstanceIfNeeded(processInstanceId, processDefinitionId, nodeId);
+            relation = createFormInstanceIfNeeded(processInstanceId, processDefinitionId, processDefinitionVersion, nodeId);
         }
         if (relation == null) {
             return null;
@@ -285,7 +287,7 @@ public class ProcessFormServiceImpl implements ProcessFormService {
 
     @Override
     public TaskFormVO buildStartForm(Integer processDefinitionId, String startNodeId) {
-        FormConfig config = resolveFormConfig(processDefinitionId, startNodeId);
+        FormConfig config = resolveFormConfig(processDefinitionId, null, startNodeId);
         if (config == null) {
             return null;
         }
@@ -432,8 +434,8 @@ public class ProcessFormServiceImpl implements ProcessFormService {
         }
 
         List<DynamicFormField> allFields = new ArrayList<>();
-        if (form.getFormFields() != null) {
-            allFields.addAll(form.getFormFields());
+        if (form.getFields() != null) {
+            allFields.addAll(form.getFields());
         }
         if (form.getGroups() != null) {
             for (DynamicFormFieldGroup group : form.getGroups()) {
@@ -468,14 +470,17 @@ public class ProcessFormServiceImpl implements ProcessFormService {
         return dynamicFormService.info(param);
     }
 
-    private FormConfig resolveFormConfig(Integer processDefinitionId, String nodeId) {
+    private FormConfig resolveFormConfig(Integer processDefinitionId, String processDefinitionVersion, String nodeId) {
         ProcessDefinition processDefinition = processDefinitionMapper.selectById(processDefinitionId);
         if (processDefinition == null) {
             return null;
         }
 
         String effectiveVersion;
-        if ("1".equals(processDefinition.getStatus()) && StringUtils.hasText(processDefinition.getVersion())) {
+        if (StringUtils.hasText(processDefinitionVersion)) {
+            // 优先使用实例锁定版本
+            effectiveVersion = processDefinitionVersion;
+        } else if ("1".equals(processDefinition.getStatus()) && StringUtils.hasText(processDefinition.getVersion())) {
             effectiveVersion = processDefinition.getVersion();
         } else {
             effectiveVersion = "DRAFT";
