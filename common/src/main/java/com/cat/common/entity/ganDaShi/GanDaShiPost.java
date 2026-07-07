@@ -6,9 +6,12 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
+
+
 import java.io.Serial;
 /**
  * <p>
@@ -24,6 +27,7 @@ import java.io.Serial;
 @Accessors(chain = true)
 @TableName("cat_gan_da_shi_post")
 @Schema(name = "GanDaShiPost", description = "干大事主贴")
+@JsonIgnoreProperties(ignoreUnknown = true) // 防止 OpenSearch 返回多余字段导致反序列化报错
 public class GanDaShiPost implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -65,6 +69,10 @@ public class GanDaShiPost implements Serializable {
 
     @Schema(description = "浏览量")
     private Integer viewCount;
+
+    @TableField(exist = false)
+    @Schema(description = "纯文字向量")
+    private float[] textEmbeddings;
 
 
 }

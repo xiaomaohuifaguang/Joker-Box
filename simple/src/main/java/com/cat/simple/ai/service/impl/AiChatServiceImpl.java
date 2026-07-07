@@ -15,6 +15,7 @@ import okio.BufferedSource;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -24,7 +25,8 @@ import java.util.Map;
 @Service
 public class AiChatServiceImpl implements AiChatService {
 
-    private static final String API_PATH = "/v1/chat/completions";
+    private static final String API_COMPLETIONS_PATH = "/v1/chat/completions";
+    private static final String API_EMBEDDINGS_PATH = "/v1/embeddings";
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
@@ -42,9 +44,11 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         String baseUrl = aiModel.getBaseUrl();
+        String completionsPath = aiModel.getCompletionsPath();
+        completionsPath = StringUtils.hasText(completionsPath) ? completionsPath : API_COMPLETIONS_PATH;
         String url = (baseUrl != null && baseUrl.endsWith("/"))
-                ? baseUrl.substring(0, baseUrl.length() - 1) + API_PATH
-                : baseUrl + API_PATH;
+                ? baseUrl.substring(0, baseUrl.length() - 1) + completionsPath
+                : baseUrl + completionsPath;
 
         ChatParam requestParam = new ChatParam()
                 .setModel(aiModel.getModel())

@@ -41,62 +41,61 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <myModule.version>1.0-SNAPSHOT</myModule.version>
         <!-- knife4j版本 https://doc.xiaominfo.com/docs/quick-start -->
-        <knife4j.version>4.4.0</knife4j.version>
-        <jjwt.version>0.12.5</jjwt.version>
+        <knife4j.version>4.5.0</knife4j.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <mybatis-plus.verson>3.5.7</mybatis-plus.verson>
-        <mysql-connector.version>9.0.0</mysql-connector.version>
+        <mysql-connector.version>9.7.0</mysql-connector.version>
         <lombok.version>1.18.32</lombok.version>
-        <springcloud.verson>2023.0.2</springcloud.verson>
-        <springcloudalibaba.verson>2023.0.1.0</springcloudalibaba.verson>
-        <minio.version>8.5.11</minio.version>
+        <okhttp.version>4.12.0</okhttp.version>
+<!--        <springcloud.verson>2023.0.2</springcloud.verson>-->
+<!--        <springcloudalibaba.verson>2023.0.1.0</springcloudalibaba.verson>-->
+        <minio.version>9.0.3</minio.version>
         <commons-fileupload.version>2.0.0-M2</commons-fileupload.version>
-        <hutool.version>5.8.29</hutool.version>
+        <hutool.version>5.8.46</hutool.version>
         <TinyPinyin.version>2.0.3.RELEASE</TinyPinyin.version>
-        <httpclient5.version>5.3.1</httpclient5.version>
+        <httpclient5.version>5.5.2</httpclient5.version>
         <flowable.version>8.0.0</flowable.version>
         <fastjson2.version>2.0.53</fastjson2.version>
         <googleauth.version>1.5.0</googleauth.version>
         <zxing.version>3.5.3</zxing.version>
+        <jackson-bom.version>2.17.0</jackson-bom.version>
+        <spring.ai.version>1.1.8</spring.ai.version>
+        <spring.ai.alibaba.version>1.1.2.3</spring.ai.alibaba.version>
+        <langchain4j.version>1.16.3</langchain4j.version>
+        <opensearch.version>3.9.0</opensearch.version>
     </properties>
 
     <!-- springboot 版本 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.12</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-bom</artifactId>
-                <version>1.0.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
                 <groupId>com.cat</groupId>
                 <artifactId>common</artifactId>
                 <version>${myModule.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${springcloud.verson}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.cloud</groupId>-->
+<!--                <artifactId>spring-cloud-dependencies</artifactId>-->
+<!--                <version>${springcloud.verson}</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
 
-            <dependency>
-                <groupId>com.alibaba.cloud</groupId>
-                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-                <version>${springcloudalibaba.verson}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.alibaba.cloud</groupId>-->
+<!--                <artifactId>spring-cloud-alibaba-dependencies</artifactId>-->
+<!--                <version>${springcloudalibaba.verson}</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
 
             <dependency>
                 <groupId>com.github.xiaoymin</groupId>
@@ -215,6 +214,43 @@
                 <artifactId>core</artifactId>
                 <version>${zxing.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring.ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-bom</artifactId>
+                <version>${spring.ai.alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.alibaba.cloud.ai</groupId>-->
+<!--                <artifactId>spring-ai-alibaba-extensions-bom</artifactId>-->
+<!--                <version>1.1.2.3</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
+
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.opensearch.client</groupId>
+                <artifactId>opensearch-java</artifactId>
+                <version>${opensearch.version}</version>
+            </dependency>
+
 
         </dependencies>
     </dependencyManagement>

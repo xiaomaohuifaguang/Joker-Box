@@ -94,24 +94,28 @@
                 ORDER BY task.CREATE_TIME_ DESC
             </when>
 
-            <!-- 4 我已办的：从 Flowable 历史任务表驱动，按结束时间倒序，必须有时间范围 -->
+            <!-- 4 我已办的：按实例查（去重），不携带 taskId/taskName，按“我最后一次办结时间”倒序 -->
             <when test='param.type != null and param.type == "4"'>
-                SELECT cpi.*, hti.ID_ AS task_id, hti.NAME_ AS taskName, cu.nickname createByName
-                FROM ACT_HI_TASKINST hti
-                INNER JOIN cat_process_instance cpi
-                    ON cpi.process_instance_id = hti.PROC_INST_ID_ AND cpi.deleted = '0'
+                SELECT cpi.*, cu.nickname createByName
+                FROM cat_process_instance cpi
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                WHERE hti.ASSIGNEE_ = #{param.userId}
-                  AND hti.END_TIME_ IS NOT NULL
-                  <if test="param.startTime != null and param.startTime != ''">
-                      AND hti.START_TIME_ &gt;= #{param.startTime}
-                  </if>
-                  <if test="param.endTime != null and param.endTime != ''">
-                      AND hti.START_TIME_ &lt;= #{param.endTime}
-                  </if>
-                  <if test="param.startTime == null or param.startTime == ''">
-                      AND hti.START_TIME_ &gt;= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-                  </if>
+                INNER JOIN (
+                    SELECT PROC_INST_ID_, MAX(END_TIME_) AS handle_time
+                    FROM ACT_HI_TASKINST
+                    WHERE ASSIGNEE_ = #{param.userId}
+                      AND END_TIME_ IS NOT NULL
+                      <if test="param.startTime != null and param.startTime != ''">
+                          AND START_TIME_ &gt;= #{param.startTime}
+                      </if>
+                      <if test="param.endTime != null and param.endTime != ''">
+                          AND START_TIME_ &lt;= #{param.endTime}
+                      </if>
+                      <if test="param.startTime == null or param.startTime == ''">
+                          AND START_TIME_ &gt;= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                      </if>
+                    GROUP BY PROC_INST_ID_
+                ) latest ON latest.PROC_INST_ID_ = cpi.process_instance_id
+                WHERE cpi.deleted = '0'
                 <if test="param.search != null and param.search != ''">
                     AND (
                         cpi.title LIKE CONCAT('%', #{param.search}, '%')
@@ -124,7 +128,7 @@
                 <if test="param.processStatus != null and param.processStatus != ''">
                     AND cpi.process_status = #{param.processStatus}
                 </if>
-                ORDER BY hti.END_TIME_ DESC
+                ORDER BY latest.handle_time DESC
             </when>
 
             <!-- 5 我发起的(全部)：当前用户创建的所有流程实例 -->

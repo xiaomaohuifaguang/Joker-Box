@@ -10,6 +10,7 @@ import com.cat.simple.ai.service.AiModelService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,10 +29,9 @@ public class AiModelServiceImpl implements AiModelService {
     @Override
     public boolean add(AiModel aiModel){
         String apiKey = aiModel.getApiKey();
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            throw new RuntimeException("API密钥不能为空");
+        if(StringUtils.hasText(apiKey)){
+            aiModel.setApiKey(AESUtils.encrypt(apiKey, aesKey));
         }
-        aiModel.setApiKey(AESUtils.encrypt(apiKey, aesKey));
         aiModel.setUserId(Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId());
         aiModel.setCreateTime(LocalDateTime.now());
         return aiModelMapper.insert(aiModel) == 1;

@@ -22,7 +22,7 @@ import java.util.Map;
 @Component("gatewayConditionEvaluator")
 public class GatewayConditionEvaluator {
 
-    private static final String CACHE_KEY_PREFIX = "__gw_cache_";
+//    private static final String CACHE_KEY_PREFIX = "__gw_cache_";
 
     @Resource
     private GatewayConditionEngine gatewayConditionEngine;
@@ -43,13 +43,14 @@ public class GatewayConditionEvaluator {
             return false;
         }
 
-        String cacheKey = CACHE_KEY_PREFIX + gatewayId;
-        Map<String, Boolean> results = (Map<String, Boolean>) execution.getVariableLocal(cacheKey);
-
-        if (results == null) {
-            results = computeGatewayResults(execution, gatewayId);
-            execution.setVariableLocal(cacheKey, results);
-        }
+//        String cacheKey = CACHE_KEY_PREFIX + gatewayId;
+//        Map<String, Boolean> results = (Map<String, Boolean>) execution.getVariableLocal(cacheKey);
+//
+//        if (results == null) {
+//            results = computeGatewayResults(execution, gatewayId);
+//            execution.setVariableLocal(cacheKey, results);
+//        }
+        Map<String, Boolean> results = computeGatewayResults(execution, gatewayId);
 
         return results.getOrDefault(sequenceFlowId, false);
     }

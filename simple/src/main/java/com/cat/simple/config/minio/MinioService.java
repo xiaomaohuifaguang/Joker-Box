@@ -108,7 +108,7 @@ public class MinioService {
         try {
             ObjectWriteResponse objectWriteResponse = minioClient.putObject(
                     PutObjectArgs.builder().bucket(bucketName).object(object).stream(
-                                    inputStream, -1, 10485760)
+                                    inputStream, -1L, 10485760L)
                             .contentType(contentType)
                             .build());
             return objectWriteResponse.etag();
