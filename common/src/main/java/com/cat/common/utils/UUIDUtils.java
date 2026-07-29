@@ -35,6 +35,11 @@ public class UUIDUtils {
         return getRondomString(length, str);
     }
 
+    public static String getRandomStringOnlyLetters(int length){
+        String str="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0";
+        return getRondomString(length, str);
+    }
+
     private static String getRondomString(int length, String charBase){
         Random random=new Random();
         StringBuilder sb=new StringBuilder();

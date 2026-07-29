@@ -1,8 +1,10 @@
 package com.cat.common.entity.dynamicForm;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -28,6 +30,7 @@ public class DynamicFormPublishedVersion {
         private String version;
 
         @Schema(description = "发布时间")
-        private String publishTime;
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone ="GMT+8")
+        private LocalDateTime publishTime;
     }
 }

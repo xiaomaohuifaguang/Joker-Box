@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.cat.common.entity.process.designer.RawData;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -79,7 +80,7 @@ public class ProcessDefinition implements Serializable {
 
     @Schema(description = "logicFlow data")
     @TableField(exist = false,typeHandler = JacksonTypeHandler.class)
-    private Map<String, Object> rawData;
+    private RawData rawData;
 
     @Schema(description = "是否可删除（从未部署过的草稿才可删除）")
     @TableField(exist = false)

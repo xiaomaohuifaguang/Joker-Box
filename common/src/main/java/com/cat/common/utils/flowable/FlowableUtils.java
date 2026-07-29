@@ -1,10 +1,16 @@
 package com.cat.common.utils.flowable;
 
 import com.cat.common.entity.DTO;
+import com.cat.common.entity.process.ProcessDefinition;
+import com.cat.common.entity.process.designer.Edge;
+import com.cat.common.entity.process.designer.Node;
+import com.cat.common.entity.process.designer.RawData;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
 import org.flowable.bpmn.model.*;
 import org.flowable.bpmn.model.Process;
 import org.flowable.common.engine.api.io.InputStreamProvider;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -185,6 +191,127 @@ public class FlowableUtils {
                 .filter(name -> name != null && !name.isBlank())
                 .findFirst()
                 .orElse(null);
+    }
+
+
+    public static BpmnModel buildBpmnModel(ProcessDefinition processDefinition){
+        BpmnModel bpmnModel = new BpmnModel();
+        Process process = new Process();
+        process.setId(processDefinition.getProcessKey());
+        process.setName(processDefinition.getProcessName());
+        process.setDocumentation(processDefinition.getProcessDescription());
+        process.setExecutable(true);
+
+        RawData rawData = processDefinition.getRawData();
+        List<Node> nodes = rawData.getNodes();
+        if(!CollectionUtils.isEmpty(nodes)){
+            for (Node node : nodes) {
+                switch (node.getType()){
+                    case "startEvent": {
+                        StartEvent startEvent = new StartEvent();
+                        startEvent.setId(node.getId());
+                        startEvent.setName((String) node.getData().get("label"));
+                        startEvent.setDocumentation((String) node.getData().get("description"));
+                        process.addFlowElement(startEvent);
+                        break;
+                    }
+                    case "userTask": {
+                        UserTask userTask = new UserTask();
+                        userTask.setId(node.getId());
+                        userTask.setName((String) node.getData().get("label"));
+                        Map<String, Object> data = node.getData();
+                        userTask.setDocumentation((String) data.get("description"));
+                        setUserTaskExtensionElements(userTask, data);
+                        process.addFlowElement(userTask);
+                        break;
+                    }
+                    case "endEvent": {
+                        EndEvent endEvent = new EndEvent();
+                        endEvent.setId(node.getId());
+                        endEvent.setName((String) node.getData().get("label"));
+                        endEvent.setDocumentation((String) node.getData().get("description"));
+                        process.addFlowElement(endEvent);
+                        break;
+                    }
+                }
+            }
+        }
+
+        List<Edge> edges = rawData.getEdges();
+        if(!CollectionUtils.isEmpty(edges)){
+            for (Edge edge : edges) {
+                SequenceFlow sequenceFlow = new SequenceFlow(edge.getSource(), edge.getTarget());
+                sequenceFlow.setId(edge.getId());
+                process.addFlowElement(sequenceFlow);
+            }
+        }
+
+
+        bpmnModel.addProcess(process);
+
+        return bpmnModel;
+    }
+
+    public static String bpmnModelToXml(BpmnModel bpmnModel){
+        BpmnXMLConverter converter = new BpmnXMLConverter();
+        byte[] xmlBytes = converter.convertToXML(bpmnModel);
+        return new String(xmlBytes, StandardCharsets.UTF_8);
+    }
+
+    private static void setUserTaskExtensionElements(UserTask userTask, Map<String, Object> data){
+        String approvalType = (String) data.get("approvalType");
+        initExtensionElementFilterNull(userTask,"approvalType", approvalType, "审批类型");
+
+
+
+        String candidateUsers = (String) data.get("candidateUsers");
+        initExtensionElementFilterNull(userTask,"candidateUsers", candidateUsers, "候选用户");
+
+        String candidateRoles = (String) data.get("candidateRoles");
+        initExtensionElementFilterNull(userTask,"candidateRoles", candidateRoles, "候选角色");
+
+        String candidateGroups = (String) data.get("candidateGroups");
+        initExtensionElementFilterNull(userTask,"candidateGroups", candidateGroups, "候选组");
+
+        String candidateDepts = (String) data.get("candidateDepts");
+        initExtensionElementFilterNull(userTask,"candidateDepts", candidateDepts, "候选部门");
+
+        String passRate = (String) data.get("passRate");
+        initExtensionElementFilterNull(userTask,"passRate", passRate, "通过率");
+
+        String actionButtons = (String) data.get("actionButtons");
+        initExtensionElementFilterNull(userTask,"actionButtons", actionButtons, "处理按钮");
+
+        String backType = (String) data.get("backType");
+        initExtensionElementFilterNull(userTask,"backType", backType, "驳回方式");
+
+        String backNodeId = (String) data.get("backNodeId");
+        initExtensionElementFilterNull(userTask,"backNodeId", backNodeId, "驳回节点");
+
+        String backAssigneePolicy = (String) data.get("backAssigneePolicy");
+        initExtensionElementFilterNull(userTask,"backAssigneePolicy", backAssigneePolicy, "回退后任务分配策略");
+
+    }
+
+//    private static ExtensionElement initExtensionElement(String name, String value, String desc){
+//        ExtensionElement extensionElement = new ExtensionElement();
+//        extensionElement.setNamespacePrefix("flowable");
+//        extensionElement.setName(name);
+//        extensionElement.setElementText(value);
+//        extensionElement.addAttribute(new ExtensionAttribute("desc", desc));
+//        return extensionElement;
+//    }
+
+    private static void initExtensionElementFilterNull(UserTask userTask ,String name, String value, String desc){
+        if(StringUtils.hasText(value)){
+            ExtensionElement extensionElement = new ExtensionElement();
+            extensionElement.setNamespacePrefix("flowable");
+            extensionElement.setNamespace("http://flowable.org/bpmn");
+            extensionElement.setName(name);
+            extensionElement.setElementText(value);
+            extensionElement.addAttribute(new ExtensionAttribute("desc", desc));
+            userTask.addExtensionElement(extensionElement);
+        }
     }
 
 

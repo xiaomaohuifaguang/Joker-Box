@@ -16,11 +16,13 @@
         LEFT JOIN cat_user cu on post.create_by = cu.id and cu.deleted = '0'
         <where>
             and post.deleted = '0'
-            and (
-            post.title like concat('%',#{param.search},'%')
-            or
-            post.text like concat('%',#{param.search},'%')
-            )
+            <if test='param.search != null and param.search != ""'>
+                and (
+                post.title like concat('%',#{param.search},'%')
+                or
+                post.text like concat('%',#{param.search},'%')
+                )
+            </if>
             <if test='param.userId != null and param.userId != ""'>
                 and cu.id = #{param.userId}
             </if>

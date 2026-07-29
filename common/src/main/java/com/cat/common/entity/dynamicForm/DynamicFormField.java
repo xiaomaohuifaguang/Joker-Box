@@ -68,9 +68,6 @@ public class DynamicFormField implements Serializable {
     @Schema(description = "提示")
     private String placeholder;
 
-//    @Schema(description = "单选多选配置")
-//    private String options;
-
     @Schema(description = "单选多选配置")
     @TableField(typeHandler = Fastjson2TypeHandler.class)
     private List<DynamicFormOption> options = new ArrayList<>();
@@ -126,6 +123,9 @@ public class DynamicFormField implements Serializable {
     @Schema(description = "组件额外配置")
     @TableField(typeHandler = Fastjson2TypeHandler.class)
     private Object props;
+
+    @Schema(description = "字段可见")
+    private Boolean visible;
 
     @Schema(description = "字段权限（运行时由流程节点权限注入，不持久化）")
     @TableField(exist = false)

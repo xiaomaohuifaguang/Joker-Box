@@ -3,6 +3,17 @@
 <mapper namespace="com.cat.simple.form.mapper.DynamicFormInstanceMapper">
 
     <select id="selectPage" resultType="com.cat.common.entity.dynamicForm.DynamicFormInstance">
-        SELECT * FROM cat_dynamic_form_instance
+        SELECT cdfi.*, cdf.name formName FROM cat_dynamic_form_instance cdfi
+        INNER JOIN cat_dynamic_form cdf on cdfi.form_id = cdf.id
+    </select>
+    <select id="selectFields" resultType="com.cat.common.entity.dynamicForm.DynamicFormField">
+        SELECT cdff.*, cdffi.val value FROM
+        cat_dynamic_form cdf
+        inner join cat_dynamic_form_instance cdfi on cdf.id = cdfi.form_id
+        inner join cat_dynamic_form_field cdff on cdf.id = cdff.form_id and cdfi.version = cdff.version
+        inner join cat_dynamic_form_field_instance cdffi on cdff.id = cdffi.form_field_id and cdfi.id = cdffi.form_instance_id
+        <where>
+            cdfi.id = #{formInstanceId}
+        </where>
     </select>
 </mapper>

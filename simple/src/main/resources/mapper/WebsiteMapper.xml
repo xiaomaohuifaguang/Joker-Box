@@ -4,5 +4,10 @@
 
     <select id="selectPage" resultType="com.cat.common.entity.website.Website">
         SELECT * FROM cat_website
+        <where>
+            <if test="param.groupName != null and param.groupName != ''">
+                group_name = #{param.groupName}
+            </if>
+        </where>
     </select>
 </mapper>

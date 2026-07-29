@@ -20,8 +20,8 @@ import static com.cat.common.entity.CONSTANTS.ORG_PARENT;
 public class OrgPageParam extends PageParam {
 
 
-    @Schema(description = "搜索")
-    private String search;
+//    @Schema(description = "搜索")
+//    private String search;
 
     @Schema(description = "父级机构id")
     private String parentId;

@@ -48,6 +48,9 @@ public class Menu implements Serializable {
     @Schema(description = "名称")
     private String name;
 
+    @Schema(description = "描述")
+    private String description;
+
     @Schema(description = "创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone ="GMT+8")
 

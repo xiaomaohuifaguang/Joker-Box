@@ -51,7 +51,7 @@
                 OR cm.white_list = '1'
             </where>
         </if>
-        ORDER BY cm.sort DESC, cm.create_time ASC
+        ORDER BY cm.sort ASC, cm.create_time ASC
     </select>
     <delete id="delete">
         <choose>

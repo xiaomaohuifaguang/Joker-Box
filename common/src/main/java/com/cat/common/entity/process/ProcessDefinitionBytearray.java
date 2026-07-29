@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.cat.common.entity.process.designer.RawData;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -37,9 +38,9 @@ public class ProcessDefinitionBytearray implements Serializable {
     @Schema(description = "xml 字节流")
     private byte[] xml;
 
-    @Schema(description = "logicFlow data")
+    @Schema(description = "画布数据")
     @TableField(value = "raw_data", typeHandler = JacksonTypeHandler.class)
-    private Map<String, Object> rawData;
+    private RawData rawData;
 
     @Schema(description = "创建人")
     private String createBy;

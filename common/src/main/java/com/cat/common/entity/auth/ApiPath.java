@@ -57,6 +57,6 @@ public class ApiPath implements Serializable {
     private boolean roleBind;
 
     public String getWhiteListStr() {
-        return whiteList.equals("1") ? "是":"否";
+        return whiteList != null && whiteList.equals("1") ? "是":"否";
     }
 }

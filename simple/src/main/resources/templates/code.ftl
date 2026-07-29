@@ -237,7 +237,7 @@
 
         <div class="footer">
             <p class="footer-hint">如果按钮无法点击，请复制下方链接到浏览器中打开</p>
-            <p style="font-size:12px;color:#9ca3af;word-break:break-all;margin:0 0 16px;">http://localhost:5173</p>
+            <p style="font-size:12px;color:#9ca3af;word-break:break-all;margin:0 0 16px;">https://joker.shien.wang</p>
             <div class="footer-links">
                 <a href="#">帮助中心</a>
                 <a href="#">隐私政策</a>
