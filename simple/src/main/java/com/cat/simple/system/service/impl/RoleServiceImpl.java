@@ -53,14 +53,14 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public boolean allow(List<String> roleIds, String server, String path) {
         // 管理员权限 强制返回
-        if(roleIds.contains(String.valueOf(ROLE_ADMIN_CODE))) return true;
+        if (roleIds.contains(String.valueOf(ROLE_ADMIN_CODE))) return true;
         ApiPath apiPath = apiPathMapper.selectOne(new LambdaQueryWrapper<ApiPath>().eq(ApiPath::getServer, server).eq(ApiPath::getPath, path));
-        if(!Objects.isNull(apiPath) && apiPath.getWhiteList().equals("1")){
+        if (!Objects.isNull(apiPath) && apiPath.getWhiteList().equals("1")) {
             return true;
         }
         List<Role> roleByPath = getRoleByPath(server, path);
         for (Role role : roleByPath) {
-            if(roleIds.contains(String.valueOf(role.getId()))){
+            if (roleIds.contains(String.valueOf(role.getId()))) {
                 return true;
             }
         }
@@ -70,24 +70,24 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Page<Role> queryPage(RolePageParam pageParam) {
         Page<Role> page = new Page<>(pageParam);
-        page = roleMapper.selectPage(page,pageParam);
+        page = roleMapper.selectPage(page, pageParam);
         return page;
     }
 
     @Override
     @Transactional
     public DTO<?> delete(Integer roleId) {
-        if(roleId.equals(ROLE_ADMIN_CODE) || roleId.equals(CONSTANTS.ROLE_EVERYONE_CODE)){
+        if (roleId.equals(ROLE_ADMIN_CODE) || roleId.equals(CONSTANTS.ROLE_EVERYONE_CODE)) {
             return DTO.error("该角色为默认角色，请不要删除");
         }
         Role role = roleMapper.selectById(roleId);
-        if(ObjectUtils.isEmpty(role)){
+        if (ObjectUtils.isEmpty(role)) {
             return DTO.error("角色不存在");
         }
         int withUser = roleMapper.withUser(roleId);
-        if(withUser>0) return DTO.error("角色仍有关联用户，请先解除关联");
+        if (withUser > 0) return DTO.error("角色仍有关联用户，请先解除关联");
         int withApi = roleMapper.withApi(roleId);
-        if(withApi>0) return DTO.error("角色仍有关联api，请先解除关联");
+        if (withApi > 0) return DTO.error("角色仍有关联api，请先解除关联");
         int delete = roleMapper.deleteById(roleId);
         userService.clearUserCache();
         return delete > 0 ? DTO.success() : DTO.error("删除失败");
@@ -96,41 +96,40 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public boolean destroy(Integer roleId) {
-        if(roleId.equals(ROLE_ADMIN_CODE) || roleId.equals(CONSTANTS.ROLE_EVERYONE_CODE)){
+        if (roleId.equals(ROLE_ADMIN_CODE) || roleId.equals(CONSTANTS.ROLE_EVERYONE_CODE)) {
             return false;
         }
         int delete = roleMapper.deleteById(roleId);
         userService.clearUserCache();
-        return delete > 0 ;
+        return delete > 0;
     }
 
     @Override
     public DTO<Role> add(String roleName, String withRole) {
-        if(!StringUtils.hasText(roleName)) return DTO.error("不可以",null);
+        if (!StringUtils.hasText(roleName)) return DTO.error("不可以", null);
         List<Role> roles = roleMapper.selectList(new LambdaQueryWrapper<Role>().eq(Role::getName, roleName));
-        if(!roles.isEmpty()){
-            return DTO.error("不建议使用同名角色",null);
+        if (!roles.isEmpty()) {
+            return DTO.error("不建议使用同名角色", null);
         }
         Role role = new Role().setName(roleName).setCreateTime(LocalDateTime.now());
         roleMapper.insert(role);
-        if(StringUtils.hasText(withRole)) {
+        if (StringUtils.hasText(withRole)) {
             Role roleCopy = roleMapper.selectById(Integer.parseInt(withRole));
-            if(!ObjectUtils.isEmpty(roleCopy)){
+            if (!ObjectUtils.isEmpty(roleCopy)) {
 
                 List<Menu> menus = menuMapper.queryAllByAuth(Collections.singletonList(roleCopy.getId()), roleCopy.getId().equals(ROLE_ADMIN_CODE));
                 List<Integer> menuIds = menus.stream().map(Menu::getId).toList();
-                if(!CollectionUtils.isEmpty(menuIds)){
+                if (!CollectionUtils.isEmpty(menuIds)) {
                     roleMapper.insetRoleMenuRelation(role.getId(), menuIds, LocalDateTime.now());
                 }
 
                 List<HashMap<String, String>> apiRelations = apiPathMapper.selectAllByRoleId(String.valueOf(role.getId()));
-                if(!CollectionUtils.isEmpty(apiRelations)){
+                if (!CollectionUtils.isEmpty(apiRelations)) {
                     roleMapper.insertRoleApiRelation(role.getId(), apiRelations, LocalDateTime.now());
                 }
 
             }
         }
-
 
 
         return DTO.success(role);
@@ -139,10 +138,10 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public List<ApiPathServer> apiPathTree(String roleId) {
         List<ApiPathServer> servers = apiPathMapper.servers();
-        servers.forEach(s->{
+        servers.forEach(s -> {
             List<ApiPathGroup> groups = apiPathMapper.groups(s.getServer());
-            groups.forEach(g->{
-                List<ApiPath> apiPaths = apiPathMapper.selectListByRoleId(roleId,s.getServer(),g.getGroupName());
+            groups.forEach(g -> {
+                List<ApiPath> apiPaths = apiPathMapper.selectListByRoleId(roleId, s.getServer(), g.getGroupName());
                 g.setApiPaths(apiPaths);
             });
             s.setGroups(groups);
@@ -160,34 +159,34 @@ public class RoleServiceImpl implements RoleService {
     public DTO<?> save(RoleAndApiPathAndMenuChoose roleAndApiPath) {
         Role role = roleAndApiPath.getRole();
         boolean exists = roleMapper.exists(new LambdaQueryWrapper<Role>().eq(Role::getId, role.getId()));
-        if(!exists) {
+        if (!exists) {
             return DTO.error("角色不存在");
         }
         Role roleBase = roleMapper.selectById(role.getId());
-        if(StringUtils.hasText(role.getName()) && !roleBase.getName().equals(role.getName())){
+        if (StringUtils.hasText(role.getName()) && !roleBase.getName().equals(role.getName())) {
             List<Role> roles = roleMapper.selectList(new LambdaQueryWrapper<Role>().eq(Role::getName, role.getName()));
-            if(!roles.isEmpty()){
-                return DTO.error("不建议使用同名角色",null);
+            if (!roles.isEmpty()) {
+                return DTO.error("不建议使用同名角色", null);
             }
             roleMapper.update(new LambdaUpdateWrapper<Role>()
-                    .set(Role::getName,role.getName())
+                    .set(Role::getName, role.getName())
                     .set(Role::getAdmin, role.getAdmin())
-                    .set(Role::getUpdateTime,LocalDateTime.now())
-                    .eq(Role::getId,roleBase.getId()));
+                    .set(Role::getUpdateTime, LocalDateTime.now())
+                    .eq(Role::getId, roleBase.getId()));
         }
 
-        if(StringUtils.hasText(role.getAdmin()) && !roleBase.getAdmin().equals(role.getAdmin())){
+        if (StringUtils.hasText(role.getAdmin()) && !roleBase.getAdmin().equals(role.getAdmin())) {
             roleMapper.update(new LambdaUpdateWrapper<Role>()
                     .set(Role::getAdmin, role.getAdmin())
-                    .set(Role::getUpdateTime,LocalDateTime.now())
-                    .eq(Role::getId,roleBase.getId()));
+                    .set(Role::getUpdateTime, LocalDateTime.now())
+                    .eq(Role::getId, roleBase.getId()));
         }
 
-        if(roleBase.getId().equals(ROLE_ADMIN_CODE)){
+        if (roleBase.getId().equals(ROLE_ADMIN_CODE)) {
             return DTO.success();
         }
 
-        List<HashMap<String,String>> roleApiRelation = new ArrayList<>();
+        List<HashMap<String, String>> roleApiRelation = new ArrayList<>();
         List<ApiPathServer> apiPathTree = roleAndApiPath.getApiPathTree();
         for (ApiPathServer apiPathServer : apiPathTree) {
             String server = apiPathServer.getServer();
@@ -195,28 +194,32 @@ public class RoleServiceImpl implements RoleService {
             for (ApiPathGroup group : groups) {
                 List<ApiPath> apiPaths = group.getApiPaths();
                 for (ApiPath apiPath : apiPaths) {
-                    if(apiPath.isRoleBind()){
-                        roleApiRelation.add(new HashMap<>(){{
-                            put("server",server);
-                            put("apiPath",apiPath.getPath());
-                        }});
-                    }
+//                    if(apiPath.isRoleBind()){
+//                        roleApiRelation.add(new HashMap<>(){{
+//                            put("server",server);
+//                            put("apiPath",apiPath.getPath());
+//                        }});
+//                    }
+                    roleApiRelation.add(new HashMap<>() {{
+                        put("server", server);
+                        put("apiPath", apiPath.getPath());
+                    }});
                 }
             }
         }
 
         roleMapper.deleteRoleApiRelation(roleBase.getId());
-        if(!roleApiRelation.isEmpty()){
-            roleMapper.insertRoleApiRelation(roleBase.getId(),roleApiRelation,LocalDateTime.now());
-            roleMapper.update(new LambdaUpdateWrapper<Role>().set(Role::getUpdateTime,LocalDateTime.now()).eq(Role::getId,roleBase.getId()));
+        if (!roleApiRelation.isEmpty()) {
+            roleMapper.insertRoleApiRelation(roleBase.getId(), roleApiRelation, LocalDateTime.now());
+            roleMapper.update(new LambdaUpdateWrapper<Role>().set(Role::getUpdateTime, LocalDateTime.now()).eq(Role::getId, roleBase.getId()));
         }
 
         List<Integer> menuChoose = roleAndApiPath.getMenuChoose();
 
 
         roleMapper.deleteRoleMenuRelation(roleBase.getId());
-        if(!menuChoose.isEmpty()){
-            roleMapper.insetRoleMenuRelation(roleBase.getId(),menuChoose,LocalDateTime.now());
+        if (!menuChoose.isEmpty()) {
+            roleMapper.insetRoleMenuRelation(roleBase.getId(), menuChoose, LocalDateTime.now());
         }
         userService.clearUserCache();
         return DTO.success();

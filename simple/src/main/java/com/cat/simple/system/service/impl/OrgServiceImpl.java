@@ -6,6 +6,7 @@ import com.cat.common.entity.auth.Org;
 
 import com.cat.common.entity.auth.OrgPageParam;
 import com.cat.common.entity.auth.OrgTree;
+import com.cat.simple.config.redis.RedisService;
 import com.cat.simple.system.mapper.OrgMapper;
 import com.cat.simple.system.service.OrgService;
 import jakarta.annotation.Resource;
@@ -15,6 +16,7 @@ import org.springframework.util.ObjectUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.cat.common.entity.CONSTANTS.NIUBI_ORG_NAME;
@@ -27,6 +29,11 @@ public class OrgServiceImpl implements OrgService {
     @Resource
     private OrgMapper orgMapper;
 
+    @Resource
+    private RedisService redisService;
+
+    private static final String ORG_TREE = "ORG_TREE";
+
     @Override
     public boolean add(Org org){
         org.setId(null);
@@ -37,7 +44,9 @@ public class OrgServiceImpl implements OrgService {
         if( ( ObjectUtils.isEmpty(org.getParentId()) || ObjectUtils.isEmpty(orgMapper.selectById(org.getParentId())) )  && !org.getParentId().equals(ORG_PARENT) ){
             return false;
         }
-        return orgMapper.insert(org) == 1;
+        int insert = orgMapper.insert(org);
+        redisService.deleteKey(ORG_TREE);
+        return insert == 1;
     }
 
     @Override
@@ -51,7 +60,9 @@ public class OrgServiceImpl implements OrgService {
         org.setCreateTime(orgOri.getCreateTime());
         org.setUpdateTime(LocalDateTime.now());
         org.setDeleted(orgOri.getDeleted());
-        return orgMapper.updateById(org) == 1;
+        int i = orgMapper.updateById(org);
+        redisService.deleteKey(ORG_TREE);
+        return i == 1;
     }
 
     @Override
@@ -79,18 +90,24 @@ public class OrgServiceImpl implements OrgService {
     @Override
     public OrgTree getOrgTree() {
 
-        OrgTree orgTree;
-        if(ORG_PARENT > 0 ){
-            Org org = orgMapper.selectById(ORG_PARENT);
-            orgTree = new OrgTree().setId(ORG_PARENT).setName(org.getName());
-        }else {
-            orgTree = new OrgTree().setId(ORG_PARENT).setName(NIUBI_ORG_NAME);
+        OrgTree orgTree = redisService.get(ORG_TREE, OrgTree.class);
+
+        if(Objects.isNull(orgTree)){
+            if(ORG_PARENT > 0 ){
+                Org org = orgMapper.selectById(ORG_PARENT);
+                orgTree = new OrgTree().setId(ORG_PARENT).setName(org.getName());
+            }else {
+                orgTree = new OrgTree().setId(ORG_PARENT).setName(NIUBI_ORG_NAME);
+            }
+
+            List<Org> orgs = orgMapper.selectList(new QueryWrapper<Org>());
+            Map<Integer, List<Org>> collect = orgs.stream().collect(Collectors.groupingBy(Org::getParentId));
+
+            orgTree.setChildren(OrgTree.getChildren(orgTree.getId(), orgTree.getName(), collect));
+
+            redisService.set(ORG_TREE, orgTree, 24 * 60 * 60);
         }
 
-        List<Org> orgs = orgMapper.selectList(new QueryWrapper<Org>());
-        Map<Integer, List<Org>> collect = orgs.stream().collect(Collectors.groupingBy(Org::getParentId));
-
-        orgTree.setChildren(OrgTree.getChildren(orgTree.getId(), orgTree.getName(), collect));
 
         return orgTree;
     }

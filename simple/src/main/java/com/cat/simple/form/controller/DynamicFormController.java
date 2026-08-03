@@ -2,6 +2,7 @@ package com.cat.simple.form.controller;
 
 import com.cat.common.entity.*;
 import com.cat.common.entity.dynamicForm.DynamicForm;
+import com.cat.common.entity.dynamicForm.DynamicFormInstance;
 import com.cat.common.entity.dynamicForm.FormData;
 import com.cat.simple.form.service.DynamicFormService;
 import com.cat.common.entity.dynamicForm.DynamicFormPublishedVersion;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -72,14 +74,34 @@ private DynamicFormService dynamicFormService;
 
     @Operation(summary = "提交")
     @RequestMapping(value = "/submit",method = RequestMethod.POST)
-    public HttpResult<?> submit(@RequestBody FormData formData) {
-        return HttpResult.back(dynamicFormService.submit(formData)  ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
+    public HttpResult<Object> submit(@RequestBody FormData formData) {
+        String submit = dynamicFormService.submit(formData);
+        return HttpResult.back(StringUtils.hasText(submit) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR).setData(submit);
     }
 
     @Operation(summary = "已发布表单列表（含历史版本）")
+    @Parameters(
+            @Parameter(name = "formId",description = "表单id",required = true)
+    )
     @RequestMapping(value = "/publishedForms", method = RequestMethod.POST)
-    public HttpResult<List<DynamicFormPublishedVersion>> publishedForms() {
-        return HttpResult.back(dynamicFormService.publishedForms());
+    public HttpResult<List<DynamicFormPublishedVersion>> publishedForms(@RequestParam(value = "formId",required = false) String formId) {
+        return HttpResult.back(dynamicFormService.publishedForms(formId));
+    }
+
+
+    @Operation(summary = "实例分页")
+    @RequestMapping(value = "/instance/queryPage",method = RequestMethod.POST)
+    public HttpResult<Page<DynamicFormInstance>> queryPageInstance(@RequestBody PageParam pageParam) {
+        return HttpResult.back(dynamicFormService.queryPageInstance(pageParam));
+    }
+
+    @Operation(summary = "实例详情")
+    @Parameters(
+            @Parameter(name = "formInstanceId",description = "表单实例id",required = true)
+    )
+    @RequestMapping(value = "/instance/info",method = RequestMethod.POST)
+    public HttpResult<DynamicForm> infoInstance(@RequestParam(value = "formInstanceId",required = true) String formInstanceId) {
+        return HttpResult.back(dynamicFormService.infoInstance(formInstanceId));
     }
 
 }

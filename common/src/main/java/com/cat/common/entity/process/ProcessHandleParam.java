@@ -37,8 +37,11 @@ public class ProcessHandleParam implements Serializable {
     @Schema(description = "备注/审批意见")
     private String remark;
 
-    @Schema(description = "目标节点id（驳回方式为用户自选时必填）")
+    @Schema(description = "目标节点id")
     private String targetNodeId;
+
+    @Schema(description = "目标节点名称")
+    private String targetNodeName;
 
     @Schema(description = "流程定义id（发起/保存草稿时必填）")
     private Integer processDefinitionId;

@@ -88,13 +88,12 @@ public class HandleInfoRecorder {
     /**
      * 记录任务驳回动作。
      */
-    public void recordBack(ProcessHandleParam param, Task task,
-                           String targetNodeId, String targetNodeName) {
+    public void recordBack(ProcessHandleParam param, Task task) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
         Integer round = resolveRound(instance.getId(), task);
         String remark = StringUtils.hasText(param.getRemark()) ? param.getRemark() : "驳回";
         String extra = String.format("{\"targetNodeId\":\"%s\",\"targetNodeName\":\"%s\"}",
-                targetNodeId, targetNodeName != null ? targetNodeName : "");
+                param.getTargetNodeId(), param.getTargetNodeName() != null ? param.getTargetNodeName() : "");
         insert(buildBase(instance, guard.getCurrentUserId())
                 .setTaskId(task.getId())
                 .setTaskName(task.getName())

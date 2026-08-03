@@ -67,7 +67,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             userService.register(registerUserInfo, false);
             User userByUsername = userService.getUserByUsername(registerUserInfo.getUsername());
 
-            String finalUsername = username;
+//            String finalUsername = username;
             new Thread(()->{
                 try {
                     userService.avatarUpload(avatarUrl, String.valueOf(userByUsername.getIdStr()));

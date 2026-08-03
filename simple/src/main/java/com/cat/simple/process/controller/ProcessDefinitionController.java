@@ -26,7 +26,7 @@ public class ProcessDefinitionController {
 
     @Operation(summary = "添加")
     @RequestMapping(value = "/add", method = RequestMethod.POST)
-    public HttpResult<?> add(@RequestBody ProcessDefinition processDefinition) throws ParserConfigurationException, IOException, SAXException {
+        public HttpResult<?> add(@RequestBody ProcessDefinition processDefinition) throws ParserConfigurationException, IOException, SAXException {
         return HttpResult.back(processDefinitionService.add(processDefinition) ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR);
     }
 
@@ -101,11 +101,19 @@ public class ProcessDefinitionController {
 
     @Operation(summary = "发起流程时的定义信息+表单配置")
     @Parameters({
-            @Parameter(name = "processDefinitionId", description = "流程定义id", required = true)
+            @Parameter(name = "processDefinitionId", description = "流程定义id", required = true),
+            @Parameter(name = "processVersion", description = "流程版本", required = false)
     })
     @RequestMapping(value = "/startInfo", method = RequestMethod.POST)
-    public HttpResult<ProcessDefinition> startInfo(@RequestParam Integer processDefinitionId) {
-        return HttpResult.back(processDefinitionService.startInfo(processDefinitionId));
+    public HttpResult<ProcessDefinition> startInfo(@RequestParam("processDefinitionId") Integer processDefinitionId, @RequestParam(value = "processVersion",required = false) String processVersion) {
+        return HttpResult.back(processDefinitionService.startInfo(processDefinitionId, processVersion));
+    }
+
+
+    @Operation(summary = "委托表达式")
+    @RequestMapping(value = "/delegateExpressions", method = RequestMethod.POST)
+    public HttpResult<List<SelectOption>> queryPage() {
+        return HttpResult.back(processDefinitionService.delegateExpressions());
     }
 
 }

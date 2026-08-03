@@ -1,14 +1,17 @@
 package com.cat.simple.config.flowable.command;
 
+import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
-import com.cat.simple.config.flowable.hook.StartContext;
+import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
+import com.cat.simple.config.flowable.hook.context.StartContext;
 import com.cat.simple.config.process.ProcessCodeGenerator;
 import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
+import org.springframework.util.CollectionUtils;
+
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -22,30 +25,21 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
     @Resource private ProcessFormService processFormService;
     @Resource private com.cat.simple.process.service.ProcessDefinitionService processDefinitionService;
 
-    private final Integer processInstanceId;
-    private final Integer processDefinitionId;
-    private final String title;
-    private final Map<String, Object> nodeFormData;
-    private final Map<String, Object> globalFormData;
+    private final ProcessHandleParam param;
 
-    public StartProcessCommand(Integer processDefinitionId, Integer processInstanceId, String title,
-                               Map<String, Object> nodeFormData, Map<String, Object> globalFormData) {
-        this.processDefinitionId = processDefinitionId;
-        this.processInstanceId = processInstanceId;
-        this.title = title;
-        this.nodeFormData = nodeFormData;
-        this.globalFormData = globalFormData;
+    public StartProcessCommand(ProcessHandleParam param) {
+        this.param = param;
     }
 
     @Override
     protected void validate() {
-        guard.assertDefinitionPublished(processDefinitionId);
+        guard.assertDefinitionPublished(param.getProcessDefinitionId());
     }
 
     @Override
     protected ProcessInstance doExecute() {
         com.cat.common.entity.process.ProcessDefinition definition =
-                guard.assertDefinitionPublished(processDefinitionId);
+                guard.assertDefinitionPublished(param.getProcessDefinitionId());
         String currentUserId = guard.getCurrentUserId();
 
         org.flowable.engine.runtime.ProcessInstance flowableInstance =
@@ -54,11 +48,11 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
         LocalDateTime now = LocalDateTime.now();
 
         ProcessInstance instance;
-        if (Objects.nonNull(processInstanceId)) {
+        if (Objects.nonNull(param.getProcessInstanceId())) {
             // 传了流程实例ID → 草稿发起：校验存在且为草稿
-            instance = guard.assertInstanceDraft(processInstanceId);
+            instance = guard.assertInstanceDraft(param.getProcessInstanceId());
             if (!currentUserId.equals(instance.getCreateBy())) {
-                throw new IllegalStateException("无权操作他人草稿: " + processInstanceId);
+                throw new IllegalStateException("无权操作他人草稿: " + param.getProcessInstanceId());
             }
 
             // 更新草稿实例的状态和字段
@@ -66,24 +60,24 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
                     .eq(ProcessInstance::getId, instance.getId())
                     .set(ProcessInstance::getProcessDefinitionId, definition.getId())
 //                    .set(ProcessInstance::getProcessDefinitionVersion, definition.getVersion())
-                    .set(ProcessInstance::getTitle, title)
+                    .set(ProcessInstance::getTitle, param.getTitle())
                     .set(ProcessInstance::getProcessInstanceId, flowableInstance.getProcessInstanceId())
                     .set(ProcessInstance::getProcessStatus, ProcessStatusEnum.ACTIVE.getStatus())
                     .set(ProcessInstance::getCode, codeGenerator.generate())
                     .set(ProcessInstance::getUpdateTime, now));
 
-            instance.setProcessDefinitionId(definition.getId())
-                    .setProcessDefinitionVersion(definition.getVersion())
-                    .setTitle(title)
-                    .setCode(codeGenerator.generate())
-                    .setProcessInstanceId(flowableInstance.getProcessInstanceId())
-                    .setProcessStatus(ProcessStatusEnum.ACTIVE.getStatus())
-                    .setUpdateTime(now);
+//            instance.setProcessDefinitionId(definition.getId())
+//                    .setProcessDefinitionVersion(definition.getVersion())
+//                    .setTitle(param.getTitle())
+//                    .setCode(codeGenerator.generate())
+//                    .setProcessInstanceId(flowableInstance.getProcessInstanceId())
+//                    .setProcessStatus(ProcessStatusEnum.ACTIVE.getStatus())
+//                    .setUpdateTime(now);
         } else {
             instance = new ProcessInstance()
                     .setProcessDefinitionId(definition.getId())
                     .setProcessDefinitionVersion(definition.getVersion())
-                    .setTitle(title)
+                    .setTitle(param.getTitle())
                     .setCode(codeGenerator.generate())
                     .setProcessInstanceId(flowableInstance.getProcessInstanceId())
                     .setProcessStatus(ProcessStatusEnum.ACTIVE.getStatus())
@@ -93,13 +87,15 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
             processInstanceMapper.insert(instance);
         }
 
-        // 创建表单实例并写入数据
-        String startNodeId = processDefinitionService.resolveStartEventNodeId(processDefinitionId);
-        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(),
-                definition.getVersion(), startNodeId);
-        processFormService.writeFormData(instance.getId(), definition.getId(),
-                definition.getVersion(), startNodeId,
-                nodeFormData, globalFormData, false);
+//        // 创建表单实例并写入数据
+//        String startNodeId = processDefinitionService.resolveStartEventNodeId(param.getProcessDefinitionId());
+//        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(),
+//                definition.getVersion(), startNodeId);
+//        processFormService.writeFormData(instance.getId(), definition.getId(),
+//                definition.getVersion(), startNodeId,
+//                param.getNodeFormData(), param.getGlobalFormData(), false);
+
+        processFormService.writeFormData(instance, param.getGlobalFormData());
 
         // 兜底：trivial 流程立即结束
         if (runtimeService.createProcessInstanceQuery()
@@ -121,12 +117,21 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 
     @Override
     protected void beforeHook() {
-        StartContext ctx = new StartContext(processDefinitionId, title, guard.getCurrentUserId(), null, nodeFormData, globalFormData);
-        lifecycleHook.beforeStart(ctx);
+        StartContext ctx = new StartContext(param);
+        if (!CollectionUtils.isEmpty(lifecycleHooks)) {
+            for (ProcessLifecycleHook hook : lifecycleHooks) {
+                hook.beforeStart(ctx);
+            }
+        }
     }
 
     @Override
     protected void afterHook(ProcessInstance result) {
-        lifecycleHook.afterStart(result);
+        StartContext ctx = new StartContext(param);
+        if (!CollectionUtils.isEmpty(lifecycleHooks)) {
+            for (ProcessLifecycleHook hook : lifecycleHooks) {
+                hook.afterStart(ctx);
+            }
+        }
     }
 }

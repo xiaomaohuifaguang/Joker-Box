@@ -1,5 +1,6 @@
-package com.cat.simple.config.flowable.hook;
+package com.cat.simple.config.flowable.hook.context;
 
+import com.cat.common.entity.process.ProcessHandleParam;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -9,7 +10,5 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class RejectContext {
-    private Integer processInstanceId;
-    private String taskId;
-    private String remark;
+    private ProcessHandleParam processHandleParam;
 }

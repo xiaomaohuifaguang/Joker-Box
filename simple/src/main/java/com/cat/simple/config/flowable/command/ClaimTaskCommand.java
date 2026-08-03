@@ -1,10 +1,12 @@
 package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.ProcessHandleParam;
-import com.cat.simple.config.flowable.hook.ClaimContext;
+import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
+import com.cat.simple.config.flowable.hook.context.ClaimContext;
 import jakarta.annotation.Resource;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
+import org.springframework.util.CollectionUtils;
 
 /**
  * 认领任务命令，当前候选人将任务指派给自己。
@@ -40,12 +42,21 @@ public class ClaimTaskCommand extends ProcessCommand<Void> {
 
     @Override
     protected void beforeHook() {
-        ClaimContext ctx = new ClaimContext(param.getProcessInstanceId(), param.getTaskId(), param.getRemark());
-        lifecycleHook.beforeClaim(ctx);
+        ClaimContext ctx = new ClaimContext(param);
+        if (!CollectionUtils.isEmpty(lifecycleHooks)) {
+            for (ProcessLifecycleHook hook : lifecycleHooks) {
+                hook.beforeClaim(ctx);
+            }
+        }
     }
 
     @Override
     protected void afterHook(Void result) {
-        lifecycleHook.afterClaim(guard.getInstance(param.getProcessInstanceId()), task);
+        ClaimContext ctx = new ClaimContext(param);
+        if (!CollectionUtils.isEmpty(lifecycleHooks)) {
+            for (ProcessLifecycleHook hook : lifecycleHooks) {
+                hook.afterClaim(ctx);
+            }
+        }
     }
 }

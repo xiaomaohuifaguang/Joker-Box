@@ -3,20 +3,23 @@ package com.cat.simple.process.service.impl;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.process.*;
-import com.cat.simple.config.flowable.back.BackConfigReader;
-import com.cat.simple.config.flowable.back.BackTargetResolver;
+import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.command.*;
+import com.cat.simple.config.flowable.enums.BackTypeEnum;
+import com.cat.simple.config.flowable.enums.HandleTypeEnum;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
+import com.cat.simple.config.flowable.util.FlowableUtils;
+import com.cat.simple.process.mapper.ProcessDefinitionMapper;
 import com.cat.simple.process.mapper.ProcessInstanceMapper;
 import com.cat.simple.process.mapper.ProcessHandleInfoMapper;
 import com.cat.simple.process.service.ProcessInstanceService;
 import com.cat.simple.process.service.ProcessFormService;
 import com.cat.simple.system.mapper.UserMapper;
 import jakarta.annotation.Resource;
+import org.flowable.bpmn.model.StartEvent;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -32,20 +35,17 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private ProcessGuard guard;
     @Resource private ProcessInstanceMapper processInstanceMapper;
     @Resource private ProcessHandleInfoMapper processHandleInfoMapper;
-    @Resource private BackConfigReader backConfigReader;
-    @Resource private BackTargetResolver backTargetResolver;
+    @Resource private FlowableUtils flowableUtils;
     @Resource private TaskService taskService;
     @Resource private ProcessFormService processFormService;
     @Resource private com.cat.simple.process.service.ProcessDefinitionService processDefinitionService;
-    @Autowired
-    private UserMapper userMapper;
+    @Resource private UserMapper userMapper;
+    @Resource private ProcessDefinitionMapper processDefinitionMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProcessInstance start(ProcessHandleParam param) {
-        return commandBus.execute(new StartProcessCommand(
-                param.getProcessDefinitionId(), param.getProcessInstanceId(),param.getTitle(),
-                param.getNodeFormData(), param.getGlobalFormData()));
+        return commandBus.execute(new StartProcessCommand(param));
     }
 
     @Override
@@ -61,10 +61,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         if (instance == null) {
             return null;
         }
-        List<ProcessHandleInfo> handleList =
-                processHandleInfoMapper.selectDetailListByProcessInstanceId(instance.getId());
-        instance.setProcessHandleInfoList(handleList);
-        instance.setTimeline(buildTimeline(handleList, instance));
+//        List<ProcessHandleInfo> handleList =
+//                processHandleInfoMapper.selectDetailListByProcessInstanceId(instance.getId());
+//        instance.setProcessHandleInfoList(handleList);
+//        instance.setTimeline(buildTimeline(handleList, instance));
+
+        ProcessDefinition processDefinition = processDefinitionMapper.selectById(instance.getProcessDefinitionId());
 
         if (StringUtils.hasText(taskId)) {
             Task task = guard.assertTaskExists(taskId);
@@ -80,25 +82,46 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 if (editable) {
                     instance.setTaskId(taskId);
                     instance.setTaskName(task.getName());
+                    ApprovalContext approvalContext = flowableUtils.getApprovalContext(taskId);
+                    instance.setButtonActions(approvalContext.actionButtons());
+                    if(approvalContext.actionButtons().contains(HandleTypeEnum.BACK.getCode())){
+                        BackConfig backConfig = flowableUtils.getBackConfig(approvalContext);
+                        if(backConfig.isAllowBack() && backConfig.getBackType().equals(BackTypeEnum.CHOOSE.getCode())){
+                            List<BackTargetNode> availableBackTargets = flowableUtils.getAvailableBackTargets(taskId);
+                            backConfig.setAvailableBackTargets(availableBackTargets);
+                        }
+                        instance.setBackConfig(backConfig);
+                    }
                 }
 
-                // 组装 taskForm
-                TaskFormVO taskForm = processFormService.buildTaskForm(
-                        id, instance.getProcessDefinitionId(),
-                        instance.getProcessDefinitionVersion(),
-                        task.getTaskDefinitionKey(), editable);
-                instance.setTaskForm(taskForm);
+
+                TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeIdWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId(), task.getTaskDefinitionKey());
+                instance.setTaskForm(taskFormVO);
+
+//                // 组装 taskForm
+//                TaskFormVO taskForm = processFormService.buildTaskForm(
+//                        id, instance.getProcessDefinitionId(),
+//                        instance.getProcessDefinitionVersion(),
+//                        task.getTaskDefinitionKey(), editable);
+//                instance.setTaskForm(taskForm);
             }
         } else if (ProcessStatusEnum.DRAFT.getStatus().equals(instance.getProcessStatus())) {
-            String startNodeId = processDefinitionService.resolveStartEventNodeId(
-                    instance.getProcessDefinitionId());
-            if (startNodeId != null) {
-                TaskFormVO draftForm = processFormService.buildTaskForm(
-                        id, instance.getProcessDefinitionId(),
-                        instance.getProcessDefinitionVersion(),
-                        startNodeId, true);
-                instance.setTaskForm(draftForm);
-            }
+            StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
+            TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeIdWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId(), startEvent.getId());
+            instance.setTaskForm(taskFormVO);
+//            String startNodeId = processDefinitionService.resolveStartEventNodeId(
+//                    instance.getProcessDefinitionId());
+//            if (startNodeId != null) {
+//                TaskFormVO draftForm = processFormService.buildTaskForm(
+//                        id, instance.getProcessDefinitionId(),
+//                        instance.getProcessDefinitionVersion(),
+//                        startNodeId, true);
+//                instance.setTaskForm(draftForm);
+//            }
+        }else {
+            StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
+            TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeIdWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId(), startEvent.getId());
+            instance.setTaskForm(taskFormVO);
         }
         return instance;
     }
@@ -247,7 +270,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void back(ProcessHandleParam param) {
-        commandBus.execute(new BackTaskCommand(param));
+         commandBus.execute(new BackTaskCommand(param));
     }
 
     @Override
@@ -261,7 +284,6 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         com.cat.common.entity.process.ProcessDefinition definition =
                 guard.assertDefinitionPublished(processDefinitionId);
         LocalDateTime now = LocalDateTime.now();
-        String startNodeId = processDefinitionService.resolveStartEventNodeId(processDefinitionId);
 
         if (id != null) {
             ProcessInstance exist = guard.assertInstanceDraft(id);
@@ -271,13 +293,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             processInstanceMapper.update(new LambdaUpdateWrapper<ProcessInstance>()
                     .eq(ProcessInstance::getId, id)
                     .set(ProcessInstance::getProcessDefinitionId, definition.getId())
-//                    .set(ProcessInstance::getProcessDefinitionVersion, definition.getVersion())
                     .set(ProcessInstance::getTitle, title)
                     .set(ProcessInstance::getUpdateTime, now));
 
-            processFormService.createFormInstanceIfNeeded(id, definition.getId(), definition.getVersion(), startNodeId);
-            processFormService.writeFormData(id, definition.getId(), definition.getVersion(), startNodeId,
-                    param.getNodeFormData(), param.getGlobalFormData(), true);
+
+            processFormService.writeFormData(exist, param.getGlobalFormData());
 
             return exist.setProcessDefinitionId(definition.getId())
                     .setProcessDefinitionVersion(definition.getVersion())
@@ -294,9 +314,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                 .setUpdateTime(now);
         processInstanceMapper.insert(instance);
 
-        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(), definition.getVersion(), startNodeId);
-        processFormService.writeFormData(instance.getId(), definition.getId(), definition.getVersion(), startNodeId,
-                param.getNodeFormData(), param.getGlobalFormData(), true);
+        processFormService.writeFormData(instance, param.getGlobalFormData());
 
         return instance;
     }
@@ -314,11 +332,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     @Override
     public List<BackTargetNode> getAvailableBackTargets(String taskId) {
-        return backConfigReader.getAvailableBackTargets(taskId);
+        return flowableUtils.getAvailableBackTargets(taskId);
     }
 
     @Override
     public BackConfig getBackConfig(String taskId) {
-        return backConfigReader.getBackConfig(taskId);
+        return flowableUtils.getBackConfig(taskId);
     }
+
 }

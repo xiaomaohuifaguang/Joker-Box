@@ -26,18 +26,19 @@ public class GatewayConditionEngine {
     private GatewayEvaluationContext evaluationContext;
 
     public boolean evaluate(Integer processDefinitionId, String version,
-                            String sequenceFlowId, Integer processInstanceId, String nodeId) {
+                            String sequenceFlowId) {
         ProcessGatewayCondition condition = conditionMapper.selectOne(
                 new LambdaQueryWrapper<ProcessGatewayCondition>()
                         .eq(ProcessGatewayCondition::getProcessDefinitionId, processDefinitionId)
                         .eq(ProcessGatewayCondition::getVersion, version)
-                        .eq(ProcessGatewayCondition::getSequenceFlowId, sequenceFlowId));
+                        .eq(ProcessGatewayCondition::getSequenceFlowId, sequenceFlowId)
+                        .eq(ProcessGatewayCondition::getConditionType, "CUSTOM"));
 
         if (condition == null || Boolean.TRUE.equals(condition.getIsDefault())) {
-            return true;
+            return false;
         }
         if (!"CUSTOM".equals(condition.getConditionType())) {
-            return true;
+            return false;
         }
 
         List<ProcessGatewayConditionNode> ruleTree = loadRuleTree(condition.getId());
@@ -45,33 +46,8 @@ public class GatewayConditionEngine {
             return true;
         }
 
-        evaluationContext.init(processInstanceId, nodeId);
+//        evaluationContext.init(processInstanceId, nodeId);
         return evaluateNode(ruleTree.get(0));
-    }
-
-    public Map<String, Boolean> evaluateAll(Integer processDefinitionId, String version,
-                                            String sourceNodeId, Integer processInstanceId, String nodeId) {
-        List<ProcessGatewayCondition> conditions = conditionMapper.selectList(
-                new LambdaQueryWrapper<ProcessGatewayCondition>()
-                        .eq(ProcessGatewayCondition::getProcessDefinitionId, processDefinitionId)
-                        .eq(ProcessGatewayCondition::getVersion, version)
-                        .eq(ProcessGatewayCondition::getSourceNodeId, sourceNodeId)
-                        .eq(ProcessGatewayCondition::getConditionType, "CUSTOM"));
-
-        if (CollectionUtils.isEmpty(conditions)) {
-            return Collections.emptyMap();
-        }
-
-        evaluationContext.init(processInstanceId, nodeId);
-        Map<String, Boolean> results = new HashMap<>();
-
-        for (ProcessGatewayCondition condition : conditions) {
-            List<ProcessGatewayConditionNode> ruleTree = loadRuleTree(condition.getId());
-            boolean result = CollectionUtils.isEmpty(ruleTree) || evaluateNode(ruleTree.get(0));
-            results.put(condition.getSequenceFlowId(), result);
-        }
-
-        return results;
     }
 
     public List<ProcessGatewayConditionNode> loadRuleTree(Long conditionId) {

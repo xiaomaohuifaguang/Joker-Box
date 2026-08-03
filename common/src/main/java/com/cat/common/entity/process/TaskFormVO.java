@@ -16,8 +16,6 @@ public class TaskFormVO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "当前用户是否可编辑（是否为任务处理人）")
-    private boolean editable;
 
     @Schema(description = "节点表单（含字段定义、权限、当前值、分组、联动规则）")
     private DynamicForm nodeForm;

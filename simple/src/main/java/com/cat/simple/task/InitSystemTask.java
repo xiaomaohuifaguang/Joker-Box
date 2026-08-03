@@ -46,7 +46,7 @@ public class InitSystemTask {
     /**
      * 初始化引导 系统缓存数据
      */
-    @PostConstruct
+//    @PostConstruct
     private void initBoot(){
 
     }

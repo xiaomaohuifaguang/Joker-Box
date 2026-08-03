@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.io.Serial;
+import java.io.Serializable;
 import java.util.Objects;
 
 
@@ -18,7 +19,7 @@ import java.util.Objects;
 @Accessors(chain = true)
 @Schema(name = "ProcessInstancePageParam", description = "流程实例分页查询参数")
 @EqualsAndHashCode(callSuper = false)
-public class ProcessInstancePageParam extends PageParam {
+public class ProcessInstancePageParam extends PageParam implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;

@@ -28,8 +28,9 @@
         <choose>
             <!-- 0 草稿：当前用户创建且尚未提交到引擎，无需关联 Flowable 表 -->
             <when test='param.type != null and param.type == "0"'>
-                SELECT cpi.*, cu.nickname createByName
+                SELECT cpi.*, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM cat_process_instance cpi
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE cpi.deleted = '0'
                   AND cpi.process_status = '0'
@@ -40,8 +41,9 @@
 
             <!-- 1 我发起的(进行中)：当前用户创建的活跃流程，不关联任务表避免重复行 -->
             <when test='param.type != null and param.type == "1"'>
-                SELECT cpi.*, cu.nickname createByName
+                SELECT cpi.*, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM cat_process_instance cpi
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE cpi.deleted = '0'
                   AND cpi.create_by = #{param.userId}
@@ -52,10 +54,11 @@
 
             <!-- 2 待办：从 Flowable 运行时任务表驱动，每个任务一行，分页准确 -->
             <when test='param.type != null and param.type == "2"'>
-                SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName
+                SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM ACT_RU_TASK task
                 INNER JOIN cat_process_instance cpi
                     ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE task.ASSIGNEE_ = #{param.userId}
                 <if test="param.search != null and param.search != ''">
@@ -72,7 +75,7 @@
 
             <!-- 3 待认领：从 Flowable 任务+身份关联驱动，候选人且未签收 -->
             <when test='param.type != null and param.type == "3"'>
-                SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName
+                SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM ACT_RU_TASK task
                 INNER JOIN ACT_RU_IDENTITYLINK il
                     ON il.TASK_ID_ = task.ID_
@@ -80,6 +83,7 @@
                     AND il.USER_ID_ = #{param.userId}
                 INNER JOIN cat_process_instance cpi
                     ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE task.ASSIGNEE_ IS NULL
                 <if test="param.search != null and param.search != ''">
@@ -96,8 +100,9 @@
 
             <!-- 4 我已办的：按实例查（去重），不携带 taskId/taskName，按“我最后一次办结时间”倒序 -->
             <when test='param.type != null and param.type == "4"'>
-                SELECT cpi.*, cu.nickname createByName
+                SELECT cpi.*, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM cat_process_instance cpi
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 INNER JOIN (
                     SELECT PROC_INST_ID_, MAX(END_TIME_) AS handle_time
@@ -133,8 +138,9 @@
 
             <!-- 5 我发起的(全部)：当前用户创建的所有流程实例 -->
             <when test='param.type != null and param.type == "5"'>
-                SELECT cpi.*, cu.nickname createByName
+                SELECT cpi.*, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM cat_process_instance cpi
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 WHERE cpi.deleted = '0'
                   AND cpi.create_by = #{param.userId}
@@ -144,9 +150,10 @@
 
             <!-- -1 非法/默认：返回空集 -->
             <otherwise>
-                SELECT cpi.*, cu.nickname createByName
+                SELECT cpi.*, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM cat_process_instance cpi
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 WHERE 1 = 2
             </otherwise>
         </choose>

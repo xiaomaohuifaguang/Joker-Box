@@ -4,6 +4,7 @@ package com.cat.simple.form.service;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.dynamicForm.DynamicForm;
+import com.cat.common.entity.dynamicForm.DynamicFormInstance;
 import com.cat.common.entity.dynamicForm.FormData;
 import com.cat.common.entity.dynamicForm.DynamicFormPublishedVersion;
 
@@ -25,18 +26,22 @@ public interface DynamicFormService {
 
     boolean stop(String formId);
 
-    boolean submit(FormData formData);
+    String submit(FormData formData);
 
     /**
      * 保存表单实例数据（弱校验，适用于流程层）。
-     * 不校验表单发布状态，只做字段存在性和必填校验（可跳过）。
+     * 只做字段存在性和必填校验（可跳过）。
      *
      * @param formData     表单数据
-     * @param skipRequired 是否跳过必填校验
-     * @return 是否成功
+     * @return 表单实例id
      */
-    boolean saveFormData(FormData formData, boolean skipRequired);
+    String saveFormData(FormData formData, String userId);
 
-    List<DynamicFormPublishedVersion> publishedForms();
+    List<DynamicFormPublishedVersion> publishedForms(String formId);
+
+
+    Page<DynamicFormInstance> queryPageInstance(PageParam pageParam);
+
+    DynamicForm infoInstance(String formInstanceId);
 
 }

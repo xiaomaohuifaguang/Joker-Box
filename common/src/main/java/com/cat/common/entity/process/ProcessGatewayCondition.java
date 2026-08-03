@@ -59,4 +59,14 @@ public class ProcessGatewayCondition implements Serializable {
     @TableField(exist = false)
     @Schema(description = "CUSTOM模式时的规则树")
     private List<ProcessGatewayConditionNode> ruleTree;
+
+    public ProcessGatewayCondition(Integer processDefinitionId, String version, String sequenceFlowId, String sourceNodeId, String targetNodeId){
+        this.processDefinitionId = processDefinitionId;
+        this.version = version;
+        this.sequenceFlowId = sequenceFlowId;
+        this.sourceNodeId = sourceNodeId;
+        this.targetNodeId = targetNodeId;
+    }
+
+
 }

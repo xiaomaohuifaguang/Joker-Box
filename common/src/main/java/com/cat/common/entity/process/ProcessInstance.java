@@ -89,6 +89,10 @@ public class ProcessInstance implements Serializable {
     @TableField(exist = false)
     private List<String> buttonActions;
 
+    @Schema(description = "驳回配置")
+    @TableField(exist = false)
+    private BackConfig backConfig;
+
     @Schema(description = "流程处理记录")
     @TableField(exist = false)
     private List<ProcessHandleInfo> processHandleInfoList;

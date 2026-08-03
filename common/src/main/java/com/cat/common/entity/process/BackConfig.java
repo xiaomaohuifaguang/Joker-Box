@@ -26,6 +26,12 @@ public class BackConfig implements Serializable {
     @Schema(description = "回退后分配策略: auto/last_handler/reassign")
     private String backAssigneePolicy;
 
-    @Schema(description = "该节点允许的操作按钮")
-    private List<String> actionButtons;
+    @Schema(description = "可驳回的目标节点")
+    List<BackTargetNode> availableBackTargets;
+
+//    @Schema(description = "该节点允许的操作按钮")
+//    private List<String> actionButtons;
+
+
+
 }

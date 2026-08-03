@@ -3,6 +3,7 @@ package com.cat.simple.gandashi.mapper;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.ganDaShi.GanDaShiPost;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cat.common.entity.ganDaShi.GanDaShiPostPageParam;
 import org.apache.ibatis.annotations.Mapper;
 
 import com.cat.common.entity.Page;
@@ -19,7 +20,7 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface GanDaShiPostMapper extends BaseMapper<GanDaShiPost> {
-   Page<GanDaShiPost> selectPage(@Param("page") Page<GanDaShiPost> page, @Param("param") PageParam pageParam);
+   Page<GanDaShiPost> selectPage(@Param("page") Page<GanDaShiPost> page, @Param("param") GanDaShiPostPageParam pageParam);
 
    GanDaShiPost selectById(@Param("id") Integer id);
 

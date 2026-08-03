@@ -1,11 +1,14 @@
 package com.cat.simple.form.mapper;
 
+import com.cat.common.entity.dynamicForm.DynamicFormField;
 import com.cat.common.entity.dynamicForm.DynamicFormInstance;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import com.cat.common.entity.Page;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 
 /**
@@ -19,4 +22,7 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface DynamicFormInstanceMapper extends BaseMapper<DynamicFormInstance> {
    Page<DynamicFormInstance> selectPage(@Param("page") Page<DynamicFormInstance> page);
+
+   List<DynamicFormField> selectFields(@Param("formInstanceId") String formInstanceId);
+
 }

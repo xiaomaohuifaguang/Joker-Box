@@ -5,7 +5,7 @@
         <!--应用名称-->
         <property name="APP_NAME">joker-box</property>
         <!--日志存放路径-->
-        <property name="LOG_PATH">/appData/logs/Joker-Box/${APP_NAME}</property>
+        <property name="LOG_PATH">/appData/logs/${APP_NAME}</property>
         <!--日志备份路径-->
         <property name="LOG_BACKUP_PATH">${LOG_PATH}/backup</property>
         <!--日志输出格式-控制台-->

@@ -2,11 +2,25 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cat.simple.form.mapper.DynamicFormInstanceMapper">
 
+    <!-- 开启 autoMapping，其余字段自动映射，无需手写 -->
+    <resultMap id="DynamicFormFieldMap"
+               type="com.cat.common.entity.dynamicForm.DynamicFormField"
+               autoMapping="true">
+
+        <!-- 只需要单独拎出需要 TypeHandler 的字段 -->
+        <result column="options" property="options"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler" />
+
+        <result column="option_source" property="optionSource"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler" />
+        <result column="columns" property="columns" typeHandler="com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler"/>
+    </resultMap>
+
     <select id="selectPage" resultType="com.cat.common.entity.dynamicForm.DynamicFormInstance">
         SELECT cdfi.*, cdf.name formName FROM cat_dynamic_form_instance cdfi
         INNER JOIN cat_dynamic_form cdf on cdfi.form_id = cdf.id
     </select>
-    <select id="selectFields" resultType="com.cat.common.entity.dynamicForm.DynamicFormField">
+    <select id="selectFields" resultMap="DynamicFormFieldMap">
         SELECT cdff.*, cdffi.val value FROM
         cat_dynamic_form cdf
         inner join cat_dynamic_form_instance cdfi on cdf.id = cdfi.form_id
@@ -15,5 +29,6 @@
         <where>
             cdfi.id = #{formInstanceId}
         </where>
+        order by cdff.sort asc
     </select>
 </mapper>

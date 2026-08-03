@@ -1,8 +1,12 @@
 package com.cat.common.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import java.util.Collections;
+import java.util.List;
 
 /***
  * JSON工具类
@@ -43,6 +47,20 @@ public class JSONUtils {
             return objectMapper.readValue(jsonStr, objectClass);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> List<T> parseList(String jsonStr, Class<T> clazz) {
+        if (jsonStr == null || jsonStr.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            // Jackson 需要借助 TypeReference 来保留泛型信息
+            return mapper.readValue(jsonStr, new TypeReference<List<T>>() {});
+        } catch (Exception e) {
+            // log.error("Jackson JSON解析失败: {}", jsonStr, e);
+            return Collections.emptyList();
         }
     }
 

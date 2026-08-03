@@ -41,10 +41,5 @@ public class DynamicFormOption implements Serializable {
     @Schema(description = "子集")
     private List<DynamicFormOption> children;
 
-    public DynamicFormOption(String label, String value) {
-        this.label = label;
-        this.value = value;
-    }
-
 
 }

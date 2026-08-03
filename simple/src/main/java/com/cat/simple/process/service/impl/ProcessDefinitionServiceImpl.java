@@ -4,13 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.DTO;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
-import com.cat.common.entity.process.ProcessDefinition;
-import com.cat.common.entity.process.ProcessDefinitionBytearray;
-import com.cat.common.entity.process.ProcessDefinitionForm;
-import com.cat.common.entity.process.ProcessGatewayCondition;
-import com.cat.common.entity.process.ProcessGatewayConditionNode;
-import com.cat.common.entity.process.ProcessNodeFieldPermission;
-import com.cat.common.utils.flowable.FlowableUtils;
+import com.cat.common.entity.SelectOption;
+import com.cat.common.entity.process.*;
+import com.cat.common.entity.process.constants.FormBindType;
+import com.cat.common.utils.UUIDUtils;
+import com.cat.simple.config.flowable.util.FlowableUtils;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.process.mapper.ProcessDefinitionBytearrayMapper;
 import com.cat.simple.process.mapper.ProcessDefinitionFormMapper;
@@ -24,8 +22,9 @@ import com.cat.simple.config.flowable.gateway.GatewayConditionValidator;
 import com.cat.simple.config.flowable.gateway.GatewayConditionXmlInjector;
 import com.cat.simple.process.service.ProcessDefinitionService;
 import jakarta.annotation.Resource;
+import org.flowable.bpmn.model.BpmnModel;
+import org.flowable.bpmn.model.StartEvent;
 import org.flowable.engine.RepositoryService;
-import org.flowable.engine.repository.Deployment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -39,9 +38,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
@@ -71,15 +68,17 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     @Resource
     private GatewayConditionXmlInjector gatewayConditionXmlInjector;
 
+    @Resource
+    private FlowableUtils flowableUtils;
+
 
     @Override
     @Transactional
     public boolean add(ProcessDefinition processDefinition) throws ParserConfigurationException, IOException, SAXException {
 
-        String processKey = getValueByTag(processDefinition.getXmlStr(), "bpmn:process", "id");
-        String processName = getValueByTag(processDefinition.getXmlStr(), "bpmn:process", "name");
-        processDefinition.setProcessKey(processKey);
-        processDefinition.setProcessName(processName);
+        processDefinition.setProcessKey(UUIDUtils.getRandomStringOnlyLetters(10));
+        processDefinition.setProcessName(processDefinition.getProcessName());
+        processDefinition = flowableUtils.build(processDefinition);
 
         processDefinition.setVersion("DRAFT");
         processDefinition.setStatus("0");
@@ -94,7 +93,6 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         ProcessDefinitionBytearray bytearray = new ProcessDefinitionBytearray()
                 .setProcessDefinitionId(processDefinition.getId())
                 .setVersion("DRAFT")
-                .setXml(processDefinition.getXmlStr().getBytes())
                 .setRawData(processDefinition.getRawData())
                 .setCreateBy(processDefinition.getCreateBy())
                 .setCreateTime(now);
@@ -108,7 +106,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         // 保存网关条件配置（全量覆盖）
         if (processDefinition.getGatewayConditions() != null) {
-            gatewayConditionValidator.validate(processDefinition.getGatewayConditions());
+//            gatewayConditionValidator.validate(processDefinition.getGatewayConditions());
             saveGatewayConditions(processDefinition.getId(), "DRAFT", processDefinition.getGatewayConditions());
         }
 
@@ -125,17 +123,16 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
             return false;
         }
 
-        String processKey = getValueByTag(processDefinition.getXmlStr(), "bpmn:process", "id");
-        if (!processDefinitionOri.getProcessKey().equals(processKey)) {
-            String s = modifyProcessId(processDefinition.getXmlStr(), processKey, processDefinitionOri.getProcessKey());
-            processDefinition.setXmlStr(s);
-        }
-        processDefinitionOri.setXmlStr(processDefinition.getXmlStr());
-        String processName = getValueByTag(processDefinition.getXmlStr(), "bpmn:process", "name");
+        processDefinition = flowableUtils.build(processDefinition.setProcessKey(processDefinitionOri.getProcessKey()));
+        String processName = processDefinition.getProcessName();
         processDefinitionOri.setProcessName(processName);
         processDefinitionOri.setUpdateTime(LocalDateTime.now());
         processDefinitionOri.setProcessCategory(processDefinition.getProcessCategory());
         processDefinitionOri.setProcessDescription(processDefinition.getProcessDescription());
+        processDefinitionOri.setRawData(processDefinition.getRawData());
+
+
+
         int update = processDefinitionMapper.updateById(processDefinitionOri);
 
         // 更新 DRAFT 版本的 bytearray
@@ -148,7 +145,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                     .setCreateBy(processDefinitionOri.getCreateBy())
                     .setCreateTime(LocalDateTime.now());
         }
-        draft.setXml(processDefinitionOri.getXmlStr().getBytes());
+        draft.setXml(processDefinition.getXmlStr().getBytes());
         draft.setRawData(processDefinition.getRawData());
         if (draft.getId() == null) {
             processDefinitionBytearrayMapper.insert(draft);
@@ -164,7 +161,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         // 保存网关条件配置（全量覆盖）
         if (processDefinition.getGatewayConditions() != null) {
-            gatewayConditionValidator.validate(processDefinition.getGatewayConditions());
+//            gatewayConditionValidator.validate(processDefinition.getGatewayConditions());
             saveGatewayConditions(processDefinitionOri.getId(), "DRAFT", processDefinition.getGatewayConditions());
         }
 
@@ -187,25 +184,14 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         processDefinition.setXmlStr(new String(draft.getXml()));
 
-        // 注入网关条件到 BPMN XML
-        List<ProcessGatewayCondition> draftConditions = gatewayConditionMapper.selectList(
-                new LambdaQueryWrapper<ProcessGatewayCondition>()
-                        .eq(ProcessGatewayCondition::getProcessDefinitionId, id)
-                        .eq(ProcessGatewayCondition::getVersion, "DRAFT"));
-        try {
-            String injectedXml = gatewayConditionXmlInjector.inject(processDefinition.getXmlStr(), draftConditions);
-            processDefinition.setXmlStr(injectedXml);
-        } catch (Exception e) {
-            return DTO.error("BPMN 条件注入失败: " + e.getMessage());
-        }
-
-        DTO<?> dto = FlowableUtils.validateBpmnXml(processDefinition.getXmlStr());
+        DTO<BpmnModel> dto = flowableUtils.validateBpmnXml(processDefinition.getXmlStr());
         if (!dto.flag) {
             return dto;
         }
 
-        Deployment deployment = repositoryService.createDeployment()
-                .addString("cat/process/" + processDefinition.getProcessKey() + ".bpmn20.xml", processDefinition.getXmlStr())
+        BpmnModel bpmnModel = dto.getData();
+        repositoryService.createDeployment()
+                .addBpmnModel("cat/process/"+ processDefinition.getProcessKey()+".bpmn20.xml", bpmnModel)
                 .name(processDefinition.getProcessName())
                 .category(processDefinition.getProcessCategory())
                 .key(processDefinition.getProcessKey())
@@ -326,7 +312,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         ProcessDefinitionBytearray bytearray = selectBytearray(processDefinition.getId(), queryVersion);
         if (bytearray != null) {
-            processDefinition.setXmlStr(new String(bytearray.getXml()));
+//            processDefinition.setXmlStr(new String(bytearray.getXml()));
             processDefinition.setRawData(bytearray.getRawData());
         }
 
@@ -335,7 +321,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 new LambdaQueryWrapper<ProcessDefinitionForm>()
                         .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinition.getId())
                         .eq(ProcessDefinitionForm::getVersion, queryVersion)
-                        .eq(ProcessDefinitionForm::getBindType, "GLOBAL"));
+                        .eq(ProcessDefinitionForm::getBindType, FormBindType.GLOBAL));
         processDefinition.setGlobalFormBinding(globalBinding);
 
         // 查询节点表单绑定（同版本）
@@ -343,7 +329,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
                 new LambdaQueryWrapper<ProcessDefinitionForm>()
                         .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinition.getId())
                         .eq(ProcessDefinitionForm::getVersion, queryVersion)
-                        .eq(ProcessDefinitionForm::getBindType, "NODE"));
+                        .eq(ProcessDefinitionForm::getBindType, FormBindType.NODE));
         processDefinition.setNodeFormBindings(nodeBindings);
 
         // 查询节点字段权限（同版本）
@@ -568,65 +554,39 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     }
 
     @Override
-    public ProcessDefinition startInfo(Integer processDefinitionId) {
-        ProcessDefinition definition = processDefinitionMapper.selectById(processDefinitionId);
-        if (definition == null) {
-            return null;
+    public ProcessDefinition startInfo(Integer processDefinitionId, String processVersion) {
+        // TODO processVersion 实现指定版本 发起
+        ProcessDefinition processDefinition = processDefinitionMapper.selectById(processDefinitionId);
+        if (processDefinition == null || !processDefinition.getStatus().equals("1")) {
+            throw new IllegalStateException("流程不存在或不可用");
         }
 
-        // 解析 BPMN 获取 startEvent 的 nodeId
-        String startNodeId = resolveStartEventNodeId(definition.getId());
-        com.cat.common.entity.process.TaskFormVO startForm =
-                processFormService.buildStartForm(processDefinitionId, startNodeId);
-        definition.setStartForm(startForm);
+        StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), processDefinition.getVersion());
+        TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeId(processDefinition.getId(), processDefinition.getVersion(), startEvent.getId());
+        processDefinition.setStartForm(taskFormVO);
 
-        return definition;
+        return processDefinition;
     }
 
     /**
      * 从 BPMN XML 中解析 startEvent 节点的 ID。
      * 优先匹配 bpmn:startEvent，其次 startEvent。
      */
+//    @Override
+//    public String resolveStartEventNodeId(Integer processDefinitionId) {
+//        ProcessDefinition processDefinition = processDefinitionMapper.selectById(processDefinitionId);
+//        if (processDefinition == null) {
+//            return null;
+//        }
+//
+//        StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), processDefinition.getVersion());
+//        return startEvent.getId();
+//    }
+
     @Override
-    public String resolveStartEventNodeId(Integer processDefinitionId) {
-        ProcessDefinition processDefinition = processDefinitionMapper.selectById(processDefinitionId);
-        if (processDefinition == null) {
-            return null;
-        }
-
-        String effectiveVersion = "1".equals(processDefinition.getStatus()) && StringUtils.hasText(processDefinition.getVersion())
-                ? processDefinition.getVersion()
-                : "DRAFT";
-
-        ProcessDefinitionBytearray bytearray = processDefinitionBytearrayMapper.selectOne(
-                new LambdaQueryWrapper<ProcessDefinitionBytearray>()
-                        .eq(ProcessDefinitionBytearray::getProcessDefinitionId, processDefinitionId)
-                        .eq(ProcessDefinitionBytearray::getVersion, effectiveVersion)
-                        .last("LIMIT 1"));
-        if (bytearray == null || bytearray.getXml() == null) {
-            return null;
-        }
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(false);
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(new ByteArrayInputStream(bytearray.getXml()));
-
-            // 先尝试 bpmn:startEvent
-            var startEvents = doc.getElementsByTagName("bpmn:startEvent");
-            if (startEvents.getLength() == 0) {
-                // 再尝试 startEvent
-                startEvents = doc.getElementsByTagName("startEvent");
-            }
-            if (startEvents.getLength() > 0) {
-                var idAttr = startEvents.item(0).getAttributes().getNamedItem("id");
-                if (idAttr != null) {
-                    return idAttr.getNodeValue();
-                }
-            }
-        } catch (Exception e) {
-            // 解析失败则返回 null
-        }
-        return null;
+    public List<SelectOption> delegateExpressions() {
+        return List.of(new SelectOption("delegateDemoService", "演示服务"));
     }
+
+
 }

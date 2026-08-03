@@ -2,9 +2,12 @@ package com.cat.simple.config.flowable.gateway;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.simple.process.mapper.ProcessDefinitionMapper;
 import com.cat.simple.process.mapper.ProcessInstanceMapper;
 import jakarta.annotation.Resource;
+import org.flowable.engine.RepositoryService;
 import org.flowable.engine.delegate.DelegateExecution;
+import org.flowable.engine.repository.ProcessDefinition;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -29,6 +32,11 @@ public class GatewayConditionEvaluator {
 
     @Resource
     private ProcessInstanceMapper processInstanceMapper;
+    @Resource
+    private ProcessDefinitionMapper processDefinitionMapper;
+
+    @Resource
+    private RepositoryService repositoryService;
 
     /**
      * 评估某条 sequenceFlow 的条件是否满足。
@@ -43,33 +51,40 @@ public class GatewayConditionEvaluator {
             return false;
         }
 
-//        String cacheKey = CACHE_KEY_PREFIX + gatewayId;
-//        Map<String, Boolean> results = (Map<String, Boolean>) execution.getVariableLocal(cacheKey);
-//
-//        if (results == null) {
-//            results = computeGatewayResults(execution, gatewayId);
-//            execution.setVariableLocal(cacheKey, results);
-//        }
-        Map<String, Boolean> results = computeGatewayResults(execution, gatewayId);
 
-        return results.getOrDefault(sequenceFlowId, false);
-    }
-
-    private Map<String, Boolean> computeGatewayResults(DelegateExecution execution, String gatewayId) {
-        // 反查业务流程实例信息（processDefinitionId + version）
-        ProcessInstance instance = processInstanceMapper.selectOne(
+       ProcessInstance instance = processInstanceMapper.selectOne(
                 new LambdaQueryWrapper<ProcessInstance>()
                         .eq(ProcessInstance::getProcessInstanceId, execution.getProcessInstanceId()));
 
-        if (instance == null) {
-            return java.util.Collections.emptyMap();
-        }
 
-        return gatewayConditionEngine.evaluateAll(
-                instance.getProcessDefinitionId(),
-                instance.getProcessDefinitionVersion(),
-                gatewayId,
-                instance.getId(),
-                gatewayId);
+        ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionId(execution.getProcessDefinitionId())
+                .singleResult();
+        String key = processDefinition.getKey();
+        com.cat.common.entity.process.ProcessDefinition processDefinitionOi = processDefinitionMapper
+                .selectOne(new LambdaQueryWrapper<com.cat.common.entity.process.ProcessDefinition>()
+                        .eq(com.cat.common.entity.process.ProcessDefinition::getProcessKey, key));
+
+        boolean evaluate = gatewayConditionEngine.evaluate(processDefinitionOi.getId(), String.valueOf(processDefinition.getVersion()), sequenceFlowId);
+
+        return false; // evaluate;
     }
+
+//    private Map<String, Boolean> computeGatewayResults(DelegateExecution execution, String gatewayId) {
+//        // 反查业务流程实例信息（processDefinitionId + version）
+//        ProcessInstance instance = processInstanceMapper.selectOne(
+//                new LambdaQueryWrapper<ProcessInstance>()
+//                        .eq(ProcessInstance::getProcessInstanceId, execution.getProcessInstanceId()));
+//
+//        if (instance == null) {
+//            return java.util.Collections.emptyMap();
+//        }
+//
+//        return gatewayConditionEngine.evaluateAll(
+//                instance.getProcessDefinitionId(),
+//                instance.getProcessDefinitionVersion(),
+//                gatewayId,
+//                instance.getId(),
+//                gatewayId);
+//    }
 }

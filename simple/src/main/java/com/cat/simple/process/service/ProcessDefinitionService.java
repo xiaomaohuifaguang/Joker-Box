@@ -4,6 +4,7 @@ package com.cat.simple.process.service;
 import com.cat.common.entity.DTO;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
+import com.cat.common.entity.SelectOption;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessDefinitionBytearray;
 import org.xml.sax.SAXException;
@@ -44,12 +45,15 @@ public interface ProcessDefinitionService {
      * @param processDefinitionId 流程定义ID
      * @return 流程定义信息（含 startForm）
      */
-    ProcessDefinition startInfo(Integer processDefinitionId);
+    ProcessDefinition startInfo(Integer processDefinitionId, String version);
 
-    /**
-     * 从 BPMN XML 中解析 startEvent 节点的 ID。
-     * @param processDefinitionId 流程定义ID
-     * @return startEvent 节点 ID，解析失败返回 null
-     */
-    String resolveStartEventNodeId(Integer processDefinitionId);
+//    /**
+//     * 从 BPMN XML 中解析 startEvent 节点的 ID。
+//     * @param processDefinitionId 流程定义ID
+//     * @return startEvent 节点 ID，解析失败返回 null
+//     */
+//    String resolveStartEventNodeId(Integer processDefinitionId);
+
+
+    List<SelectOption> delegateExpressions();
 }

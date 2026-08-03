@@ -26,7 +26,8 @@ public class JwtUtils {
      * 这里默认单机 如果不是单机请不要这么做
      */
     static {
-        JWT_KEY = generateJwtKey(64);
+//        JWT_KEY = generateJwtKey(64);
+        JWT_KEY = "fFXFCN9OFV23CCAoTaUo6BB/kcFfKS/zcBHDevpCakiQ575r2yBB5eQTEismcEuy";
     }
 
 

@@ -39,7 +39,7 @@ public class EndpointMappingConfiguration {
     @Resource
     private ApiPathService apiPathService;
 
-    @Bean
+//    @Bean
     public CommandLineRunner commandLineRunner(@Qualifier("requestMappingHandlerMapping") RequestMappingHandlerMapping handlerMapping) {
         return args -> {
             long startTime = System.currentTimeMillis();

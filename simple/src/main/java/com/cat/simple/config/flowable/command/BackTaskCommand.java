@@ -2,26 +2,25 @@ package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.BackConfig;
 import com.cat.common.entity.process.ProcessHandleParam;
-import com.cat.simple.config.flowable.back.BackConfigReader;
-import com.cat.simple.config.flowable.back.BackEngine;
-import com.cat.simple.config.flowable.back.BackTargetResolver;
-import com.cat.simple.config.flowable.hook.BackContext;
-import com.cat.simple.config.flowable.util.BpmnModelUtil;
+import com.cat.simple.config.flowable.engine.BackEngine;
+import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
+import com.cat.simple.config.flowable.hook.context.BackContext;
+import com.cat.simple.config.flowable.util.FlowableUtils;
 import jakarta.annotation.Resource;
 import org.flowable.task.api.Task;
+import org.springframework.util.CollectionUtils;
 
 /**
  * 驳回任务命令，将当前任务回退到指定或上一节点。
  */
 public class BackTaskCommand extends ProcessCommand<Void> {
 
-    @Resource private BackConfigReader backConfigReader;
-    @Resource private BackTargetResolver backTargetResolver;
+
+    @Resource private FlowableUtils flowableUtils;
     @Resource private BackEngine backEngine;
-    @Resource private BpmnModelUtil bpmnModelUtil;
 
     private final ProcessHandleParam param;
-    private String resolvedTargetNodeId;
+    private Task task;
 
     public BackTaskCommand(ProcessHandleParam param) {
         this.param = param;
@@ -30,58 +29,70 @@ public class BackTaskCommand extends ProcessCommand<Void> {
     @Override
     protected void validate() {
         guard.assertInstanceActive(param.getProcessInstanceId());
-        Task task = guard.assertTaskExists(param.getTaskId());
-        String currentUserId = guard.getCurrentUserId();
-        if (!currentUserId.equals(task.getAssignee())) {
-            throw new IllegalStateException("当前用户不是该任务的办理人, taskId: " + param.getTaskId());
-        }
+        guard.assertTaskAssignee(param.getTaskId());
     }
 
     @Override
     protected Void doExecute() {
         com.cat.common.entity.process.ProcessInstance instance =
                 guard.getInstance(param.getProcessInstanceId());
-        Task task = guard.getTask(param.getTaskId());
-        String currentUserId = guard.getCurrentUserId();
+        task = guard.getTask(param.getTaskId());
+//        String currentUserId = guard.getCurrentUserId();
+//
+//        BackConfig cfg = flowableUtils.getBackConfig(param.getTaskId());
+//
+//        if (!cfg.isAllowBack()) {
+//            throw new IllegalStateException("该节点未配置驳回方式, taskId: " + param.getTaskId());
+//        }
 
-        BackConfig cfg = backConfigReader.getBackConfig(param.getTaskId());
-        if (!cfg.isAllowBack()) {
-            throw new IllegalStateException("该节点未配置驳回方式, taskId: " + param.getTaskId());
-        }
 
-        resolvedTargetNodeId = backTargetResolver.resolveTargetNodeId(
-                task, cfg.getBackType(), cfg.getBackNodeId(), param.getTargetNodeId());
-        String targetNodeName = backTargetResolver.resolveTargetNodeName(
-                instance.getProcessInstanceId(), resolvedTargetNodeId);
+        backEngine.back(param, task);
 
-        boolean isMultiInstance = task.getProcessInstanceId() != null && bpmnModelUtil.isMultiInstance(task);
 
-        if (isMultiInstance) {
-            backEngine.backMultiInstanceAllBack(instance, task, resolvedTargetNodeId, currentUserId, param.getRemark(),
-                    cfg.getBackAssigneePolicy(), targetNodeName);
-        } else {
-            backEngine.backSingleInstance(instance, task, resolvedTargetNodeId, currentUserId, param.getRemark(),
-                    cfg.getBackAssigneePolicy(), targetNodeName);
-        }
+//        param.setTargetNodeId(flowableUtils.resolveTargetNodeId(
+//                task, cfg.getBackType(), cfg.getBackNodeId(), param.getTargetNodeId()));
+//        param.setTargetNodeName(flowableUtils.resolveTargetNodeName(
+//                instance.getProcessInstanceId(), param.getTargetNodeId()));
+//
+//        boolean isMultiInstance = task.getProcessInstanceId() != null && flowableUtils.isMultiInstance(task);
+//
+//        if (isMultiInstance) {
+//            flowableUtils.backMultiInstanceAllBack(instance, task, param.getTargetNodeId(), currentUserId, param.getRemark(),
+//                    cfg.getBackAssigneePolicy(), param.getTargetNodeName());
+//        } else {
+//            flowableUtils.backSingleInstance(instance, task, param.getTargetNodeId(), currentUserId, param.getRemark(),
+//                    cfg.getBackAssigneePolicy(), param.getTargetNodeName());
+//        }
 
-        recorder.recordBack(param, task, resolvedTargetNodeId, targetNodeName);
+
         return null;
     }
 
     @Override
     protected void record(Void result) {
-        // record is called in doExecute because targetNodeId is needed
+        recorder.recordBack(param, task);
     }
 
     @Override
     protected void beforeHook() {
-        BackConfig cfg = backConfigReader.getBackConfig(param.getTaskId());
-        BackContext ctx = new BackContext(param.getProcessInstanceId(), param.getTaskId(), param.getRemark(), param.getTargetNodeId(), cfg);
-        lifecycleHook.beforeBack(ctx);
+        BackContext ctx = new BackContext(param);
+        if (!CollectionUtils.isEmpty(lifecycleHooks)) {
+            for (ProcessLifecycleHook hook : lifecycleHooks) {
+                hook.beforeBack(ctx);
+            }
+        }
     }
 
     @Override
     protected void afterHook(Void result) {
-        lifecycleHook.afterBack(guard.getInstance(param.getProcessInstanceId()), resolvedTargetNodeId);
+        BackContext ctx = new BackContext(param);
+        if (!CollectionUtils.isEmpty(lifecycleHooks)) {
+            for (ProcessLifecycleHook hook : lifecycleHooks) {
+                hook.afterBack(ctx);
+            }
+        }
     }
+
+
+
 }

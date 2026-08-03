@@ -37,7 +37,7 @@ public class ProcessNodeFieldPermission implements Serializable {
     @Schema(description = "字段标识（对应表单 field.key）")
     private String fieldKey;
 
-    @Schema(description = "权限：VISIBLE / READONLY / HIDDEN / EDITABLE / REQUIRED")
+    @Schema(description = "权限：VISIBLE / READONLY / HIDDEN / REQUIRED")
     private String permission;
 
     @Schema(description = "创建人")

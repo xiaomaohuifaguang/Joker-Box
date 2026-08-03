@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static com.cat.simple.config.flowable.constant.ProcessConstants.*;
+import static com.cat.simple.config.flowable.enums.ExtensionElementEnum.*;
 
 /**
  * 审批上下文，封装从 UserTask 扩展元素 {@code <flowable:*>} 解析出的配置。
@@ -42,21 +42,21 @@ public record ApprovalContext(
         if (map == null || map.isEmpty()) {
             return null;
         }
-        ApprovalTypeEnum type = ApprovalTypeEnum.of(readText(map, EL_APPROVAL_TYPE));
+        ApprovalTypeEnum type = ApprovalTypeEnum.of(readText(map, APPROVAL_TYPE.getCode()));
         if (type == null) {
             return null;
         }
         return new ApprovalContext(
                 type,
-                splitCsv(readText(map, EL_CANDIDATE_USERS)),
-                splitCsv(readText(map, EL_CANDIDATE_ROLES)),
-                splitCsv(readText(map, EL_CANDIDATE_GROUPS)),
-                splitCsv(readText(map, EL_CANDIDATE_DEPTS)),
-                parseRate(readText(map, EL_PASS_RATE)),
-                splitCsv(readText(map, EL_ACTION_BUTTONS)),
-                readText(map, EL_BACK_TYPE),
-                readText(map, EL_BACK_NODE_ID),
-                readText(map, EL_BACK_ASSIGNEE_POLICY)
+                splitCsv(readText(map, CANDIDATE_USERS.getCode())),
+                splitCsv(readText(map, CANDIDATE_ROLES.getCode())),
+                splitCsv(readText(map, CANDIDATE_GROUPS.getCode())),
+                splitCsv(readText(map, CANDIDATE_DEPTS.getCode())),
+                parseRate(readText(map, PASS_RATE.getCode())),
+                splitCsv(readText(map, ACTION_BUTTONS.getCode())),
+                readText(map, BACK_TYPE.getCode()),
+                readText(map, BACK_NODE_ID.getCode()),
+                readText(map, BACK_ASSIGNEE_POLICY.getCode())
         );
     }
 

@@ -202,13 +202,13 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             }
             form.setGroups(groups);
         } else {
-            form.setGroups(null);
+            form.setGroups(new ArrayList<>());
         }
 
         if (!CollectionUtils.isEmpty(ungroupedFields)) {
             form.setFields(ungroupedFields);
         } else {
-            form.setFields(null);
+            form.setFields(new ArrayList<>());
         }
 
         List<DynamicFormLinkageRule> rules = loadLinkageRules(form.getId(), version);
@@ -299,28 +299,19 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean submit(FormData formData) {
-        DynamicForm dynamicForm = dynamicFormMapper.selectById(formData.getFormId());
-        if (dynamicForm == null) {
-            throw new IllegalArgumentException("表单不存在: " + formData.getFormId());
-        }
-        if (!"1".equals(dynamicForm.getStatus())) {
-            throw new IllegalStateException("表单未发布, 无法提交: " + formData.getFormId());
-        }
+    public String submit(FormData formData) {
+        String version = getVersion(formData.getFormId(), formData.getVersion());
 
-        String version = dynamicForm.getVersion();
-        if (StringUtils.hasText(formData.getVersion()) && !"DRAFT".equals(formData.getVersion())) {
-            version = formData.getVersion();
-        }
+
         List<DynamicFormField> fields = dynamicFormFieldMapper.selectList(
                 new LambdaQueryWrapper<DynamicFormField>()
-                        .eq(DynamicFormField::getFormId, dynamicForm.getId())
+                        .eq(DynamicFormField::getFormId, formData.getFormId())
                         .eq(DynamicFormField::getVersion, version));
         if (CollectionUtils.isEmpty(fields)) {
             throw new IllegalStateException("表单模板为空, 无法提交: " + formData.getFormId());
         }
 
-        List<DynamicFormLinkageRule> rules = loadLinkageRules(dynamicForm.getId(), version);
+        List<DynamicFormLinkageRule> rules = loadLinkageRules(formData.getFormId(), version);
         validateFormData(fields, formData.getData(), rules);
 
         String userId = currentUserId();
@@ -329,7 +320,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         DynamicFormInstance instance = dynamicFormInstanceMapper.selectById(formData.getFormInstanceId());
         if (instance == null) {
             instance = new DynamicFormInstance()
-                    .setFormId(dynamicForm.getId())
+                    .setFormId(formData.getFormId())
                     .setVersion(version)
                     .setCreateBy(userId)
                     .setDeleted("0")
@@ -370,69 +361,62 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         }
 
         dynamicFormFieldInstanceMapper.insertOrUpdate(toSave);
-        return true;
+        return instance.getId();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean saveFormData(FormData formData, boolean skipRequired) {
-        DynamicForm dynamicForm = dynamicFormMapper.selectById(formData.getFormId());
-        if (dynamicForm == null) {
-            throw new IllegalArgumentException("表单不存在: " + formData.getFormId());
+    public String saveFormData(FormData formData, String userId) {
+        LocalDateTime now = LocalDateTime.now();
+        Map<String, DynamicFormFieldInstance> existFiledInstanceMap = new HashMap<>();
+        String version;
+        if(StringUtils.hasText(formData.getFormInstanceId())){
+            DynamicFormInstance dynamicFormInstance = dynamicFormInstanceMapper.selectOne(new LambdaQueryWrapper<DynamicFormInstance>()
+                    .eq(DynamicFormInstance::getId, formData.getFormInstanceId()));
+            if(Objects.isNull(dynamicFormInstance)){
+                throw new IllegalStateException("表单实例不存在");
+            }
+            formData.setVersion(dynamicFormInstance.getVersion());
+            formData.setFormId(dynamicFormInstance.getFormId());
+            version = getVersion(formData.getFormId(), formData.getVersion());
+
+            dynamicFormInstance.setUpdateTime(now);
+            dynamicFormInstanceMapper.updateById(dynamicFormInstance);
+
+            List<DynamicFormFieldInstance> existInstances = dynamicFormFieldInstanceMapper.selectList(
+                    new LambdaQueryWrapper<DynamicFormFieldInstance>()
+                            .eq(DynamicFormFieldInstance::getFormInstanceId, formData.getFormInstanceId()));
+            existFiledInstanceMap = existInstances.stream()
+                    .collect(Collectors.toMap(
+                            DynamicFormFieldInstance::getFormFieldId,
+                            Function.identity(),
+                            (a, b) -> a));
+
+        }else {
+            version = getVersion(formData.getFormId(), formData.getVersion());
+
+            DynamicFormInstance instance = new DynamicFormInstance()
+                    .setFormId(formData.getFormId())
+                    .setVersion(version)
+                    .setCreateBy(userId)
+                    .setDeleted("0")
+                    .setCreateTime(now)
+                    .setUpdateTime(now);
+            dynamicFormInstanceMapper.insert(instance);
+
+            formData.setFormInstanceId(instance.getId());
         }
 
-        String version = dynamicForm.getVersion();
-        if (StringUtils.hasText(formData.getVersion()) && !"DRAFT".equals(formData.getVersion())) {
-            version = formData.getVersion();
-        }
+
+        List<DynamicFormFieldInstance> toSave = new ArrayList<>();
 
         List<DynamicFormField> fields = dynamicFormFieldMapper.selectList(
                 new LambdaQueryWrapper<DynamicFormField>()
-                        .eq(DynamicFormField::getFormId, dynamicForm.getId())
+                        .eq(DynamicFormField::getFormId, formData.getFormId())
                         .eq(DynamicFormField::getVersion, version));
-        if (CollectionUtils.isEmpty(fields)) {
-            throw new IllegalStateException("表单模板为空: " + formData.getFormId());
-        }
-
-        if (!skipRequired) {
-            for (DynamicFormField field : fields) {
-                if (formData.getData() == null || !formData.getData().containsKey(field.getFieldId())) {
-                    continue;
-                }
-                Object value = formData.getData().get(field.getFieldId());
-                if ("1".equals(field.getRequired()) && isEmptyValue(value)) {
-                    throw new IllegalArgumentException(field.getTitle() + " 必填");
-                }
-            }
-        }
-
-        String userId = currentUserId();
-        LocalDateTime now = LocalDateTime.now();
-
-        DynamicFormInstance instance = dynamicFormInstanceMapper.selectById(formData.getFormInstanceId());
-        if (instance == null) {
-            throw new IllegalArgumentException("表单实例不存在: " + formData.getFormInstanceId());
-        }
-        instance.setUpdateTime(now);
-        dynamicFormInstanceMapper.updateById(instance);
-
-        List<DynamicFormFieldInstance> existInstances = dynamicFormFieldInstanceMapper.selectList(
-                new LambdaQueryWrapper<DynamicFormFieldInstance>()
-                        .eq(DynamicFormFieldInstance::getFormInstanceId, instance.getId()));
-        Map<String, DynamicFormFieldInstance> existMap = existInstances.stream()
-                .collect(Collectors.toMap(
-                        DynamicFormFieldInstance::getFormFieldId,
-                        Function.identity(),
-                        (a, b) -> a));
-
-        String finalInstanceId = instance.getId();
-        List<DynamicFormFieldInstance> toSave = new ArrayList<>();
 
         for (DynamicFormField field : fields) {
-            if (formData.getData() == null || !formData.getData().containsKey(field.getFieldId())) {
-                continue;
-            }
-            DynamicFormFieldInstance fieldInstance = existMap.get(field.getId());
+            DynamicFormFieldInstance fieldInstance = existFiledInstanceMap.get(field.getId());
             if (fieldInstance == null) {
                 fieldInstance = new DynamicFormFieldInstance()
                         .setVersion(version)
@@ -441,16 +425,38 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                         .setDeleted("0");
             }
             fieldInstance.setFormFieldId(field.getId())
-                    .setFormInstanceId(finalInstanceId)
-                    .setVal(formData.getData().get(field.getFieldId()))
+                    .setFormInstanceId(formData.getFormInstanceId())
                     .setUpdateTime(now);
+
+            if(formData.getData().containsKey(field.getFieldId())){
+                fieldInstance.setVal(formData.getData().get(field.getFieldId()));
+            }
             toSave.add(fieldInstance);
         }
 
-        if (!toSave.isEmpty()) {
-            dynamicFormFieldInstanceMapper.insertOrUpdate(toSave);
+
+        dynamicFormFieldInstanceMapper.insertOrUpdate(toSave);
+        return formData.getFormInstanceId();
+    }
+
+    private String getVersion(String formId, String formVersion){
+        DynamicForm dynamicForm = dynamicFormMapper.selectById(formId);
+        String version = StringUtils.hasText(formVersion) ? formVersion : dynamicForm.getVersion();
+
+        boolean exists = dynamicFormPublishHistoryMapper.exists(new LambdaQueryWrapper<DynamicFormPublishHistory>()
+                .eq(DynamicFormPublishHistory::getFormId,
+                        dynamicForm.getId()).eq(DynamicFormPublishHistory::getVersion, version));
+
+        if(!exists){
+            throw new IllegalArgumentException("表单或版本不存在");
         }
-        return true;
+
+
+        if ("DRAFT".equals(version)) {
+            throw new IllegalStateException("表单未发布, 无法提交: " + formId);
+        }
+
+        return version;
     }
 
     private boolean isEmptyValue(Object value) {
@@ -467,10 +473,10 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     }
 
     @Override
-    public List<DynamicFormPublishedVersion> publishedForms() {
+    public List<DynamicFormPublishedVersion> publishedForms(String formId) {
         List<DynamicForm> publishedForms = dynamicFormMapper.selectList(
                 new LambdaQueryWrapper<DynamicForm>()
-//                        .eq(DynamicForm::getStatus, "1")
+                        .eq(StringUtils.hasText(formId), DynamicForm::getId, formId)
                         .orderByAsc(DynamicForm::getName));
 
         if (CollectionUtils.isEmpty(publishedForms)) {
@@ -498,13 +504,66 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                 DynamicFormPublishedVersion.Version v = new DynamicFormPublishedVersion.Version();
                 v.setVersion(h.getVersion());
                 v.setPublishTime(h.getCreateTime() != null
-                        ? h.getCreateTime().toString() : null);
+                        ? h.getCreateTime() : null);
                 versions.add(v);
             }
             vo.setVersions(versions);
             result.add(vo);
         }
         return result;
+    }
+
+    @Override
+    public Page<DynamicFormInstance> queryPageInstance(PageParam pageParam) {
+        Page<DynamicFormInstance> page = new Page<>(pageParam);
+        return dynamicFormInstanceMapper.selectPage(page);
+    }
+
+    @Override
+    public DynamicForm infoInstance(String formInstanceId) {
+        DynamicFormInstance dynamicFormInstance = dynamicFormInstanceMapper.selectById(formInstanceId);
+
+        DynamicForm form = dynamicFormMapper.selectById(dynamicFormInstance.getFormId());
+        form.setVersion(dynamicFormInstance.getVersion());
+
+        List<DynamicFormFieldGroup> groups = dynamicFormFieldGroupMapper.selectList(
+                new LambdaQueryWrapper<DynamicFormFieldGroup>()
+                        .eq(DynamicFormFieldGroup::getFormId, dynamicFormInstance.getFormId())
+                        .eq(DynamicFormFieldGroup::getVersion, dynamicFormInstance.getVersion())
+                        .eq(DynamicFormFieldGroup::getDeleted, "0")
+                        .orderByAsc(DynamicFormFieldGroup::getSort));
+
+        List<DynamicFormField> fields = dynamicFormInstanceMapper.selectFields(formInstanceId);
+
+        // 按 groupId 分组
+        Map<String, List<DynamicFormField>> groupFieldMap = fields.stream()
+                .filter(f -> f.getGroupId() != null)
+                .collect(Collectors.groupingBy(DynamicFormField::getGroupId, Collectors.toList()));
+
+        // 未分组字段
+        List<DynamicFormField> ungroupedFields = fields.stream()
+                .filter(f -> f.getGroupId() == null)
+                .collect(Collectors.toList());
+
+        if (!CollectionUtils.isEmpty(groups)) {
+            for (DynamicFormFieldGroup group : groups) {
+                group.setFields(groupFieldMap.getOrDefault(group.getId(), List.of()));
+            }
+            form.setGroups(groups);
+        } else {
+            form.setGroups(null);
+        }
+
+        if (!CollectionUtils.isEmpty(ungroupedFields)) {
+            form.setFields(ungroupedFields);
+        } else {
+            form.setFields(null);
+        }
+
+        List<DynamicFormLinkageRule> rules = loadLinkageRules(form.getId(), dynamicFormInstance.getVersion());
+        form.setLinkageRules(rules);
+
+        return form;
     }
 
     // ---------- private helpers ----------
@@ -1470,7 +1529,8 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         if (!StringUtils.hasText(fieldId)) {
             throw new IllegalArgumentException("字段ID不能为空");
         }
-        if (!fieldId.matches("^[a-zA-Z][a-zA-Z0-9_]{0,31}$")) {
+//        if (!fieldId.matches("^[a-zA-Z][a-zA-Z0-9_-]{0,31}$")) {
+        if (!fieldId.matches("^[a-zA-Z0-9_-]{0,36}$")) {
             throw new IllegalArgumentException("字段ID格式错误：以字母开头，仅含字母数字下划线，最长32字符");
         }
 

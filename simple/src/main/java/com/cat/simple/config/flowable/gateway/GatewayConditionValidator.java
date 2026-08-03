@@ -1,5 +1,6 @@
 package com.cat.simple.config.flowable.gateway;
 
+import com.cat.common.entity.process.constants.ConditionTypeConstants;
 import com.cat.common.entity.process.ProcessGatewayCondition;
 import com.cat.common.entity.process.ProcessGatewayConditionNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,14 +10,13 @@ import org.springframework.util.StringUtils;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Component
 public class GatewayConditionValidator {
 
-    private static final String CONDITION_TYPE_NATIVE = "NATIVE";
-    private static final String CONDITION_TYPE_CUSTOM = "CUSTOM";
+//    private static final String CONDITION_TYPE_NATIVE = "NATIVE";
+//    private static final String CONDITION_TYPE_CUSTOM = "CUSTOM";
 
     private static final String NODE_TYPE_AND = "AND";
     private static final String NODE_TYPE_OR = "OR";
@@ -84,9 +84,9 @@ public class GatewayConditionValidator {
         }
 
         if (StringUtils.hasText(condition.getConditionType())) {
-            if (CONDITION_TYPE_NATIVE.equals(condition.getConditionType())) {
+            if (ConditionTypeConstants.NATIVE.equals(condition.getConditionType())) {
                 validateNativeMode(condition);
-            } else if (CONDITION_TYPE_CUSTOM.equals(condition.getConditionType())) {
+            } else if (ConditionTypeConstants.CUSTOM.equals(condition.getConditionType())) {
                 validateCustomMode(condition);
             }
         }

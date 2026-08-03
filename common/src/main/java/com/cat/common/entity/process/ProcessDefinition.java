@@ -78,7 +78,7 @@ public class ProcessDefinition implements Serializable {
     @TableField(exist = false)
     private String xmlStr;
 
-    @Schema(description = "logicFlow data")
+    @Schema(description = "画布数据data")
     @TableField(exist = false,typeHandler = JacksonTypeHandler.class)
     private RawData rawData;
 

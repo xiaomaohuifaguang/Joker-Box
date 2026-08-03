@@ -3,8 +3,9 @@ package com.cat.simple.config.flowable.command;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
 import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
 import com.cat.simple.config.flowable.recorder.HandleInfoRecorder;
-import com.cat.simple.config.flowable.variable.ProcessVariableStore;
 import jakarta.annotation.Resource;
+
+import java.util.List;
 
 /**
  * 流程命令抽象基类，定义命令执行的标准模板：
@@ -15,8 +16,7 @@ public abstract class ProcessCommand<T> {
 
     @Resource protected ProcessGuard guard;
     @Resource protected HandleInfoRecorder recorder;
-    @Resource protected ProcessLifecycleHook lifecycleHook;
-    @Resource protected ProcessVariableStore variableStore;
+    @Resource protected List<ProcessLifecycleHook> lifecycleHooks;
 
     /**
      * 执行命令模板，按固定顺序调用各阶段方法。

@@ -1,5 +1,6 @@
 package com.cat.simple.config.flowable.gateway;
 
+import com.cat.common.entity.process.constants.ConditionTypeConstants;
 import com.cat.common.entity.process.ProcessGatewayCondition;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
@@ -94,7 +95,7 @@ public class GatewayConditionXmlInjector {
             condExpr.setAttributeNS(XSI_NS, "xsi:type", "tFormalExpression");
 
             String expression;
-            if ("NATIVE".equals(condition.getConditionType())) {
+            if (ConditionTypeConstants.NATIVE.equals(condition.getConditionType())) {
                 expression = condition.getNativeExpression();
             } else if ("CUSTOM".equals(condition.getConditionType())) {
                 // sourceNodeId 作为 gatewayId 注入，运行时用作缓存 key 避免反查
@@ -153,7 +154,7 @@ public class GatewayConditionXmlInjector {
     }
 
     private List<Element> getElementsByTagName(Document doc, String tagName) {
-        java.util.List<Element> result = new java.util.ArrayList<>();
+        List<Element> result = new java.util.ArrayList<>();
 
         // Try namespaced first
         NodeList nodeList = doc.getElementsByTagNameNS(BPMN_NS, tagName);

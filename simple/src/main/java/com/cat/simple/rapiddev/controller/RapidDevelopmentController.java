@@ -18,6 +18,7 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/rapidDevelopmentController")
 @Tag(name = "快速开发")
+@Deprecated // vue3 仍然可用 react不再使用
 public class RapidDevelopmentController {
 
 
