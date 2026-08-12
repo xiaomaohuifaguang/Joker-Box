@@ -16,6 +16,7 @@ import java.util.List;
 @RocketMQMessageListener(
         topic = "${custom.rocket.ganDaShi.topic}",
         consumerGroup = "${custom.rocket.ganDaShi.group}",
+        consumeThreadNumber  = 2,
         consumeThreadMax = 2
 )
 @Slf4j
