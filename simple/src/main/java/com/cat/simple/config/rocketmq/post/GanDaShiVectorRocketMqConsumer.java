@@ -15,7 +15,8 @@ import java.util.List;
 @Component
 @RocketMQMessageListener(
         topic = "${custom.rocket.ganDaShi.topic}",
-        consumerGroup = "${custom.rocket.ganDaShi.group}"
+        consumerGroup = "${custom.rocket.ganDaShi.group}",
+        consumeThreadMax = 2
 )
 @Slf4j
 public class GanDaShiVectorRocketMqConsumer implements RocketMQListener<GanDaShiPost> {
