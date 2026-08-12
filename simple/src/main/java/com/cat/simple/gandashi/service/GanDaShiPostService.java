@@ -6,6 +6,8 @@ import com.cat.common.entity.PageParam;
 import com.cat.common.entity.ganDaShi.GanDaShiPost;
 import com.cat.common.entity.ganDaShi.GanDaShiPostPageParam;
 
+import java.io.IOException;
+
 public interface GanDaShiPostService {
 
     boolean add(GanDaShiPost ganDaShiPost);

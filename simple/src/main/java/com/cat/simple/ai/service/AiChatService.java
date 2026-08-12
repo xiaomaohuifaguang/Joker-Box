@@ -1,12 +1,23 @@
 package com.cat.simple.ai.service;
 
-import com.cat.common.entity.ai.chat.ChatParam;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.cat.common.entity.ai.chat.ChatMessage;
+import com.cat.common.entity.ai.chat.ChatRequestParam;
+import com.cat.common.entity.ai.chat.ChatSession;
+import com.cat.common.entity.ai.model.AiModel;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface AiChatService {
 
-    SseEmitter chat(ChatParam chatParam) throws IOException;
+    Object chat(ChatRequestParam chatRequestPram) throws IOException;
+
+
+    List<ChatSession> sessions();
+
+    List<ChatMessage> messages(String sessionId);
+
+    List<AiModel> chatModels();
 
 }

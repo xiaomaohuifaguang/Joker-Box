@@ -7,12 +7,15 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 
 import java.io.Serial;
+import java.util.List;
+
 /**
  * <p>
  * 干大事主贴
@@ -27,8 +30,12 @@ import java.io.Serial;
 @Accessors(chain = true)
 @TableName("cat_gan_da_shi_post")
 @Schema(name = "GanDaShiPost", description = "干大事主贴")
+//@JsonInclude(JsonInclude.Include.NON_NULL) // 序列化时忽略 null 值
 @JsonIgnoreProperties(ignoreUnknown = true) // 防止 OpenSearch 返回多余字段导致反序列化报错
 public class GanDaShiPost implements Serializable {
+
+    public static final String INDEX = "gan_da_shi";
+
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -50,7 +57,7 @@ public class GanDaShiPost implements Serializable {
 
     @Schema(description = "逻辑删除")
     @TableLogic
-    private String deleted;
+    private String deleted = "0";
 
     @Schema(description = "创建人用户名")
     @TableField(exist = false)
@@ -72,7 +79,7 @@ public class GanDaShiPost implements Serializable {
 
     @TableField(exist = false)
     @Schema(description = "纯文字向量")
-    private float[] textEmbeddings;
+    private List<Float> textEmbeddings;
 
 
 }

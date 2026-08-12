@@ -21,19 +21,22 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Accessors(chain = true)
 @Schema(name = "ChatRequestPram", description = "chat接口请求参数")
-public class ChatRequestPram implements Serializable {
+public class ChatRequestParam implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "会话id")
-    private String dialogId;
+    @Schema(description = "模型id")
+    private String modelId;
+
+    @Schema(description = "会话uuid")
+    private String sessionId;
 
     @Schema(description = "内容")
     private String content;
 
     @Schema(description = "流式响应")
-    private Boolean stream = false;
+    private boolean stream = false;
 
 
 

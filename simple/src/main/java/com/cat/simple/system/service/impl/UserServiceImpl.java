@@ -2,14 +2,13 @@ package com.cat.simple.system.service.impl;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.cat.common.entity.menu.Menu;
 import com.cat.common.utils.*;
 import com.cat.common.utils.base64.Base64Utils;
 import com.cat.common.utils.googleauth.GoogleAuthUtils;
-import com.cat.simple.config.redis.RedisService;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.system.mapper.OrgMapper;
 import com.cat.simple.system.mapper.RoleMapper;
@@ -64,7 +63,7 @@ public class UserServiceImpl implements UserService {
     @Resource
     private OrgMapper  orgMapper;
     @Resource
-    private RedisService redisService;
+    private CacheService cacheService;
     @Resource
     private MailService mailService;
     @Resource
@@ -89,7 +88,7 @@ public class UserServiceImpl implements UserService {
         if(CryptoUtils.verify(loginInfo.getPassword(), loginUser.getPassword())){
             token = this.makeToken(loginUser);
             List<String> tokens;
-            String  tokensStr = redisService.get(REDIS_PARENT_TOKEN + loginUser.getUsername(), String.class);
+            String  tokensStr = cacheService.get(CacheKeyEnum.TOKEN , loginUser.getUsername(), String.class);
             if(StringUtils.hasText(tokensStr)){
                 tokens = JSONArray.parseArray(tokensStr, String.class);
             }else {
@@ -101,7 +100,7 @@ public class UserServiceImpl implements UserService {
             }
 
             tokens.add(token);
-            redisService.set(REDIS_PARENT_TOKEN + loginUser.getUsername(), JSONUtils.toJSONString(tokens), tokenExpire);
+            cacheService.set(CacheKeyEnum.TOKEN, loginUser.getUsername(), JSONUtils.toJSONString(tokens));
 
         }
         return  token;
@@ -161,7 +160,7 @@ public class UserServiceImpl implements UserService {
         String username = (String) decrypt.get("username");
         String password = (String) decrypt.get("password");
 
-        String  tokensStr = redisService.get(REDIS_PARENT_TOKEN + username, String.class);
+        String  tokensStr = cacheService.get(CacheKeyEnum.TOKEN , username, String.class);
         if(StringUtils.hasText(tokensStr)){
             List<String> tokens = JSONArray.parseArray(tokensStr, String.class);
             if(!tokens.contains(token)) return null;
@@ -241,7 +240,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if(verifyMainAndCode){
-            String codeCache = redisService.get(CONSTANTS.REDIS_PARENT_MAIL_CODE + registerUserInfo.getMail(), String.class);
+            String codeCache = cacheService.get(CacheKeyEnum.MAIL_CODE , registerUserInfo.getMail(), String.class);
             if (!StringUtils.hasText(codeCache) || !codeCache.equals(registerUserInfo.getCode())) {
                 return DTO.error("验证码不正确");
             }
@@ -440,13 +439,13 @@ public class UserServiceImpl implements UserService {
             for (int start = 0; start < new Random().nextInt(2); start++) {
                 put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
             }
-        }}, tokenExpire);
+        }}, CacheKeyEnum.TOKEN.getExpire());
     }
 
     @Override
     public String getTokenBySSO(String clientName, String id) {
-        String token = redisService.get(REDIS_SSO + clientName + ":" + id, String.class);
-        redisService.set(REDIS_SSO + clientName + ":" + id, "", 1);
+        String token = cacheService.get(CacheKeyEnum.SSO , clientName + ":" + id, String.class);
+        cacheService.set(CacheKeyEnum.SSO , clientName + ":" + id, "");
         return token;
     }
 

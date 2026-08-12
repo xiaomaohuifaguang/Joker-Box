@@ -53,7 +53,7 @@
         <commons-fileupload.version>2.0.0-M2</commons-fileupload.version>
         <hutool.version>5.8.46</hutool.version>
         <TinyPinyin.version>2.0.3.RELEASE</TinyPinyin.version>
-        <httpclient5.version>5.5.2</httpclient5.version>
+<!--        <httpclient5.version>5.2.1</httpclient5.version>-->
         <flowable.version>8.0.0</flowable.version>
         <fastjson2.version>2.0.53</fastjson2.version>
         <googleauth.version>1.5.0</googleauth.version>
@@ -63,6 +63,8 @@
         <spring.ai.alibaba.version>1.1.2.3</spring.ai.alibaba.version>
         <langchain4j.version>1.16.3</langchain4j.version>
         <opensearch.version>3.9.0</opensearch.version>
+<!--        <rocketmq.version>5.5.0</rocketmq.version>-->
+        <rocketmq-spring.version>2.3.6</rocketmq-spring.version>
     </properties>
 
     <!-- springboot 版本 -->
@@ -177,11 +179,11 @@
                 <version>${TinyPinyin.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.apache.httpcomponents.client5</groupId>
-                <artifactId>httpclient5</artifactId>
-                <version>${httpclient5.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.apache.httpcomponents.client5</groupId>-->
+<!--                <artifactId>httpclient5</artifactId>-->
+<!--                <version>${httpclient5.version}</version>-->
+<!--            </dependency>-->
 
             <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
             <dependency>
@@ -249,6 +251,19 @@
                 <groupId>org.opensearch.client</groupId>
                 <artifactId>opensearch-java</artifactId>
                 <version>${opensearch.version}</version>
+            </dependency>
+
+<!--            <dependency>-->
+<!--                <groupId>org.apache.rocketmq</groupId>-->
+<!--                <artifactId>rocketmq-client</artifactId>-->
+<!--                <version>${rocketmq.version}</version>-->
+<!--            </dependency>-->
+
+            <!-- Source: https://mvnrepository.com/artifact/org.apache.rocketmq/rocketmq-spring-boot-starter -->
+            <dependency>
+                <groupId>org.apache.rocketmq</groupId>
+                <artifactId>rocketmq-spring-boot-starter</artifactId>
+                <version>${rocketmq-spring.version}</version>
             </dependency>
 
 

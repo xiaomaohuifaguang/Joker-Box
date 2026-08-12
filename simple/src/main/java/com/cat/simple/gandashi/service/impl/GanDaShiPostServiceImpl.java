@@ -4,20 +4,43 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.User;
 import com.cat.common.entity.ganDaShi.GanDaShiPost;
 import com.cat.common.entity.ganDaShi.GanDaShiPostPageParam;
+import com.cat.common.utils.JSONUtils;
+import com.cat.simple.ai.service.AiModelService;
+import com.cat.simple.ai.service.LlmService;
+import com.cat.simple.config.opensearch.OpensearchUtils;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.gandashi.mapper.GanDaShiCommentMapper;
 import com.cat.simple.gandashi.mapper.GanDaShiPostMapper;
 import com.cat.simple.gandashi.service.GanDaShiPostService;
 import com.cat.simple.system.service.UserService;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOptions;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
+@Slf4j
 public class GanDaShiPostServiceImpl implements GanDaShiPostService {
 
 
@@ -27,55 +50,106 @@ public class GanDaShiPostServiceImpl implements GanDaShiPostService {
     private GanDaShiCommentMapper ganDaShiCommentMapper;
     @Resource
     private UserService userService;
+    @Resource
+    private OpensearchUtils opensearchUtils;
+    @Resource
+    private LlmService llmService;
 
     @Override
-    public boolean add(GanDaShiPost ganDaShiPost){
+    @Transactional
+    public boolean add(GanDaShiPost ganDaShiPost) {
 
-        if(!StringUtils.hasText(ganDaShiPost.getContent())){
+        if (!StringUtils.hasText(ganDaShiPost.getContent())) {
             return false;
         }
-        if(!StringUtils.hasText(ganDaShiPost.getTitle())){
+        if (!StringUtils.hasText(ganDaShiPost.getTitle())) {
             ganDaShiPost.setTitle("无标题");
         }
-        if(StringUtils.hasText(ganDaShiPost.getText())){
-            ganDaShiPost.setDigest(ganDaShiPost.getText().substring(0,Math.min(ganDaShiPost.getText().length(), 100)));
+        if (StringUtils.hasText(ganDaShiPost.getText())) {
+            ganDaShiPost.setDigest(ganDaShiPost.getText().substring(0, Math.min(ganDaShiPost.getText().length(), 100)));
         }
-
 
         ganDaShiPost.setId(null);
         ganDaShiPost.setCreateBy(Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId());
         ganDaShiPost.setCreateTime(LocalDateTime.now());
+        ganDaShiPost.setDeleted("0");
         ganDaShiPost.setViewCount(0);
-        return ganDaShiPostMapper.insert(ganDaShiPost) == 1;
-    }
+        int insert = ganDaShiPostMapper.insert(ganDaShiPost);
 
-    @Override
-    public boolean delete(GanDaShiPost ganDaShiPost){
-            return ganDaShiPostMapper.deleteById(ganDaShiPost) == 1;
+        List<Float> vector = llmService.vector(ganDaShiPost.getText());
+
+        ganDaShiPost.setTextEmbeddings(vector);
+
+        boolean b = opensearchUtils.insertOrUpdate(GanDaShiPost.INDEX, String.valueOf(ganDaShiPost.getId()), ganDaShiPost);
+
+
+        return insert == 1;
     }
 
     @Override
     @Transactional
-    public GanDaShiPost info(GanDaShiPost ganDaShiPost){
+    public boolean delete(GanDaShiPost ganDaShiPost) {
+        ganDaShiPost = ganDaShiPostMapper.selectById(ganDaShiPost.getId());
+        ganDaShiPost.setDeleted("1");
+        boolean b = opensearchUtils.update(GanDaShiPost.INDEX, String.valueOf(ganDaShiPost.getId()), ganDaShiPost, GanDaShiPost.class);
+        int i = ganDaShiPostMapper.deleteById(ganDaShiPost);
+        return i == 1;
+    }
+
+    @Override
+    @Transactional
+    public GanDaShiPost info(GanDaShiPost ganDaShiPost) {
         ganDaShiPost = ganDaShiPostMapper.selectById(ganDaShiPost.getId());
         Integer viewCount = ganDaShiPost.getViewCount();
         ganDaShiPost.setViewCount(++viewCount);
         ganDaShiPostMapper.updateById(ganDaShiPost);
+        boolean b = opensearchUtils.update(GanDaShiPost.INDEX, String.valueOf(ganDaShiPost.getId()), ganDaShiPost, GanDaShiPost.class);
         return ganDaShiPost;
     }
 
     @Override
-    public Page<GanDaShiPost> queryPage(GanDaShiPostPageParam pageParam){
+    public Page<GanDaShiPost> queryPage(GanDaShiPostPageParam pageParam) {
         Page<GanDaShiPost> page = new Page<>(pageParam);
-        if(StringUtils.hasText(pageParam.getCreateUsername())){
-            User userByUsername = userService.getUserByUsername(pageParam.getCreateUsername());
-            if(Objects.nonNull(userByUsername)){
-                pageParam.setUserId(String.valueOf(userByUsername.getId()));
-            }else {
-                return page;
+
+        if (pageParam.getCurrent() * pageParam.getSize() > 10000) {
+
+            if (StringUtils.hasText(pageParam.getCreateUsername())) {
+                User userByUsername = userService.getUserByUsername(pageParam.getCreateUsername());
+                if (Objects.nonNull(userByUsername)) {
+                    pageParam.setUserId(String.valueOf(userByUsername.getId()));
+                } else {
+                    return page;
+                }
             }
+            page = ganDaShiPostMapper.selectPage(page, pageParam);
+            return page;
         }
-        page = ganDaShiPostMapper.selectPage(page, pageParam);
+
+        page = opensearchUtils.searchPage(GanDaShiPost.INDEX, page, Query.of(q -> q.bool(b -> {
+            // 必须满足：逻辑未删除
+            b.filter(f -> f.term(t -> t.field("deleted").value(FieldValue.of("0"))));
+
+            // 多字段模糊搜索
+            if (pageParam.getSearch() != null && !pageParam.getSearch().isEmpty()) {
+                b.must(m -> m.multiMatch(mm -> mm
+                        .fields("title", "text")
+                        .query(pageParam.getSearch())
+                ));
+            }
+
+            // 用户ID精确过滤
+            if (pageParam.getUserId() != null && !pageParam.getUserId().isEmpty()) {
+                b.filter(f -> f.term(t -> t.field("createBy").value(FieldValue.of(pageParam.getUserId()))));
+            }
+
+
+            return b;
+        })), SourceConfig.of(sour -> sour.filter(f -> f
+                .includes("*")              // 其他字段都要
+                .excludes("textEmbeddings") // 唯独排除向量字段
+        )), GanDaShiPost.class, SortOptions.of(sort -> sort.field(f -> f.field("createTime").order(SortOrder.Desc))));
+
         return page;
+
     }
 }

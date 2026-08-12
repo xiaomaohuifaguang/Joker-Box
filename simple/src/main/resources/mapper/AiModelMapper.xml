@@ -2,7 +2,39 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cat.simple.ai.mapper.AiModelMapper">
 
+
     <select id="selectPage" resultType="com.cat.common.entity.ai.model.AiModel">
-        SELECT * FROM cat_ai_model
+        SELECT cam.*
+        FROM cat_ai_model cam
+        <where>
+            <if test='param.type != null and param.type != ""'>
+                and cam.type = #{param.type}
+            </if>
+        </where>
     </select>
+    <select id="selectDefaultByType" resultType="com.cat.common.entity.ai.model.AiModel">
+        SELECT * FROM cat_ai_model_default camd
+        INNER JOIN cat_ai_model cam on camd.model_id = cam.id
+        <where>
+            camd.type = #{type}
+        </where>
+    </select>
+    <insert id="insertOrUpdateDefault">
+        INSERT INTO cat_ai_model_default (type, model_id)
+        VALUES (#{type}, #{modelId})
+        ON DUPLICATE KEY UPDATE model_id = VALUES(model_id)
+    </insert>
+    <select id="selectDefaultCountByModelId" resultType="java.lang.Integer">
+        SELECT count(1) FROM cat_ai_model_default camd
+        INNER JOIN cat_ai_model cam on camd.model_id = cam.id
+        <where>
+            cam.id = #{modelId}
+        </where>
+    </select>
+
+    <delete id="deleteDefaultByType">
+        DELETE FROM cat_ai_model_default
+        where type = #{type}
+    </delete>
+
 </mapper>

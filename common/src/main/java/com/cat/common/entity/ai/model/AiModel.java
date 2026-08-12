@@ -39,6 +39,12 @@ public class AiModel implements Serializable {
     @Schema(description = "模型")
     private String model;
 
+    @Schema(description = "类型")
+    private String type;
+
+    @Schema(description = "向量维度")
+    private Integer dimension;
+
     @Schema(description = "基础URL")
     private String baseUrl;
 

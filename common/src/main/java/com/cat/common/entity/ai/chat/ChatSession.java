@@ -1,0 +1,52 @@
+package com.cat.common.entity.ai.chat;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Accessors(chain = true)
+@TableName("cat_chat_session")
+@Schema(name = "ChatSession", description = "ai会话表")
+public class ChatSession implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+
+    @Schema(description = "id")
+    @TableId(type = IdType.AUTO)
+    private Integer id;
+
+    @Schema(description = "会话唯一标识(UUID)")
+    private String sessionId;
+
+    @Schema(description = "关联的用户ID")
+    private String userId;
+
+    @Schema(description = "会话标题 AI生成")
+    private String title;
+
+    @Schema(description = "创建时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone ="GMT+8")
+    private LocalDateTime createTime;
+    @Schema(description = "更新时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone ="GMT+8")
+    private LocalDateTime updateTime;
+
+
+
+}

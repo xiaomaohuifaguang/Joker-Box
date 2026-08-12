@@ -122,6 +122,11 @@
             <artifactId>flowable-spring-boot-starter-process</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.opensearch.client</groupId>
+            <artifactId>opensearch-java</artifactId>
+        </dependency>
+
 
     </dependencies>
 

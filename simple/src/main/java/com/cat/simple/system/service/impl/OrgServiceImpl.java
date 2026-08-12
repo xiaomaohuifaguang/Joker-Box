@@ -6,7 +6,8 @@ import com.cat.common.entity.auth.Org;
 
 import com.cat.common.entity.auth.OrgPageParam;
 import com.cat.common.entity.auth.OrgTree;
-import com.cat.simple.config.redis.RedisService;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.system.mapper.OrgMapper;
 import com.cat.simple.system.service.OrgService;
 import jakarta.annotation.Resource;
@@ -30,9 +31,8 @@ public class OrgServiceImpl implements OrgService {
     private OrgMapper orgMapper;
 
     @Resource
-    private RedisService redisService;
+    private CacheService cacheService;
 
-    private static final String ORG_TREE = "ORG_TREE";
 
     @Override
     public boolean add(Org org){
@@ -45,7 +45,7 @@ public class OrgServiceImpl implements OrgService {
             return false;
         }
         int insert = orgMapper.insert(org);
-        redisService.deleteKey(ORG_TREE);
+        cacheService.deleteKey(CacheKeyEnum.ORG_TREE);
         return insert == 1;
     }
 
@@ -61,7 +61,7 @@ public class OrgServiceImpl implements OrgService {
         org.setUpdateTime(LocalDateTime.now());
         org.setDeleted(orgOri.getDeleted());
         int i = orgMapper.updateById(org);
-        redisService.deleteKey(ORG_TREE);
+        cacheService.deleteKey(CacheKeyEnum.ORG_TREE);
         return i == 1;
     }
 
@@ -90,7 +90,7 @@ public class OrgServiceImpl implements OrgService {
     @Override
     public OrgTree getOrgTree() {
 
-        OrgTree orgTree = redisService.get(ORG_TREE, OrgTree.class);
+        OrgTree orgTree = cacheService.get(CacheKeyEnum.ORG_TREE, OrgTree.class);
 
         if(Objects.isNull(orgTree)){
             if(ORG_PARENT > 0 ){
@@ -105,7 +105,7 @@ public class OrgServiceImpl implements OrgService {
 
             orgTree.setChildren(OrgTree.getChildren(orgTree.getId(), orgTree.getName(), collect));
 
-            redisService.set(ORG_TREE, orgTree, 24 * 60 * 60);
+            cacheService.set(CacheKeyEnum.ORG_TREE, orgTree);
         }
 
 

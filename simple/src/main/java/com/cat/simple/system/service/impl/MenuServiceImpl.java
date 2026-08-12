@@ -1,7 +1,6 @@
 package com.cat.simple.system.service.impl;
 
 import com.cat.common.entity.Page;
-import com.cat.common.entity.PageParam;
 import com.cat.common.entity.auth.*;
 import com.cat.common.entity.menu.Menu;
 import com.cat.common.entity.menu.MenuAndApiPath;
@@ -24,10 +23,6 @@ import static com.cat.common.entity.CONSTANTS.ROLE_ADMIN_CODE;
 @Service
 public class MenuServiceImpl implements MenuService {
 
-//    private static final Integer CONSOLE_MENU_PARENT_ID = -1;
-
-//    private static final Integer MAIN_MENU_PARENT_ID = -2;
-
 
     @Resource
     private MenuMapper menuMapper;
@@ -36,7 +31,7 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     public boolean add(Menu menu) {
-        menu.setUserId(SecurityUtils.getLoginUser().getUserId());
+        menu.setUserId(Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId());
         return menuMapper.insert(menu) == 1;
     }
 
@@ -148,6 +143,9 @@ public class MenuServiceImpl implements MenuService {
     @Override
     public List<String> queryAllPathByAuth() {
         LoginUser loginUser = SecurityUtils.getLoginUser();
+        if(Objects.isNull(loginUser) || CollectionUtils.isEmpty(loginUser.getRoles())){
+            return new ArrayList<>();
+        }
         List<Role> roles = loginUser.getRoles();
         List<Integer> roleIds = roles.stream().map(Role::getId).toList();
 

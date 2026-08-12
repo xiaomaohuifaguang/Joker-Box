@@ -3,7 +3,6 @@ package com.cat.simple.task;
 import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.auth.RegisterUserInfo;
 import com.cat.common.utils.who.WhoUtils;
-import com.cat.simple.config.redis.RedisService;
 import com.cat.simple.system.service.UserService;
 import freemarker.template.TemplateException;
 import jakarta.annotation.PostConstruct;
@@ -13,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Random;
 
 @Component
 @Slf4j
@@ -21,12 +19,10 @@ public class UserRegisterTask {
 
     @Resource
     private UserService userService;
-    @Resource
-    private RedisService redisService;
 
 
     @PostConstruct
-    void init() throws TemplateException, MessagingException, IOException {
+    void init(){
         log.info("UserRegisterTask init");
 
         for (int i = 0; i < 1; i++) {
@@ -44,8 +40,6 @@ public class UserRegisterTask {
                 registerUserInfo.setMail(randomEmail);
                 registerUserInfo.setSex(sex == 1 ? "男" : "女");
                 registerUserInfo.setPhone(WhoUtils.getRandomPhone());
-//        userService.code(registerUserInfo.getMail());
-//        registerUserInfo.setCode(redisService.get(CONSTANTS.REDIS_PARENT_MAIL_CODE + registerUserInfo.getMail(), String.class));
                 userService.register(registerUserInfo, false);
             }).start();
         }

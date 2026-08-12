@@ -1,6 +1,7 @@
 package com.cat.simple.config.process;
 
-import com.cat.simple.config.redis.RedisService;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 
@@ -11,16 +12,14 @@ import java.time.format.DateTimeFormatter;
 public class ProcessCodeGenerator {
 
     @Resource
-    private RedisService redisService;
+    private CacheService cacheService;
 
     private static final String PREFIX = "JB";
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
-    private static final String REDIS_KEY_TEMPLATE = "process:code:seq:%s";
 
     public String generate() {
         String date = LocalDate.now().format(DATE_FMT);
-        String redisKey = String.format(REDIS_KEY_TEMPLATE, date);
-        long seq = redisService.incr(redisKey);
+        long seq = cacheService.incr(CacheKeyEnum.PROCESS_CODE_REQ, date);
         return String.format("%s-%s-%04d", PREFIX, date, seq);
     }
 }

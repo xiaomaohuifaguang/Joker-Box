@@ -2,10 +2,10 @@ package com.cat.simple.mail.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.cat.common.entity.mail.MailInfo;
-import com.cat.simple.config.redis.RedisService;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.mail.service.MailInfoService;
 import com.cat.simple.mail.service.MailService;
-import com.cat.common.entity.CONSTANTS;
 import com.cat.common.utils.UUIDUtils;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -41,7 +41,7 @@ public class MailServiceImpl implements MailService {
     @Resource
     private FreeMarkerConfigurer freeMarkerConfigurer;
     @Resource
-    private RedisService redisService;
+    private CacheService cacheService;
     @Resource
     private MailInfoService mailInfoService;
 
@@ -54,7 +54,7 @@ public class MailServiceImpl implements MailService {
         map.put("code", code);
         sendMail("code.ftl", map, email, "验证码" );
 
-        redisService.set(CONSTANTS.REDIS_PARENT_MAIL_CODE+email , code, 5 * 60);
+        cacheService.set(CacheKeyEnum.MAIL_CODE, email, code);
         return code;
     }
 

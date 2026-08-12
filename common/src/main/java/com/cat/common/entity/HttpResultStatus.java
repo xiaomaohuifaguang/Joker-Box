@@ -15,7 +15,6 @@ public enum HttpResultStatus {
     NOT_FOUND(HttpStatus.NOT_FOUND.value(), "请求不存在"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED.value(), "鉴权失败"),
     FORBIDDEN(HttpStatus.FORBIDDEN.value(), "权限不足"),
-    AI_STREAM_STOP(-200 , "ai流式响应终止"),
     ERROR_USERNAME_OR_PASSWORD(500, "账号或密码错误"),
     ERROR_SSO_AUTHORIZATION(500,"客户端授权失败"),
     ;

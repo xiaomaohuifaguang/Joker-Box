@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import com.cat.common.entity.dynamicForm.DynamicFormField;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -104,5 +105,9 @@ public class ProcessInstance implements Serializable {
     @Schema(description = "任务表单渲染数据")
     @TableField(exist = false)
     private TaskFormVO taskForm;
+
+    @Schema(description = "分页列表展示字段")
+    @TableField(exist = false)
+    private List<DynamicFormField> listShowFormFields;
 
 }

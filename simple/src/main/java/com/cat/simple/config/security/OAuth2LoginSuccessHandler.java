@@ -2,7 +2,8 @@ package com.cat.simple.config.security;
 import com.alibaba.fastjson2.JSONArray;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.utils.JSONUtils;
-import com.cat.simple.config.redis.RedisService;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.system.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletException;
@@ -32,7 +33,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private UserService userService;
 
     @Resource
-    private RedisService redisService;
+    private CacheService cacheService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -52,11 +53,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         LoginUser loginUser = userService.getLoginUser(clientNameDown , id);
         String token = userService.makeToken(loginUser);
 
-        redisService.set(REDIS_SSO+clientNameDown+":"+id, token, 60*60*24);
+        cacheService.set(CacheKeyEnum.SSO, clientNameDown+":"+id, token);
 
 
         List<String> tokens;
-        String  tokensStr = redisService.get(REDIS_PARENT_TOKEN + loginUser.getUsername(), String.class);
+        String  tokensStr = cacheService.get(CacheKeyEnum.TOKEN, loginUser.getUsername(), String.class);
         if(StringUtils.hasText(tokensStr)){
             tokens = JSONArray.parseArray(tokensStr, String.class);
         }else {
@@ -68,7 +69,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         tokens.add(token);
-        redisService.set(REDIS_PARENT_TOKEN + loginUser.getUsername(), JSONUtils.toJSONString(tokens), tokenExpire);
+        cacheService.set(CacheKeyEnum.TOKEN , loginUser.getUsername(), JSONUtils.toJSONString(tokens));
 
 
         // 保存用户信息到数据库
