@@ -77,6 +77,8 @@ public class OpensearchUtils {
 
                     if(query == null){
                         s.query(Query.of(q -> q.matchAll(m -> m)));
+                    }else {
+                        s.query(query);
                     }
                     if (sourceConfig != null) {
                         s.source(sourceConfig);
