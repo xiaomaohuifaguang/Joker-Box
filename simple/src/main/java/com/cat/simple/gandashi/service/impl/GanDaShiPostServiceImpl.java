@@ -8,6 +8,7 @@ import com.cat.common.utils.JSONUtils;
 import com.cat.simple.ai.service.AiModelService;
 import com.cat.simple.ai.service.LlmService;
 import com.cat.simple.config.opensearch.OpensearchUtils;
+import com.cat.simple.config.rocketmq.post.GanDaShiVectorRocketMqProductor;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.gandashi.mapper.GanDaShiCommentMapper;
 import com.cat.simple.gandashi.mapper.GanDaShiPostMapper;
@@ -54,6 +55,8 @@ public class GanDaShiPostServiceImpl implements GanDaShiPostService {
     private OpensearchUtils opensearchUtils;
     @Resource
     private LlmService llmService;
+    @Resource
+    private GanDaShiVectorRocketMqProductor ganDaShiVectorRocketMqProductor;
 
     @Override
     @Transactional
@@ -76,11 +79,10 @@ public class GanDaShiPostServiceImpl implements GanDaShiPostService {
         ganDaShiPost.setViewCount(0);
         int insert = ganDaShiPostMapper.insert(ganDaShiPost);
 
-        List<Float> vector = llmService.vector(ganDaShiPost.getText());
-
-        ganDaShiPost.setTextEmbeddings(vector);
 
         boolean b = opensearchUtils.insertOrUpdate(GanDaShiPost.INDEX, String.valueOf(ganDaShiPost.getId()), ganDaShiPost);
+
+        ganDaShiVectorRocketMqProductor.send(ganDaShiPost);
 
 
         return insert == 1;
