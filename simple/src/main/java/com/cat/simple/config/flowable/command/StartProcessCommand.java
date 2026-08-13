@@ -9,6 +9,7 @@ import com.cat.simple.config.process.ProcessCodeGenerator;
 import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
@@ -42,8 +43,7 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
                 guard.assertDefinitionPublished(param.getProcessDefinitionId());
         String currentUserId = guard.getCurrentUserId();
 
-        org.flowable.engine.runtime.ProcessInstance flowableInstance =
-                runtimeService.startProcessInstanceByKey(definition.getProcessKey());
+
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -55,37 +55,36 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
                 throw new IllegalStateException("无权操作他人草稿: " + param.getProcessInstanceId());
             }
 
-            // 更新草稿实例的状态和字段
-            processInstanceMapper.update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ProcessInstance>()
-                    .eq(ProcessInstance::getId, instance.getId())
-                    .set(ProcessInstance::getProcessDefinitionId, definition.getId())
-//                    .set(ProcessInstance::getProcessDefinitionVersion, definition.getVersion())
-                    .set(ProcessInstance::getTitle, param.getTitle())
-                    .set(ProcessInstance::getProcessInstanceId, flowableInstance.getProcessInstanceId())
-                    .set(ProcessInstance::getProcessStatus, ProcessStatusEnum.ACTIVE.getStatus())
-                    .set(ProcessInstance::getCode, codeGenerator.generate())
-                    .set(ProcessInstance::getUpdateTime, now));
+            processFormService.writeFormData(instance, param.getGlobalFormData());
 
-//            instance.setProcessDefinitionId(definition.getId())
-//                    .setProcessDefinitionVersion(definition.getVersion())
-//                    .setTitle(param.getTitle())
-//                    .setCode(codeGenerator.generate())
-//                    .setProcessInstanceId(flowableInstance.getProcessInstanceId())
-//                    .setProcessStatus(ProcessStatusEnum.ACTIVE.getStatus())
-//                    .setUpdateTime(now);
         } else {
+
             instance = new ProcessInstance()
                     .setProcessDefinitionId(definition.getId())
                     .setProcessDefinitionVersion(definition.getVersion())
                     .setTitle(param.getTitle())
                     .setCode(codeGenerator.generate())
-                    .setProcessInstanceId(flowableInstance.getProcessInstanceId())
-                    .setProcessStatus(ProcessStatusEnum.ACTIVE.getStatus())
+                    .setProcessStatus(ProcessStatusEnum.DRAFT.getStatus())
                     .setCreateBy(currentUserId)
                     .setCreateTime(now)
                     .setUpdateTime(now);
             processInstanceMapper.insert(instance);
+            processFormService.writeFormData(instance, param.getGlobalFormData());
+
         }
+
+        org.flowable.engine.runtime.ProcessInstance flowableInstance =
+                runtimeService.startProcessInstanceByKey(definition.getProcessKey(), String.valueOf(instance.getId()));
+        instance.setProcessInstanceId(flowableInstance.getProcessInstanceId());
+
+        processInstanceMapper.update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ProcessInstance>()
+                .eq(ProcessInstance::getId, instance.getId())
+                .set(ProcessInstance::getProcessDefinitionId, definition.getId())
+                .set(ProcessInstance::getTitle, param.getTitle())
+                .set(ProcessInstance::getProcessInstanceId, instance.getProcessInstanceId())
+                .set(ProcessInstance::getProcessStatus, ProcessStatusEnum.ACTIVE.getStatus())
+                .set(ProcessInstance::getCode, codeGenerator.generate())
+                .set(ProcessInstance::getUpdateTime, now));
 
 //        // 创建表单实例并写入数据
 //        String startNodeId = processDefinitionService.resolveStartEventNodeId(param.getProcessDefinitionId());
@@ -95,11 +94,11 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 //                definition.getVersion(), startNodeId,
 //                param.getNodeFormData(), param.getGlobalFormData(), false);
 
-        processFormService.writeFormData(instance, param.getGlobalFormData());
+//        processFormService.writeFormData(instance, param.getGlobalFormData());
 
         // 兜底：trivial 流程立即结束
         if (runtimeService.createProcessInstanceQuery()
-                .processInstanceId(flowableInstance.getProcessInstanceId())
+                .processInstanceId(instance.getProcessInstanceId())
                 .singleResult() == null) {
             processInstanceMapper.update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ProcessInstance>()
                     .eq(ProcessInstance::getId, instance.getId())

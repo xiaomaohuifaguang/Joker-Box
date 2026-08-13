@@ -14,6 +14,9 @@
         <result column="option_source" property="optionSource"
                 typeHandler="com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler" />
         <result column="columns" property="columns" typeHandler="com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler"/>
+
+        <result column="value" property="value"
+                typeHandler="com.cat.common.handler.DefaultValueTypeHandler"/>
     </resultMap>
 
     <select id="selectPage" resultType="com.cat.common.entity.dynamicForm.DynamicFormInstance">

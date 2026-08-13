@@ -48,7 +48,7 @@ public class RedisService {
 
         // 仅首次（seq==1）时设置过期，避免每次调用都执行 EXPIRE
         if (seq != null && seq == 1L) {
-            redisTemplate.expire(key, 48, TimeUnit.SECONDS);
+            redisTemplate.expire(key, expire, TimeUnit.SECONDS);
         }
 
         return Optional.ofNullable(seq).orElse(0L);

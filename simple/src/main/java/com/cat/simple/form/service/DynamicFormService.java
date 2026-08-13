@@ -3,10 +3,7 @@ package com.cat.simple.form.service;
 
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
-import com.cat.common.entity.dynamicForm.DynamicForm;
-import com.cat.common.entity.dynamicForm.DynamicFormInstance;
-import com.cat.common.entity.dynamicForm.FormData;
-import com.cat.common.entity.dynamicForm.DynamicFormPublishedVersion;
+import com.cat.common.entity.dynamicForm.*;
 
 import java.util.List;
 
@@ -43,5 +40,7 @@ public interface DynamicFormService {
     Page<DynamicFormInstance> queryPageInstance(PageParam pageParam);
 
     DynamicForm infoInstance(String formInstanceId);
+
+    List<DynamicFormField> allFieldInstance(String formInstanceId);
 
 }

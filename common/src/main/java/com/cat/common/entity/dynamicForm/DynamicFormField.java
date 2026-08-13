@@ -132,7 +132,7 @@ public class DynamicFormField implements Serializable {
     private String permission;
 
     @Schema(description = "当前实例值（运行时由表单实例数据回填，不持久化）")
-    @TableField(exist = false)
+    @TableField(exist = false, typeHandler = DefaultValueTypeHandler.class)
     private Object value;
 
     public boolean validate() {

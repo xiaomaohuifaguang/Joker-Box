@@ -16,6 +16,7 @@ import com.cat.simple.ai.service.LlmService;
 import com.cat.simple.config.security.SecurityUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -120,6 +121,7 @@ public class AiChatServiceImpl implements AiChatService {
         // 2. 构建大模型请求
         AiModel aiModel = aiModelService.getOneWithRealApiKeyById(chatRequestParam.getModelId());
         OpenAiApi openAiApi = llmService.buildOpenAiApi(aiModel);
+//        OpenAiChatModel build = OpenAiChatModel.builder().openAiApi(openAiApi).build();
         List<OpenAiApi.ChatCompletionMessage> messages = buildMessageList(chatMessages);
         OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
                 messages, aiModel.getModel(), 1d, chatRequestParam.isStream()

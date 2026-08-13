@@ -93,6 +93,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         ProcessDefinitionBytearray bytearray = new ProcessDefinitionBytearray()
                 .setProcessDefinitionId(processDefinition.getId())
                 .setVersion("DRAFT")
+                .setXml(processDefinition.getXmlStr().getBytes())
                 .setRawData(processDefinition.getRawData())
                 .setCreateBy(processDefinition.getCreateBy())
                 .setCreateTime(now);

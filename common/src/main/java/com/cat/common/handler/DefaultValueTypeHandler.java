@@ -1,6 +1,8 @@
 package com.cat.common.handler;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
@@ -46,25 +48,34 @@ public class DefaultValueTypeHandler extends BaseTypeHandler<Object> {
     }
 
     private Object parse(String value) {
+
+        System.out.println("结构化值"+value);
         if (value == null) {
             return null;
         }
         String trimmed = value.trim();
-        // 不以 [ 或 { 开头，直接当作字符串返回
         if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
             return value;
         }
         try {
             Object result = JSON.parse(trimmed);
-            if (result instanceof com.alibaba.fastjson2.JSONObject jo) {
-                return jo.to(Map.class);
+            if (result instanceof JSONObject jo) {
+                // 用 getInnerMap() 或 new HashMap<>(jo) 确保返回标准 Map
+                return new java.util.HashMap<>(jo);
             }
-            if (result instanceof com.alibaba.fastjson2.JSONArray ja) {
+            if (result instanceof JSONArray ja) {
+                // ✅ 使用 toJavaObject 代替 to，行为更确定
                 return ja.to(List.class);
+                // 或者更保险的做法：
+                // return new ArrayList<>(ja);
             }
             return result;
         } catch (Exception e) {
+            // ✅ 建议至少打个日志，否则这类 bug 极难排查
+            // log.warn("DefaultValueTypeHandler parse failed, raw value: {}", value, e);
             return value;
         }
     }
+
+
 }

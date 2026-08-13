@@ -52,9 +52,9 @@ public class GatewayConditionEvaluator {
         }
 
 
-       ProcessInstance instance = processInstanceMapper.selectOne(
+        ProcessInstance instance = processInstanceMapper.selectOne(
                 new LambdaQueryWrapper<ProcessInstance>()
-                        .eq(ProcessInstance::getProcessInstanceId, execution.getProcessInstanceId()));
+                        .eq(ProcessInstance::getId, execution.getProcessInstanceBusinessKey()));
 
 
         ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
@@ -65,9 +65,8 @@ public class GatewayConditionEvaluator {
                 .selectOne(new LambdaQueryWrapper<com.cat.common.entity.process.ProcessDefinition>()
                         .eq(com.cat.common.entity.process.ProcessDefinition::getProcessKey, key));
 
-        boolean evaluate = gatewayConditionEngine.evaluate(processDefinitionOi.getId(), String.valueOf(processDefinition.getVersion()), sequenceFlowId);
+        return gatewayConditionEngine.evaluate(processDefinitionOi.getId(), String.valueOf(processDefinition.getVersion()), sequenceFlowId, instance);
 
-        return false; // evaluate;
     }
 
 //    private Map<String, Boolean> computeGatewayResults(DelegateExecution execution, String gatewayId) {

@@ -1,6 +1,8 @@
 package com.cat.common.entity.process;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.cat.common.handler.DefaultValueTypeHandler;
+import com.cat.common.handler.JsonValueTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -33,7 +35,7 @@ public class ProcessGatewayConditionNode implements Serializable {
     private String nodeType;
 
     @Schema(description = "条件来源分类: FORM_FIELD / HANDLER_DEPT / HANDLER_ROLE / PREV_HANDLER_DEPT / PREV_HANDLER_ROLE")
-    private String category;
+    private NodeFieldCategory category;
 
     @Schema(description = "字段标识(fieldId或内置变量名)")
     private String fieldKey;
@@ -42,7 +44,8 @@ public class ProcessGatewayConditionNode implements Serializable {
     private String operator;
 
     @Schema(description = "比较值")
-    private String value;
+    @TableField(typeHandler = DefaultValueTypeHandler.class)
+    private Object value;
 
     @Schema(description = "同级排序")
     private Integer sort;

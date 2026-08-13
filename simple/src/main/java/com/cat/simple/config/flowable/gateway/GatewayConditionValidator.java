@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Component
@@ -131,7 +132,7 @@ public class GatewayConditionValidator {
     }
 
     private void validateConditionNode(ProcessGatewayConditionNode node) {
-        if (!StringUtils.hasText(node.getCategory())) {
+        if (node.getCategory() != null) {
             throw new IllegalArgumentException("CONDITION节点category不能为空");
         }
         if (!StringUtils.hasText(node.getFieldKey())) {
@@ -140,7 +141,7 @@ public class GatewayConditionValidator {
         if (!StringUtils.hasText(node.getOperator())) {
             throw new IllegalArgumentException("CONDITION节点operator不能为空");
         }
-        if (!StringUtils.hasText(node.getValue())) {
+        if (Objects.nonNull(node.getValue())) {
             throw new IllegalArgumentException("CONDITION节点value不能为空");
         }
 
@@ -149,10 +150,10 @@ public class GatewayConditionValidator {
         }
     }
 
-    private void validateJsonArrayValue(String value) {
+    private void validateJsonArrayValue(Object value) {
         try {
-            Object parsed = objectMapper.readValue(value, Object.class);
-            if (!(parsed instanceof List) && !(parsed instanceof Object[])) {
+//            Object parsed = objectMapper.readValue(value, Object.class);
+            if (!(value instanceof List) && !(value instanceof Object[])) {
                 throw new IllegalArgumentException("IN/NOT_IN的value必须是有效的JSON数组字符串");
             }
         } catch (Exception e) {

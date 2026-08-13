@@ -207,6 +207,15 @@ public class ProcessFormServiceImpl implements ProcessFormService {
 
     }
 
+    @Override
+    public List<DynamicFormField> getGlobalFields(Integer processInstanceId) {
+        ProcessInstanceForm processInstanceForm = processInstanceFormMapper.selectOne(new LambdaQueryWrapper<ProcessInstanceForm>().eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId));
+        if(StringUtils.hasText(processInstanceForm.getFormInstanceId())){
+            return dynamicFormService.allFieldInstance(processInstanceForm.getFormInstanceId());
+        }
+        return List.of();
+    }
+
     private DynamicForm loadDynamicForm(String formId, String formVersion, List<ProcessNodeFieldPermission> permissions){
 
         boolean exists = dynamicFormPublishHistoryMapper.exists(new LambdaQueryWrapper<DynamicFormPublishHistory>()

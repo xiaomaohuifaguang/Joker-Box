@@ -9,6 +9,7 @@ import com.cat.common.entity.process.constants.FormBindType;import com.cat.commo
 import com.cat.common.entity.process.designer.Edge;
 import com.cat.common.entity.process.designer.Node;
 import com.cat.common.entity.process.designer.RawData;
+import com.cat.common.utils.JSONUtils;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.enums.BackAssigneePolicyEnum;
@@ -365,6 +366,11 @@ public class FlowableUtils {
             } else {
                 processGatewayCondition.setConditionType(ConditionTypeConstants.CUSTOM);
                 sequenceFlow.setConditionExpression("${gatewayConditionEvaluator.evaluate(execution, '" + edge.getSource() + "', '" + edge.getId() + "')}");
+                Object ruleTree = data.get("ruleTree");
+                if(Objects.nonNull(ruleTree)){
+                    List<ProcessGatewayConditionNode> processGatewayConditionNodes = JSONUtils.parseListByObject(ruleTree, ProcessGatewayConditionNode.class);
+                    processGatewayCondition.setRuleTree(processGatewayConditionNodes);
+                }
             }
         }
         gatewayConditions.add(processGatewayCondition);

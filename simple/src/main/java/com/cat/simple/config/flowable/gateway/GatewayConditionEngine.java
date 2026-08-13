@@ -1,17 +1,23 @@
 package com.cat.simple.config.flowable.gateway;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cat.common.entity.dynamicForm.DynamicFormField;
+import com.cat.common.entity.process.NodeFieldCategory;
 import com.cat.common.entity.process.ProcessGatewayCondition;
 import com.cat.common.entity.process.ProcessGatewayConditionNode;
+import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.gateway.operator.ConditionOperator;
 import com.cat.simple.config.flowable.gateway.operator.OperatorFactory;
 import com.cat.simple.process.mapper.ProcessGatewayConditionMapper;
 import com.cat.simple.process.mapper.ProcessGatewayConditionNodeMapper;
+import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class GatewayConditionEngine {
@@ -23,10 +29,10 @@ public class GatewayConditionEngine {
     @Resource
     private OperatorFactory operatorFactory;
     @Resource
-    private GatewayEvaluationContext evaluationContext;
+    private ProcessFormService processFormService;
 
     public boolean evaluate(Integer processDefinitionId, String version,
-                            String sequenceFlowId) {
+                            String sequenceFlowId, ProcessInstance instance) {
         ProcessGatewayCondition condition = conditionMapper.selectOne(
                 new LambdaQueryWrapper<ProcessGatewayCondition>()
                         .eq(ProcessGatewayCondition::getProcessDefinitionId, processDefinitionId)
@@ -46,8 +52,14 @@ public class GatewayConditionEngine {
             return true;
         }
 
-//        evaluationContext.init(processInstanceId, nodeId);
-        return evaluateNode(ruleTree.get(0));
+        List<DynamicFormField> globalFields = processFormService.getGlobalFields(instance.getId());
+        Map<String, DynamicFormField> globalFormData = globalFields.stream()
+                .collect(Collectors.toMap(
+                        DynamicFormField::getFieldId,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+        return evaluateNode(ruleTree.get(0), globalFormData);
     }
 
     public List<ProcessGatewayConditionNode> loadRuleTree(Long conditionId) {
@@ -84,26 +96,33 @@ public class GatewayConditionEngine {
         }
     }
 
-    private boolean evaluateNode(ProcessGatewayConditionNode node) {
+    private boolean evaluateNode(ProcessGatewayConditionNode node, Map<String, DynamicFormField> globalFormData) {
         if (node == null) return true;
 
         return switch (node.getNodeType()) {
             case "AND" -> {
                 if (CollectionUtils.isEmpty(node.getChildren())) yield true;
-                yield node.getChildren().stream().allMatch(this::evaluateNode);
+                yield node.getChildren().stream().allMatch(child-> evaluateNode(child, globalFormData));
             }
             case "OR" -> {
                 if (CollectionUtils.isEmpty(node.getChildren())) yield true;
-                yield node.getChildren().stream().anyMatch(this::evaluateNode);
+                yield node.getChildren().stream().anyMatch(child-> evaluateNode(child, globalFormData));
             }
-            case "CONDITION" -> evaluateCondition(node);
+            case "CONDITION" -> evaluateCondition(node, globalFormData);
             default -> true;
         };
     }
 
-    private boolean evaluateCondition(ProcessGatewayConditionNode node) {
-        Object actualValue = evaluationContext.getValue(node.getCategory(), node.getFieldKey());
+    private boolean evaluateCondition(ProcessGatewayConditionNode node, Map<String, DynamicFormField> globalFormData) {
+
+        Object actualValue = null;
+        if(node.getCategory().equals(NodeFieldCategory.FORM_FIELD)){
+            DynamicFormField dynamicFormField = globalFormData.get(node.getFieldKey());
+            actualValue = dynamicFormField.getValue();
+        }
+
         ConditionOperator operator = operatorFactory.get(node.getOperator());
+
         return operator.compare(actualValue, node.getValue());
     }
 }

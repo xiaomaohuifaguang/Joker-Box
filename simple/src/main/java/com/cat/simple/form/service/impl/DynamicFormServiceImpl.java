@@ -566,6 +566,11 @@ public class DynamicFormServiceImpl implements DynamicFormService {
         return form;
     }
 
+    @Override
+    public List<DynamicFormField> allFieldInstance(String formInstanceId) {
+        return dynamicFormInstanceMapper.selectFields(formInstanceId);
+    }
+
     // ---------- private helpers ----------
 
     private String currentUserId() {

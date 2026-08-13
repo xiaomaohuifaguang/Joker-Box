@@ -21,7 +21,6 @@ import org.flowable.bpmn.model.StartEvent;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -43,7 +42,6 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private ProcessDefinitionMapper processDefinitionMapper;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public ProcessInstance start(ProcessHandleParam param) {
         return commandBus.execute(new StartProcessCommand(param));
     }
@@ -250,31 +248,26 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void claim(ProcessHandleParam param) {
         commandBus.execute(new ClaimTaskCommand(param));
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void pass(ProcessHandleParam param) {
         commandBus.execute(new PassTaskCommand(param));
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void reject(ProcessHandleParam param) {
         commandBus.execute(new RejectTaskCommand(param));
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void back(ProcessHandleParam param) {
          commandBus.execute(new BackTaskCommand(param));
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public ProcessInstance saveDraft(ProcessHandleParam param) {
         Integer id = param.getProcessInstanceId();
         Integer processDefinitionId = param.getProcessDefinitionId();

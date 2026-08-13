@@ -24,7 +24,7 @@ import java.io.Serial;
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-@TableName("cat_dynamic_form_field_instance")
+@TableName(value = "cat_dynamic_form_field_instance", autoResultMap = true)
 @Schema(name = "DynamicFormFieldInstance", description = "表单项实例id")
 public class DynamicFormFieldInstance implements Serializable {
     @Serial

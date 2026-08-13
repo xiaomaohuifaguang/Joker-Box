@@ -2,6 +2,7 @@ package com.cat.common.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -36,6 +37,11 @@ public class JSONUtils {
         }
     }
 
+    public static <T> T parseObjectByObject(Object o, Class<T> objectClass){
+        String jsonStr = toJSONString(o);
+        return parseObject(jsonStr, objectClass);
+    }
+
     /**
      * JSON格式字符串转换对象
      * @param jsonStr json字符串
@@ -49,6 +55,10 @@ public class JSONUtils {
             throw new RuntimeException(e);
         }
     }
+    public static <T> List<T> parseListByObject(Object o, Class<T> clazz) {
+        String jsonStr = toJSONString(o);
+        return parseList(jsonStr, clazz);
+    }
 
     public static <T> List<T> parseList(String jsonStr, Class<T> clazz) {
         if (jsonStr == null || jsonStr.trim().isEmpty()) {
@@ -56,10 +66,11 @@ public class JSONUtils {
         }
         try {
             ObjectMapper mapper = new ObjectMapper();
-            // Jackson 需要借助 TypeReference 来保留泛型信息
-            return mapper.readValue(jsonStr, new TypeReference<List<T>>() {});
+            // ✅ 关键：用 clazz 显式构造 List<T> 的完整类型信息
+            JavaType javaType = mapper.getTypeFactory()
+                    .constructCollectionType(List.class, clazz);
+            return mapper.readValue(jsonStr, javaType);
         } catch (Exception e) {
-            // log.error("Jackson JSON解析失败: {}", jsonStr, e);
             return Collections.emptyList();
         }
     }
