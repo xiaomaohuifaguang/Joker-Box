@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.menu.Menu;
 import com.cat.simple.apidoc.mapper.ApiPathMapper;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.system.mapper.MenuMapper;
 import com.cat.simple.system.mapper.RoleMapper;
 import com.cat.simple.system.service.RoleService;
@@ -42,8 +44,8 @@ public class RoleServiceImpl implements RoleService {
     private ApiPathMapper apiPathMapper;
     @Resource
     private MenuMapper menuMapper;
-    @Resource
-    UserService userService;
+    @Resource private UserService userService;
+    @Resource private CacheService cacheService;
 
     @Override
     public List<Role> getRoleByPath(String server, String path) {
@@ -221,6 +223,7 @@ public class RoleServiceImpl implements RoleService {
         if (!menuChoose.isEmpty()) {
             roleMapper.insetRoleMenuRelation(roleBase.getId(), menuChoose, LocalDateTime.now());
         }
+        cacheService.hdel(CacheKeyEnum.ROLE_MENUS, String.valueOf(role.getId()));
         userService.clearUserCache();
         return DTO.success();
     }
@@ -230,4 +233,7 @@ public class RoleServiceImpl implements RoleService {
         List<Role> roles = roleMapper.selectList(new LambdaQueryWrapper<Role>().select(Role::getId, Role::getName));
         return roles.stream().map(role -> new SelectOption(role.getId(), role.getName())).collect(Collectors.toList());
     }
+
+
+
 }

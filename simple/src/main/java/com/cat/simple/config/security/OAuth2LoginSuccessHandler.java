@@ -1,7 +1,5 @@
 package com.cat.simple.config.security;
-import com.alibaba.fastjson2.JSONArray;
 import com.cat.common.entity.auth.LoginUser;
-import com.cat.common.utils.JSONUtils;
 import com.cat.simple.config.cache.CacheKeyEnum;
 import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.system.service.UserService;
@@ -15,7 +13,6 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,11 +53,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         cacheService.set(CacheKeyEnum.SSO, clientNameDown+":"+id, token);
 
 
-        List<String> tokens;
-        String  tokensStr = cacheService.get(CacheKeyEnum.TOKEN, loginUser.getUsername(), String.class);
-        if(StringUtils.hasText(tokensStr)){
-            tokens = JSONArray.parseArray(tokensStr, String.class);
-        }else {
+        List<String> tokens = cacheService.getList(CacheKeyEnum.TOKEN, loginUser.getUsername(), String.class);
+        if (tokens == null) {
             tokens = new ArrayList<>();
         }
 
@@ -69,7 +63,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         tokens.add(token);
-        cacheService.set(CacheKeyEnum.TOKEN , loginUser.getUsername(), JSONUtils.toJSONString(tokens));
+        cacheService.set(CacheKeyEnum.TOKEN , loginUser.getUsername(), tokens);
 
 
         // 保存用户信息到数据库

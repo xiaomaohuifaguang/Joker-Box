@@ -1,6 +1,5 @@
 package com.cat.simple.system.service.impl;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -87,11 +86,8 @@ public class UserServiceImpl implements UserService {
         String token = null;
         if(CryptoUtils.verify(loginInfo.getPassword(), loginUser.getPassword())){
             token = this.makeToken(loginUser);
-            List<String> tokens;
-            String  tokensStr = cacheService.get(CacheKeyEnum.TOKEN , loginUser.getUsername(), String.class);
-            if(StringUtils.hasText(tokensStr)){
-                tokens = JSONArray.parseArray(tokensStr, String.class);
-            }else {
+            List<String> tokens = cacheService.getList(CacheKeyEnum.TOKEN, loginUser.getUsername(), String.class);
+            if (tokens == null) {
                 tokens = new ArrayList<>();
             }
 
@@ -100,7 +96,7 @@ public class UserServiceImpl implements UserService {
             }
 
             tokens.add(token);
-            cacheService.set(CacheKeyEnum.TOKEN, loginUser.getUsername(), JSONUtils.toJSONString(tokens));
+            cacheService.set(CacheKeyEnum.TOKEN, loginUser.getUsername(), tokens);
 
         }
         return  token;
@@ -160,13 +156,8 @@ public class UserServiceImpl implements UserService {
         String username = (String) decrypt.get("username");
         String password = (String) decrypt.get("password");
 
-        String  tokensStr = cacheService.get(CacheKeyEnum.TOKEN , username, String.class);
-        if(StringUtils.hasText(tokensStr)){
-            List<String> tokens = JSONArray.parseArray(tokensStr, String.class);
-            if(!tokens.contains(token)) return null;
-        }else {
-            return null;
-        }
+        List<String> tokens = cacheService.getList(CacheKeyEnum.TOKEN, username, String.class);
+        if (tokens == null || !tokens.contains(token)) return null;
 
 //        boolean isSSO = (boolean) decrypt.get("isSSO");
         LoginUser loginUser = this.getLoginUser(username);

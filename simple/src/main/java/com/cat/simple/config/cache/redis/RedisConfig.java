@@ -1,4 +1,4 @@
-package com.cat.simple.config.redis;
+package com.cat.simple.config.cache.redis;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
@@ -41,7 +41,7 @@ public class RedisConfig {
         template.setHashKeySerializer(RedisSerializer.string());
         //设置value的序列化
         template.setValueSerializer(jsonRedisSerializer);
-        template.setHashKeySerializer(jsonRedisSerializer);
+        template.setHashValueSerializer(jsonRedisSerializer);
         //返回
         return template;
     }

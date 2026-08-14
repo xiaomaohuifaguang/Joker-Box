@@ -5,6 +5,8 @@ import com.cat.common.entity.auth.*;
 import com.cat.common.entity.menu.Menu;
 import com.cat.common.entity.menu.MenuAndApiPath;
 import com.cat.common.entity.menu.MenuPageParam;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.apidoc.mapper.ApiPathMapper;
 import com.cat.simple.system.mapper.MenuMapper;
@@ -28,22 +30,37 @@ public class MenuServiceImpl implements MenuService {
     private MenuMapper menuMapper;
     @Resource
     private ApiPathMapper apiPathMapper;
+    @Resource
+    private CacheService cacheService;
 
     @Override
     public boolean add(Menu menu) {
         menu.setUserId(Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId());
-        return menuMapper.insert(menu) == 1;
+        boolean success = menuMapper.insert(menu) == 1;
+        if (success) {
+            // 菜单结构变更影响所有角色的菜单缓存，一键清空，读取时按角色懒重建
+            cacheService.deleteKey(CacheKeyEnum.ROLE_MENUS);
+        }
+        return success;
     }
 
     @Override
     public boolean delete(Menu menu) {
-        return menuMapper.deleteById(menu) == 1;
+        boolean success = menuMapper.deleteById(menu) == 1;
+        if (success) {
+            cacheService.deleteKey(CacheKeyEnum.ROLE_MENUS);
+        }
+        return success;
     }
 
     @Override
     public boolean update(Menu menu) {
         menu.setUpdateTime(LocalDateTime.now());
-        return menuMapper.updateById(menu) == 1;
+        boolean success = menuMapper.updateById(menu) == 1;
+        if (success) {
+            cacheService.deleteKey(CacheKeyEnum.ROLE_MENUS);
+        }
+        return success;
     }
 
     @Override
@@ -100,9 +117,30 @@ public class MenuServiceImpl implements MenuService {
         }
 
         // 获取全部有权限的菜单
-        List<Menu> menus = menuMapper.queryAllByAuth(roleIds, roleIds.contains(ROLE_ADMIN_CODE));
+//        List<Menu> menus = new ArrayList<>(); // menuMapper.queryAllByAuth(roleIds, roleIds.contains(ROLE_ADMIN_CODE));
+        LinkedHashSet<Menu> menus = new LinkedHashSet<>();
+        if(roleIds.contains(ROLE_ADMIN_CODE)){
+            List<Menu> adminMenuList = cacheService.hgetList(CacheKeyEnum.ROLE_MENUS, String.valueOf(ROLE_ADMIN_CODE), Menu.class);
+            if(CollectionUtils.isEmpty(adminMenuList)){
+                adminMenuList = menuMapper.queryAllByAuth(null, true);
+                cacheService.hset(CacheKeyEnum.ROLE_MENUS, String.valueOf(ROLE_ADMIN_CODE), adminMenuList);
+            }
+            menus.addAll(adminMenuList);
+        }else {
+            roleIds.forEach(roleId -> {
+                List<Menu> roleMenuList = cacheService.hgetList(CacheKeyEnum.ROLE_MENUS, String.valueOf(roleId), Menu.class);
+                if(CollectionUtils.isEmpty(roleMenuList)){
+                    roleMenuList = menuMapper.queryAllByAuth(List.of(roleId), false);
+                    cacheService.hset(CacheKeyEnum.ROLE_MENUS, String.valueOf(roleId), roleMenuList);
+                    menus.addAll(roleMenuList);
+                }
+                menus.addAll(roleMenuList);
+            });
+        }
 
-        return getMenuTree(menus, menuType);
+
+
+        return getMenuTree(new ArrayList<>(menus), menuType);
     }
 
     @Override
