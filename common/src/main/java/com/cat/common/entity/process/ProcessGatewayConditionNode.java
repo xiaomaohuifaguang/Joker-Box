@@ -1,8 +1,8 @@
 package com.cat.common.entity.process;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.cat.common.entity.process.enums.NodeFieldCategory;
 import com.cat.common.handler.DefaultValueTypeHandler;
-import com.cat.common.handler.JsonValueTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;

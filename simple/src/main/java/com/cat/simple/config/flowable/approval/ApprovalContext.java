@@ -21,6 +21,7 @@ public record ApprovalContext(
         List<String> candidateGroups,
         List<String> candidateDepts,
         BigDecimal passRate,
+        BigDecimal randomCount,
         List<String> actionButtons,
         String backType,
         String backNodeId,
@@ -53,6 +54,7 @@ public record ApprovalContext(
                 splitCsv(readText(map, CANDIDATE_GROUPS.getCode())),
                 splitCsv(readText(map, CANDIDATE_DEPTS.getCode())),
                 parseRate(readText(map, PASS_RATE.getCode())),
+                randomCount(readText(map, RANDOM_COUNT.getCode())),
                 splitCsv(readText(map, ACTION_BUTTONS.getCode())),
                 readText(map, BACK_TYPE.getCode()),
                 readText(map, BACK_NODE_ID.getCode()),
@@ -79,6 +81,17 @@ public record ApprovalContext(
     }
 
     private static BigDecimal parseRate(String text) {
+        if (text == null || text.isBlank()) {
+            return BigDecimal.ONE;
+        }
+        try {
+            return new BigDecimal(text.trim());
+        } catch (NumberFormatException e) {
+            return BigDecimal.ONE;
+        }
+    }
+
+    private static BigDecimal randomCount(String text) {
         if (text == null || text.isBlank()) {
             return BigDecimal.ONE;
         }

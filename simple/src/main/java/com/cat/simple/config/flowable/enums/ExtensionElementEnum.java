@@ -16,6 +16,7 @@ public enum ExtensionElementEnum {
     CANDIDATE_GROUPS("candidateGroups", "候选组"),
     CANDIDATE_DEPTS("candidateDepts", "候选部门"),
     PASS_RATE("passRate", "通过率"),
+    RANDOM_COUNT("randomCount", "随机人数"),
     ACTION_BUTTONS("actionButtons", "处理按钮"),
     BACK_TYPE("backType", "驳回方式"),
     BACK_NODE_ID("backNodeId", "驳回节点"),

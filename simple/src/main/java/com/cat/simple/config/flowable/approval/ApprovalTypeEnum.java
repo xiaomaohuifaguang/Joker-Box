@@ -19,7 +19,9 @@ public enum ApprovalTypeEnum {
     /** 随机1人：从候选池随机抽取 1 人指派 */
     RANDOM(3, "随机1人"),
     /** 认领：候选人均可 claim，不预先指派 */
-    CLAIM(4, "认领");
+    CLAIM(4, "认领"),
+    RANDOM_COUNTERSIGN(5, "随机多人会签"),
+    RANDOM_OR_SIGN(6, "随机多人或签");
 
     /** 数据库存储值 */
     private final int code;

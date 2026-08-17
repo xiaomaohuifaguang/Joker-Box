@@ -50,8 +50,8 @@ public class ApprovalUserTaskParseHandler implements BpmnParseHandler {
         registerCreateListener(userTask);
 
         switch (ctx.type()) {
-            case COUNTERSIGN -> setupMultiInstance(userTask, completionByPassRate(ctx.passRate()));
-            case OR_SIGN -> setupMultiInstance(userTask, "${nrOfCompletedInstances >= 1}");
+            case COUNTERSIGN, RANDOM_COUNTERSIGN -> setupMultiInstance(userTask, completionByPassRate(ctx.passRate()));
+            case OR_SIGN, RANDOM_OR_SIGN -> setupMultiInstance(userTask, "${nrOfCompletedInstances >= 1}");
             default -> { /* RANDOM / CLAIM 走运行期监听器 */ }
         }
         log.debug("已处理审批任务 id={}, type={}, passRate={}",
@@ -73,6 +73,7 @@ public class ApprovalUserTaskParseHandler implements BpmnParseHandler {
         listener.setImplementationType(ImplementationType.IMPLEMENTATION_TYPE_DELEGATEEXPRESSION);
         listener.setImplementation(LISTENER_EXPRESSION);
         userTask.getTaskListeners().add(listener);
+
     }
 
     /**

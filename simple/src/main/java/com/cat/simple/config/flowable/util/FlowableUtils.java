@@ -383,16 +383,22 @@ public class FlowableUtils {
     }
 
     private void setUserTaskExtensionElements(UserTask userTask, Map<String, Object> data) {
-        initExtensionElementFilterNull(userTask, APPROVAL_TYPE.getCode(), (String) data.get(APPROVAL_TYPE.getCode()), APPROVAL_TYPE.getDescription());
-        initExtensionElementFilterNull(userTask, CANDIDATE_USERS.getCode(), (String) data.get(CANDIDATE_USERS.getCode()), CANDIDATE_USERS.getDescription());
-        initExtensionElementFilterNull(userTask, CANDIDATE_ROLES.getCode(), (String) data.get(CANDIDATE_ROLES.getCode()), CANDIDATE_ROLES.getDescription());
-        initExtensionElementFilterNull(userTask, CANDIDATE_GROUPS.getCode(), (String) data.get(CANDIDATE_GROUPS.getCode()), CANDIDATE_GROUPS.getDescription());
-        initExtensionElementFilterNull(userTask, CANDIDATE_DEPTS.getCode(), (String) data.get(CANDIDATE_DEPTS.getCode()), CANDIDATE_DEPTS.getDescription());
-        initExtensionElementFilterNull(userTask, PASS_RATE.getCode(), (String) data.get(PASS_RATE.getCode()), PASS_RATE.getDescription());
-        initExtensionElementFilterNull(userTask, ACTION_BUTTONS.getCode(), (String) data.get(ACTION_BUTTONS.getCode()), ACTION_BUTTONS.getDescription());
-        initExtensionElementFilterNull(userTask, BACK_TYPE.getCode(), (String) data.get(BACK_TYPE.getCode()), BACK_TYPE.getDescription());
-        initExtensionElementFilterNull(userTask, BACK_NODE_ID.getCode(), (String) data.get(BACK_NODE_ID.getCode()), BACK_NODE_ID.getDescription());
-        initExtensionElementFilterNull(userTask, BACK_ASSIGNEE_POLICY.getCode(), (String) data.get(BACK_ASSIGNEE_POLICY.getCode()), BACK_ASSIGNEE_POLICY.getDescription());
+        initExtensionElementFilterNull(userTask, APPROVAL_TYPE.getCode(), String.valueOf(data.get(APPROVAL_TYPE.getCode())), APPROVAL_TYPE.getDescription());
+        initExtensionElementFilterNull(userTask, CANDIDATE_USERS.getCode(), String.valueOf(data.get(CANDIDATE_USERS.getCode())), CANDIDATE_USERS.getDescription());
+        initExtensionElementFilterNull(userTask, CANDIDATE_ROLES.getCode(), String.valueOf(data.get(CANDIDATE_ROLES.getCode())), CANDIDATE_ROLES.getDescription());
+        initExtensionElementFilterNull(userTask, CANDIDATE_GROUPS.getCode(), String.valueOf(data.get(CANDIDATE_GROUPS.getCode())), CANDIDATE_GROUPS.getDescription());
+        initExtensionElementFilterNull(userTask, CANDIDATE_DEPTS.getCode(), String.valueOf(data.get(CANDIDATE_DEPTS.getCode())), CANDIDATE_DEPTS.getDescription());
+        initExtensionElementFilterNull(userTask, PASS_RATE.getCode(), String.valueOf(data.get(PASS_RATE.getCode())), PASS_RATE.getDescription());
+        initExtensionElementFilterNull(userTask, RANDOM_COUNT.getCode(), String.valueOf(data.get(RANDOM_COUNT.getCode())), RANDOM_COUNT.getDescription());
+        initExtensionElementFilterNull(userTask, ACTION_BUTTONS.getCode(), String.valueOf(data.get(ACTION_BUTTONS.getCode())), ACTION_BUTTONS.getDescription());
+        String backType = String.valueOf(data.get(BACK_TYPE.getCode()));
+        initExtensionElementFilterNull(userTask, BACK_TYPE.getCode(), backType, BACK_TYPE.getDescription());
+        initExtensionElementFilterNull(userTask, BACK_NODE_ID.getCode(), String.valueOf(data.get(BACK_NODE_ID.getCode())), BACK_NODE_ID.getDescription());
+        String backAssigneePolicyEnum = String.valueOf(data.get(BACK_ASSIGNEE_POLICY.getCode()));
+        if(StringUtils.hasText(backType) && !StringUtils.hasText(backAssigneePolicyEnum)){
+            backAssigneePolicyEnum = BackAssigneePolicyEnum.AUTO.getCode();
+        }
+        initExtensionElementFilterNull(userTask, BACK_ASSIGNEE_POLICY.getCode(), backAssigneePolicyEnum, BACK_ASSIGNEE_POLICY.getDescription());
     }
 
     private void setServiceTaskExtensionElements(ServiceTask serviceTask, Map<String, Object> data) {

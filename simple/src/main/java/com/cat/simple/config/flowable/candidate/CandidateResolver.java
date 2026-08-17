@@ -1,6 +1,7 @@
 package com.cat.simple.config.flowable.candidate;
 
 import com.cat.simple.config.flowable.approval.ApprovalContext;
+import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.system.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.bpmn.model.BpmnModel;
@@ -12,9 +13,8 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.Resource;
 import org.springframework.util.ObjectUtils;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,7 +45,17 @@ public class CandidateResolver {
             log.warn("activityId={} 缺少 approvalType, 候选人为空", execution.getCurrentActivityId());
             return List.of();
         }
-        return resolve(ctx);
+        String cacheKey = "cachedAssignees_" + execution.getCurrentActivityId();
+        Object variableLocal = execution.getVariable(cacheKey);
+        if (variableLocal instanceof List<?> list) {
+            return (List<String>) list;
+        }
+
+        List<String> resolve = resolve(ctx);
+
+        execution.setVariable(cacheKey, resolve);
+
+        return resolve;
     }
 
     /**
@@ -71,10 +81,25 @@ public class CandidateResolver {
         if (!ObjectUtils.isEmpty(ctx.candidateDepts())) {
             set.addAll(userMapper.selectListByOrgs(ctx.candidateDepts()).stream().map(u -> String.valueOf(u.getId())).collect(Collectors.toSet()));
         }
-        List<String> result = List.copyOf(set);
+        List<String> result = new java.util.ArrayList<>(List.copyOf(set));
         if (result.isEmpty()) {
             throw new IllegalStateException("候选人解析结果为空，请检查流程配置");
         }
+        if(ctx.type().equals(ApprovalTypeEnum.RANDOM_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.RANDOM_OR_SIGN)){
+            BigDecimal bigDecimal = ctx.randomCount();
+            int size = result.size();
+            int count = (bigDecimal == null) ? 1 : bigDecimal.intValue();
+            // bigDecimal > size → min 截断到 size
+            // bigDecimal < 1   → max 兜底到 1
+            // size == 0        → 结果为0，下方短路返回空集合
+            count = Math.max(1, Math.min(count, size));
+
+            List<String> mutable = new ArrayList<>(result);
+            Collections.shuffle(mutable);
+            List<String> strings = mutable.subList(0, count);
+            return new ArrayList<>(strings);
+        }
+
         return result;
     }
 

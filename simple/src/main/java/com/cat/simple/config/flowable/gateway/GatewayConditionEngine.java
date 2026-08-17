@@ -2,7 +2,7 @@ package com.cat.simple.config.flowable.gateway;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.dynamicForm.DynamicFormField;
-import com.cat.common.entity.process.NodeFieldCategory;
+import com.cat.common.entity.process.enums.NodeFieldCategory;
 import com.cat.common.entity.process.ProcessGatewayCondition;
 import com.cat.common.entity.process.ProcessGatewayConditionNode;
 import com.cat.common.entity.process.ProcessInstance;

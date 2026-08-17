@@ -74,6 +74,7 @@ public class BackEngine {
         // 判断当前任务是否多实例
         boolean isMultiInstance = flowableUtils.isMultiInstance(task);
 
+
         // 校验目标节点是否已有进行中的任务
         long activeCount = taskService.createTaskQuery()
                 .processInstanceId(task.getProcessInstanceId())
@@ -103,6 +104,11 @@ public class BackEngine {
             targetExecutionId = task.getExecutionId();
         }
 
+        boolean isTargetNodeMultiInstance = flowableUtils.isMultiInstance(task.getProcessDefinitionId(), param.getTargetNodeId());
+        if(isTargetNodeMultiInstance && BackAssigneePolicyEnum.of(cfg.getBackAssigneePolicy()).equals(BackAssigneePolicyEnum.REASSIGN)){
+            runtimeService.removeVariable(task.getProcessInstanceId(), "cachedAssignees_" + param.getTargetNodeId());
+        }
+
         // 2. 统一的 Flowable 状态变更（消除 if-else 重复代码）
         runtimeService.createChangeActivityStateBuilder()
                 .processInstanceId(task.getProcessInstanceId())
@@ -110,7 +116,7 @@ public class BackEngine {
                 .changeState();
 
 
-        boolean isTargetNodeMultiInstance = flowableUtils.isMultiInstance(task);
+
 
         if(isTargetNodeMultiInstance){
             // 新任务分派
