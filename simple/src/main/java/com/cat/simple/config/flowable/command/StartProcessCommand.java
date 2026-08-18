@@ -9,10 +9,12 @@ import com.cat.simple.config.process.ProcessCodeGenerator;
 import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.flowable.engine.TaskService;
+import org.flowable.task.api.Task;
 import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -21,6 +23,7 @@ import java.util.Objects;
 public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 
     @Resource private RuntimeService runtimeService;
+    @Resource private TaskService taskService;
     @Resource private ProcessCodeGenerator codeGenerator;
     @Resource private com.cat.simple.process.mapper.ProcessInstanceMapper processInstanceMapper;
     @Resource private ProcessFormService processFormService;
@@ -135,5 +138,13 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
                 hook.afterStart(ctx);
             }
         }
+
+        List<Task> list = taskService.createTaskQuery().processInstanceId(result.getProcessInstanceId()).list();
+        if(!CollectionUtils.isEmpty(list) && list.size() == 1 &&  list.get(0).getTaskDefinitionKey().equals("applyNode")){
+            Task task = list.get(0);
+            taskService.complete(task.getId());
+        }
+
+
     }
 }
