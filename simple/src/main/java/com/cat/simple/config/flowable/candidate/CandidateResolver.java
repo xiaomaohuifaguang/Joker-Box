@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +42,35 @@ public class CandidateResolver {
 
     @Resource
     private UserMapper userMapper;
+
+
+    /**
+     * 单例
+     * @param execution 当前流程执行上下文
+     * @return 去重后的用户 ID 列表；解析结果为空时抛异常，防止 Flowable 跳过节点
+     */
+    public String resolveSingleAssignee(DelegateExecution execution) {
+        ApprovalContext ctx = readContext(execution.getProcessDefinitionId(), execution.getCurrentActivityId());
+        if (ctx == null) {
+            throw new IllegalStateException("activityId=" + execution.getCurrentActivityId() + " 缺少 approvalType");
+        }
+        List<String> pool = resolve(ctx, execution.getProcessInstanceId());
+        if (ctx.type() == ApprovalTypeEnum.RANDOM) {
+            return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        }
+        // APPLICANT_SELF：resolve 已返回发起人单例
+        return pool.get(0);
+    }
+
+    /** 认领节点候选人表达式入口（CLAIM），返回用户 ID 列表 */
+    public List<String> resolveCandidateUsers(DelegateExecution execution) {
+        ApprovalContext ctx = readContext(execution.getProcessDefinitionId(), execution.getCurrentActivityId());
+        if (ctx == null) {
+            throw new IllegalStateException("activityId=" + execution.getCurrentActivityId() + " 缺少 approvalType");
+        }
+        return resolve(ctx, execution.getProcessInstanceId());
+    }
+
 
     /**
      * 多实例 collection 表达式入口。

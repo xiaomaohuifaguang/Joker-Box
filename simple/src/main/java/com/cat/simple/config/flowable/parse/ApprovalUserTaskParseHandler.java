@@ -32,6 +32,8 @@ public class ApprovalUserTaskParseHandler implements BpmnParseHandler {
     public static final String COLLECTION_EXPRESSION = "${candidateResolver.resolveAssignees(execution)}";
     /** TaskListener 表达式，指向 Spring Bean approvalTaskCreateListener */
     public static final String LISTENER_EXPRESSION = "${approvalTaskCreateListener}";
+    public static final String SINGLE_ASSIGNEE_EXPRESSION = "${candidateResolver.resolveSingleAssignee(execution)}";
+    public static final String CANDIDATE_USERS_EXPRESSION  = "${candidateResolver.resolveCandidateUsers(execution)}";
 
     @Override
     public Collection<Class<? extends BaseElement>> getHandledTypes() {
@@ -52,6 +54,8 @@ public class ApprovalUserTaskParseHandler implements BpmnParseHandler {
         switch (ctx.type()) {
             case COUNTERSIGN, RANDOM_COUNTERSIGN -> setupMultiInstance(userTask, completionByPassRate(ctx.passRate()));
             case OR_SIGN, RANDOM_OR_SIGN -> setupMultiInstance(userTask, "${nrOfCompletedInstances >= 1}");
+            case RANDOM, APPLICANT_SELF         -> userTask.setAssignee(SINGLE_ASSIGNEE_EXPRESSION);
+            case CLAIM                          -> userTask.setCandidateUsers(List.of(CANDIDATE_USERS_EXPRESSION));
             default -> { /* RANDOM / CLAIM 走运行期监听器 */ }
         }
         log.debug("已处理审批任务 id={}, type={}, passRate={}",

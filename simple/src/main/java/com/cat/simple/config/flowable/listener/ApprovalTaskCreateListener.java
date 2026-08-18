@@ -1,12 +1,9 @@
 package com.cat.simple.config.flowable.listener;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cat.common.entity.process.ProcessInstance;
+
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.approval.ApprovalTypeHandler;
-import com.cat.simple.process.mapper.ProcessInstanceMapper;
-//import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -36,13 +33,6 @@ public class ApprovalTaskCreateListener implements TaskListener {
     @Resource
     private RepositoryService repositoryService;
 
-
-//    @Resource
-//    private ProcessInstanceMapper processInstanceMapper;
-//
-//    @Resource
-//    private ProcessFormService processFormService;
-
     private Map<ApprovalTypeEnum, ApprovalTypeHandler> handlerMap;
 
     /**
@@ -70,23 +60,8 @@ public class ApprovalTaskCreateListener implements TaskListener {
                 log.warn("approvalType={} 无匹配 handler, taskId={}", ctx.type(), delegateTask.getId());
             } else {
                 handler.applyOnCreate(delegateTask, ctx);
-
-                // 将按钮配置写入任务变量，供后端接口查询和校验
-//                if (ctx.actionButtons() != null && !ctx.actionButtons().isEmpty()) {
-//                    variableStore.setLocal(delegateTask, VariableNames.ACTION_BUTTONS, String.join(",", ctx.actionButtons()));
-//                }
-//                if (ctx.backType() != null && !ctx.backType().isBlank()) {
-//                    variableStore.setLocal(delegateTask, VariableNames.BACK_TYPE, ctx.backType());
-//                }
-//                if (ctx.backNodeId() != null && !ctx.backNodeId().isBlank()) {
-//                    variableStore.setLocal(delegateTask, VariableNames.BACK_NODE_ID, ctx.backNodeId());
-//                }
-//                if (ctx.backAssigneePolicy() != null && !ctx.backAssigneePolicy().isBlank()) {
-//                    variableStore.setLocal(delegateTask, VariableNames.BACK_ASSIGNEE_POLICY, ctx.backAssigneePolicy());
-//                }
             }
         }
-//        createNodeFormInstance(delegateTask);
     }
 
     /**
@@ -103,25 +78,4 @@ public class ApprovalTaskCreateListener implements TaskListener {
         return model.getFlowElement(delegateTask.getTaskDefinitionKey()) instanceof UserTask ut ? ut : null;
     }
 
-    /**
-     * 为当前任务节点创建表单实例（如果该节点绑定了表单）。
-     * 即使表单实例创建失败也不应阻塞任务创建，因此用 try-catch 包裹。
-     */
-//    private void createNodeFormInstance(DelegateTask delegateTask) {
-//        try {
-//            String flowableInstanceId = delegateTask.getProcessInstanceId();
-//            ProcessInstance instance = processInstanceMapper.selectOne(
-//                    new LambdaQueryWrapper<ProcessInstance>()
-//                            .eq(ProcessInstance::getProcessInstanceId, flowableInstanceId));
-//            if (instance == null) {
-//                return;
-//            }
-//            String nodeId = delegateTask.getTaskDefinitionKey();
-//            processFormService.createFormInstanceIfNeeded(
-//                    instance.getId(), instance.getProcessDefinitionId(),
-//                    instance.getProcessDefinitionVersion(), nodeId);
-//        } catch (Exception e) {
-//            log.error("创建节点表单实例失败, taskId={}", delegateTask.getId(), e);
-//        }
-//    }
 }

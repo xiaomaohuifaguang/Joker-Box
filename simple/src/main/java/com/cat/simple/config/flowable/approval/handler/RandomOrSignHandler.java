@@ -23,6 +23,6 @@ public class RandomOrSignHandler implements ApprovalTypeHandler {
 
     @Override
     public void applyOnCreate(DelegateTask task, ApprovalContext ctx) {
-        log.info("[或签] taskId={}, assignee={}", task.getId(), task.getAssignee());
+
     }
 }

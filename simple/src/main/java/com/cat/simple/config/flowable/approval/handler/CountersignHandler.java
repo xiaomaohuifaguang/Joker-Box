@@ -24,7 +24,6 @@ public class CountersignHandler implements ApprovalTypeHandler {
 
     @Override
     public void applyOnCreate(DelegateTask task, ApprovalContext ctx) {
-        log.info("[会签] taskId={}, assignee={}, passRate={}",
-                task.getId(), task.getAssignee(), ctx.passRate());
+
     }
 }
