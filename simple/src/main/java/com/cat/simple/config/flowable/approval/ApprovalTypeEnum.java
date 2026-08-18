@@ -12,6 +12,7 @@ import java.util.Arrays;
 @Getter
 public enum ApprovalTypeEnum {
 
+    APPLICANT_SELF(0, "申请人自审"),
     /** 会签：多实例并行，按 passRate 比例通过 */
     COUNTERSIGN(1, "会签"),
     /** 或签：多实例并行，任一完成即流转 */

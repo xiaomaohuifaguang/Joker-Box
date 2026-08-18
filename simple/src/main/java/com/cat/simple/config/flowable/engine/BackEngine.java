@@ -2,6 +2,8 @@ package com.cat.simple.config.flowable.engine;
 
 import com.cat.common.entity.process.BackConfig;
 import com.cat.common.entity.process.ProcessHandleParam;
+import com.cat.simple.config.flowable.approval.ApprovalContext;
+import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.enums.BackAssigneePolicyEnum;
 import com.cat.simple.config.flowable.enums.BackTypeEnum;
 import com.cat.simple.config.flowable.util.FlowableUtils;
@@ -17,7 +19,9 @@ import org.flowable.engine.TaskService;
 import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.runtime.Execution;
 import org.flowable.task.api.Task;
+import org.flowable.task.api.history.HistoricTaskInstance;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,6 +35,7 @@ public class BackEngine {
     @Resource private RepositoryService repositoryService;
     @Resource private RuntimeService runtimeService;
     @Resource private TaskService taskService;
+    @Resource private CandidateResolver candidateResolver;
 
     public void back(ProcessHandleParam param, Task task){
 
@@ -133,7 +138,7 @@ public class BackEngine {
                     .processInstanceId(task.getProcessInstanceId())
                     .taskDefinitionKey(param.getTargetNodeId())
                     .singleResult();
-            String assignee = flowableUtils.resolveAssignee(newTask, cfg.getBackAssigneePolicy());
+            String assignee = resolveAssignee(newTask, cfg.getBackAssigneePolicy());
             taskService.setAssignee(newTask.getId(), assignee);
         }
     }
@@ -181,6 +186,54 @@ public class BackEngine {
             return ut;
         }
 
+        return null;
+    }
+
+
+    /** 按策略解析回退后任务的办理人。 */
+    public String resolveAssignee(Task newTask, String policy) {
+        BackAssigneePolicyEnum p = BackAssigneePolicyEnum.of(policy);
+        if (p == null) {
+            p = BackAssigneePolicyEnum.AUTO;
+        }
+
+        return switch (p) {
+            case LAST_HANDLER -> findLastHandler(newTask.getProcessInstanceId(), newTask.getTaskDefinitionKey());
+            case REASSIGN -> resolveByCandidateConfig(newTask);
+            case AUTO -> {
+                String last = findLastHandler(newTask.getProcessInstanceId(), newTask.getTaskDefinitionKey());
+                yield last != null ? last : resolveByCandidateConfig(newTask);
+            }
+        };
+    }
+
+    /** 查询目标节点最近一次的历史办理人。 */
+    public String findLastHandler(String flowableProcessInstanceId, String taskDefinitionKey) {
+        return historyService.createHistoricTaskInstanceQuery()
+                .processInstanceId(flowableProcessInstanceId)
+                .taskDefinitionKey(taskDefinitionKey)
+                .finished()
+                .orderByHistoricTaskInstanceEndTime().desc()
+                .list().stream()
+                .findFirst()
+                .map(HistoricTaskInstance::getAssignee)
+                .orElse(null);
+    }
+
+
+    /** 按节点候选配置解析办理人，取第一个候选人。 */
+    public String resolveByCandidateConfig(Task task) {
+        BpmnModel model = repositoryService.getBpmnModel(task.getProcessDefinitionId());
+        if (model == null) return null;
+        if (!(model.getFlowElement(task.getTaskDefinitionKey()) instanceof UserTask ut)) return null;
+
+        ApprovalContext ctx = ApprovalContext.from(ut);
+        if (ctx == null) return null;
+
+        List<String> assignees = candidateResolver.resolve(ctx, task.getProcessInstanceId());
+        if (!ObjectUtils.isEmpty(assignees)) {
+            return assignees.get(0);
+        }
         return null;
     }
 

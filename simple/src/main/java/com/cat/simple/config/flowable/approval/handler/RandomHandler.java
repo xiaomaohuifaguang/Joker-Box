@@ -30,7 +30,7 @@ public class RandomHandler implements ApprovalTypeHandler {
 
     @Override
     public void applyOnCreate(DelegateTask task, ApprovalContext ctx) {
-        List<String> pool = candidateResolver.resolve(ctx);
+        List<String> pool = candidateResolver.resolve(ctx, task.getProcessInstanceId());
         if (pool.isEmpty()) {
             log.warn("[随机1人] 候选池为空, taskId={}", task.getId());
             return;

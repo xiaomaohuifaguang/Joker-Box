@@ -2,16 +2,22 @@ package com.cat.simple.config.flowable.candidate;
 
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
+import com.cat.simple.process.mapper.ProcessInstanceMapper;
+import com.cat.simple.process.service.ProcessInstanceService;
 import com.cat.simple.system.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.RepositoryService;
+import org.flowable.engine.RuntimeService;
 import org.flowable.engine.delegate.DelegateExecution;
+import org.flowable.engine.runtime.ProcessInstance;
+import org.flowable.task.service.delegate.DelegateTask;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.Resource;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -27,6 +33,11 @@ public class CandidateResolver {
 
     @Resource
     private RepositoryService repositoryService;
+    @Resource
+    private RuntimeService runtimeService;
+
+    @Resource
+    private ProcessInstanceMapper processInstanceMapper;
 
     @Resource
     private UserMapper userMapper;
@@ -51,7 +62,7 @@ public class CandidateResolver {
             return (List<String>) list;
         }
 
-        List<String> resolve = resolve(ctx);
+        List<String> resolve = resolve(ctx, null);
 
         execution.setVariable(cacheKey, resolve);
 
@@ -66,7 +77,21 @@ public class CandidateResolver {
      * @return 去重后的用户 ID 列表
      * @throws IllegalStateException 展开结果为空时抛出
      */
-    public List<String> resolve(ApprovalContext ctx) {
+    public List<String> resolve(ApprovalContext ctx, String processInstanceId) {
+
+        if(ctx.type().equals(ApprovalTypeEnum.APPLICANT_SELF) && StringUtils.hasText(processInstanceId)){
+
+            ProcessInstance processInstance = runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
+            String businessKey = processInstance.getBusinessKey();
+
+            com.cat.common.entity.process.ProcessInstance catProcessInstance = processInstanceMapper.selectInfoById(Integer.valueOf(businessKey));
+
+            String createBy = catProcessInstance.getCreateBy();
+
+            return List.of(createBy);
+        }
+
+
         Set<String> set = new LinkedHashSet<>();
         if (!ObjectUtils.isEmpty(ctx.candidateUsers())) {
             set.addAll(userMapper.selectListByIds(ctx.candidateUsers()).stream().map(u -> String.valueOf(u.getId())).collect(Collectors.toSet()));

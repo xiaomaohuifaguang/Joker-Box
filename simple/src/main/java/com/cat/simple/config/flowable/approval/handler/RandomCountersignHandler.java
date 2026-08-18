@@ -8,7 +8,7 @@ import org.flowable.task.service.delegate.DelegateTask;
 import org.springframework.stereotype.Component;
 
 /**
- * 随机会签处理器（approvalType=1）。
+ * 随机会签处理器（approvalType=5）。
  * 多实例配置与完成条件已在解析期写入 BPMN 模型，
  * 每个实例的 assignee 由 Flowable 多实例 elementVariable 自动注入，
  * 这里仅做日志留痕。

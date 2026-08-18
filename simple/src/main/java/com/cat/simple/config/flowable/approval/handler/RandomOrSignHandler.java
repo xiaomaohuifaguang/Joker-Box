@@ -8,7 +8,7 @@ import org.flowable.task.service.delegate.DelegateTask;
 import org.springframework.stereotype.Component;
 
 /**
- * 或签处理器（approvalType=2）。
+ * 或签处理器（approvalType=6）。
  * 多实例配置与完成条件 {@code nrOfCompletedInstances >= 1} 已在解析期写入 BPMN 模型，
  * 任一实例完成即触发整个节点结束，这里仅做日志留痕。
  */

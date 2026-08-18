@@ -507,7 +507,6 @@ public class FlowableUtils {
     }
 
     public BackConfig getBackConfig(ApprovalContext context) {
-//        List<String> actionButtons = context.actionButtons();
 
         String backType = context.backType();
         String backNodeId = context.backNodeId();
@@ -518,123 +517,7 @@ public class FlowableUtils {
         config.setBackType(backType);
         config.setBackNodeId(backNodeId);
         config.setBackAssigneePolicy(backAssigneePolicy != null ? backAssigneePolicy : BackAssigneePolicyEnum.AUTO.getCode());
-//        config.setActionButtons(actionButtons);
         return config;
-    }
-
-    /** 根据驳回类型解析目标节点 ID。 */
-    public String resolveTargetNodeId(Task task, String backType, String backNodeId, String paramTargetNodeId) {
-        BackTypeEnum type = BackTypeEnum.of(backType);
-        if (type == null) {
-            throw new IllegalStateException("不支持的驳回方式: " + backType);
-        }
-        return switch (type) {
-            case PREV -> resolvePrevNodeId(task);
-            case SPECIFIC -> {
-                if (backNodeId == null || backNodeId.isBlank()) {
-                    throw new IllegalStateException("该节点未配置固定驳回目标");
-                }
-                yield backNodeId;
-            }
-            case CHOOSE -> {
-                if (paramTargetNodeId == null || paramTargetNodeId.isBlank()) {
-                    throw new IllegalArgumentException("请选择驳回目标节点");
-                }
-                validateTargetNode(task.getProcessInstanceId(), paramTargetNodeId);
-                yield paramTargetNodeId;
-            }
-        };
-    }
-
-    /** 解析上一审批节点 ID。 */
-    public String resolvePrevNodeId(Task task) {
-        HistoricActivityInstance last = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(task.getProcessInstanceId())
-                .activityType("userTask")
-                .finishedBefore(task.getCreateTime())
-                .orderByHistoricActivityInstanceEndTime().desc()
-                .list().stream()
-                .filter(h -> !h.getActivityId().equals(task.getTaskDefinitionKey()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("没有可驳回的上级节点"));
-
-        return last.getActivityId();
-    }
-
-    /** 校验目标节点是否在当前流程历史中出现过。 */
-    public void validateTargetNode(String processInstanceId, String targetNodeId) {
-        long count = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .activityId(targetNodeId)
-                .activityType("userTask")
-                .count();
-        if (count == 0) {
-            throw new IllegalArgumentException("无效的回退目标节点: " + targetNodeId);
-        }
-    }
-
-
-    /** 按策略解析回退后任务的办理人。 */
-    public String resolveAssignee(Task newTask, String policy) {
-        BackAssigneePolicyEnum p = BackAssigneePolicyEnum.of(policy);
-        if (p == null) {
-            p = BackAssigneePolicyEnum.AUTO;
-        }
-
-        return switch (p) {
-            case LAST_HANDLER -> findLastHandler(newTask.getProcessInstanceId(), newTask.getTaskDefinitionKey());
-            case REASSIGN -> resolveByCandidateConfig(newTask);
-            case AUTO -> {
-                String last = findLastHandler(newTask.getProcessInstanceId(), newTask.getTaskDefinitionKey());
-                yield last != null ? last : resolveByCandidateConfig(newTask);
-            }
-        };
-    }
-
-    /** 查询目标节点最近一次的历史办理人。 */
-    public String findLastHandler(String flowableProcessInstanceId, String taskDefinitionKey) {
-        return historyService.createHistoricTaskInstanceQuery()
-                .processInstanceId(flowableProcessInstanceId)
-                .taskDefinitionKey(taskDefinitionKey)
-                .finished()
-                .orderByHistoricTaskInstanceEndTime().desc()
-                .list().stream()
-                .findFirst()
-                .map(HistoricTaskInstance::getAssignee)
-                .orElse(null);
-    }
-
-    /**
-     * 查询目标节点"上一轮"的处理人列表。
-     * 以当前任务的创建时间为分界，取目标节点在此之前完成的所有历史任务的去重处理人。
-     */
-    public List<String> findPrevRoundHandlers(String flowableProcessInstanceId, String taskDefinitionKey, Date beforeTime) {
-        return historyService.createHistoricTaskInstanceQuery()
-                .processInstanceId(flowableProcessInstanceId)
-                .taskDefinitionKey(taskDefinitionKey)
-                .finished()
-                .list().stream()
-                .filter(t -> t.getEndTime() != null && t.getEndTime().before(beforeTime))
-                .map(HistoricTaskInstance::getAssignee)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-    }
-
-    /** 按节点候选配置解析办理人，取第一个候选人。 */
-    public String resolveByCandidateConfig(Task task) {
-        BpmnModel model = repositoryService.getBpmnModel(task.getProcessDefinitionId());
-        if (model == null) return null;
-        if (!(model.getFlowElement(task.getTaskDefinitionKey()) instanceof UserTask ut)) return null;
-
-        ApprovalContext ctx = ApprovalContext.from(ut);
-        if (ctx == null) return null;
-
-        List<String> assignees = candidateResolver.resolve(ctx);
-        if (!ObjectUtils.isEmpty(assignees)) {
-            return assignees.get(0);
-        }
-        return null;
     }
 
 

@@ -4,37 +4,40 @@ import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.approval.ApprovalTypeHandler;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.task.service.delegate.DelegateTask;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.Resource;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 认领处理器（approvalType=4）。
- * 不预先指派 assignee，把候选池全部加入 candidateUser，等待用户主动 claim。
+ * 申请人自审（approvalType=0）。
+ * 从候选池中随机抽取 1 人直接设为 assignee。
  */
 @Slf4j
 @Component
-public class ClaimHandler implements ApprovalTypeHandler {
+public class ApplicantSelfHandler implements ApprovalTypeHandler {
 
     @Resource
     private CandidateResolver candidateResolver;
 
     @Override
     public ApprovalTypeEnum supports() {
-        return ApprovalTypeEnum.CLAIM;
+        return ApprovalTypeEnum.APPLICANT_SELF;
     }
 
     @Override
     public void applyOnCreate(DelegateTask task, ApprovalContext ctx) {
+
         List<String> pool = candidateResolver.resolve(ctx, task.getProcessInstanceId());
-        if (pool.isEmpty()) {
-            log.warn("[认领] 候选池为空, taskId={}", task.getId());
+            if (pool.isEmpty()) {
+            log.warn("[申请人自审] 候选池为空, taskId={}", task.getId());
             return;
         }
-        pool.forEach(task::addCandidateUser);
-        log.info("[认领] taskId={}, 候选人数={}", task.getId(), pool.size());
+        task.setAssignee(pool.get(0));
+        log.info("[申请人自审] taskId={}, 候选池大小={}, 指派={}", task.getId(), pool.size(), pool.get(0));
+
     }
 }
