@@ -54,6 +54,10 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
             if (!currentUserId.equals(instance.getCreateBy())) {
                 throw new IllegalStateException("无权操作他人草稿: " + param.getProcessInstanceId());
             }
+            instance.setTitle(param.getTitle())
+                    .setCode(codeGenerator.generate())
+                    .setUpdateTime(now);
+            processInstanceMapper.updateById(instance);
 
             processFormService.writeFormData(instance, param.getGlobalFormData());
 
@@ -83,7 +87,6 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
                 .set(ProcessInstance::getTitle, param.getTitle())
                 .set(ProcessInstance::getProcessInstanceId, instance.getProcessInstanceId())
                 .set(ProcessInstance::getProcessStatus, ProcessStatusEnum.ACTIVE.getStatus())
-                .set(ProcessInstance::getCode, codeGenerator.generate())
                 .set(ProcessInstance::getUpdateTime, now));
 
 //        // 创建表单实例并写入数据

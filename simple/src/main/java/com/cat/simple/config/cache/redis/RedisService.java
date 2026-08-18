@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,8 @@ public class RedisService {
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate; // 脚本专用：参数按纯字符串序列化，避免 JSON 加引号
     @Resource
     private ObjectMapper objectMapper; // ✅ 使用 Spring Boot 自动配置的实例
 
@@ -74,7 +77,7 @@ public class RedisService {
      * 自增并在首次（值为 1 时）设置过期时间，INCR 与 EXPIRE 通过 Lua 脚本原子执行
      */
     public long incr(String key, long expire){
-        Long seq = redisTemplate.execute(INCR_WITH_EXPIRE_SCRIPT,
+        Long seq = stringRedisTemplate.execute(INCR_WITH_EXPIRE_SCRIPT,
                 Collections.singletonList(key), String.valueOf(expire));
         return seq == null ? 0L : seq;
     }
