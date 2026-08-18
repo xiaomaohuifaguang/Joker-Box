@@ -384,6 +384,7 @@ public class FlowableUtils {
 
     private void setUserTaskExtensionElements(UserTask userTask, Map<String, Object> data) {
         initExtensionElementFilterNull(userTask, APPROVAL_TYPE.getCode(), String.valueOf(data.get(APPROVAL_TYPE.getCode())), APPROVAL_TYPE.getDescription());
+        initExtensionElementFilterNull(userTask, AUTO_APPROVE_IF_SELF.getCode(), String.valueOf(data.get(AUTO_APPROVE_IF_SELF.getCode())), AUTO_APPROVE_IF_SELF.getDescription());
         initExtensionElementFilterNull(userTask, CANDIDATE_USERS.getCode(), String.valueOf(data.get(CANDIDATE_USERS.getCode())), CANDIDATE_USERS.getDescription());
         initExtensionElementFilterNull(userTask, CANDIDATE_ROLES.getCode(), String.valueOf(data.get(CANDIDATE_ROLES.getCode())), CANDIDATE_ROLES.getDescription());
         initExtensionElementFilterNull(userTask, CANDIDATE_GROUPS.getCode(), String.valueOf(data.get(CANDIDATE_GROUPS.getCode())), CANDIDATE_GROUPS.getDescription());

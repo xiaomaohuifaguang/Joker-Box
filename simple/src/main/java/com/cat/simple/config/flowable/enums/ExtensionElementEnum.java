@@ -11,6 +11,7 @@ import lombok.Getter;
 public enum ExtensionElementEnum {
 
     APPROVAL_TYPE("approvalType", "审批类型"),
+    AUTO_APPROVE_IF_SELF("autoApproveIfSelf", "是否开启自审批自动通过"),
     CANDIDATE_USERS("candidateUsers", "候选用户"),
     CANDIDATE_ROLES("candidateRoles", "候选角色"),
     CANDIDATE_GROUPS("candidateGroups", "候选组"),

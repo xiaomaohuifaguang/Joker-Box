@@ -16,6 +16,7 @@ import static com.cat.simple.config.flowable.enums.ExtensionElementEnum.*;
  */
 public record ApprovalContext(
         ApprovalTypeEnum type,
+        String autoApproveIfSelf,
         List<String> candidateUsers,
         List<String> candidateRoles,
         List<String> candidateGroups,
@@ -49,6 +50,7 @@ public record ApprovalContext(
         }
         return new ApprovalContext(
                 type,
+                readText(map, AUTO_APPROVE_IF_SELF.getCode()),
                 splitCsv(readText(map, CANDIDATE_USERS.getCode())),
                 splitCsv(readText(map, CANDIDATE_ROLES.getCode())),
                 splitCsv(readText(map, CANDIDATE_GROUPS.getCode())),
