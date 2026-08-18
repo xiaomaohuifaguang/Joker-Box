@@ -12,6 +12,7 @@ public enum HandleTypeEnum {
 
     APPLY("apply","申请"),
     PASS("pass","通过"),
+    AUTO_PASS("auto_pass","自动通过"),
     REJECT("reject","拒绝"),
     TRANSFER("transfter","转办"),
     DELEGATE("delegate","委派"),

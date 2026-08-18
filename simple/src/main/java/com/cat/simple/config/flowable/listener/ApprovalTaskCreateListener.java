@@ -4,6 +4,8 @@ package com.cat.simple.config.flowable.listener;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.approval.ApprovalTypeHandler;
+import com.cat.simple.config.flowable.candidate.CandidateResolver;
+import com.cat.simple.process.service.ProcessInstanceService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +15,9 @@ import org.flowable.engine.RepositoryService;
 import org.flowable.task.service.delegate.DelegateTask;
 import org.flowable.task.service.delegate.TaskListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -32,6 +37,12 @@ public class ApprovalTaskCreateListener implements TaskListener {
 
     @Resource
     private RepositoryService repositoryService;
+
+    @Resource
+    private CandidateResolver candidateResolver;
+
+    @Resource
+    private ProcessInstanceService processInstanceService;
 
     private Map<ApprovalTypeEnum, ApprovalTypeHandler> handlerMap;
 
@@ -61,6 +72,45 @@ public class ApprovalTaskCreateListener implements TaskListener {
             } else {
                 handler.applyOnCreate(delegateTask, ctx);
             }
+            maybeAutoApprove(delegateTask, ctx);
+        }
+    }
+
+    /**
+     * 节点配置 autoApproveIfSelf=1 且任务办理人与申请人一致时，登记事务提交后的自动通过。
+     * 不能在 create 事件里直接 complete（任务尚未落库、且无登录上下文），
+     * 故延迟到当前事务提交后由 ProcessInstanceService.autoPass 在新事务中执行。
+     */
+    private void maybeAutoApprove(DelegateTask delegateTask, ApprovalContext ctx) {
+        if (!"1".equals(ctx.autoApproveIfSelf())) {
+            return;
+        }
+        String assignee = delegateTask.getAssignee();
+        if (!StringUtils.hasText(assignee)) {
+            return;
+        }
+        String applicant = candidateResolver.findApplicant(delegateTask.getProcessInstanceId());
+        if (!assignee.equals(applicant)) {
+            return;
+        }
+        String taskId = delegateTask.getId();
+        log.info("[自动通过] 命中 autoApproveIfSelf, taskId={}, assignee={}", taskId, assignee);
+        Runnable autoPass = () -> {
+            try {
+                processInstanceService.autoPass(taskId);
+            } catch (Exception e) {
+                log.error("[自动通过] 执行失败, taskId={}，任务保持待办", taskId, e);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    autoPass.run();
+                }
+            });
+        } else {
+            autoPass.run();
         }
     }
 

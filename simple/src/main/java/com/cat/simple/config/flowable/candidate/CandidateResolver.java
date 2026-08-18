@@ -110,15 +110,11 @@ public class CandidateResolver {
     public List<String> resolve(ApprovalContext ctx, String processInstanceId) {
 
         if(ctx.type().equals(ApprovalTypeEnum.APPLICANT_SELF) && StringUtils.hasText(processInstanceId)){
-
-            ProcessInstance processInstance = runtimeService.createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult();
-            String businessKey = processInstance.getBusinessKey();
-
-            com.cat.common.entity.process.ProcessInstance catProcessInstance = processInstanceMapper.selectInfoById(Integer.valueOf(businessKey));
-
-            String createBy = catProcessInstance.getCreateBy();
-
-            return List.of(createBy);
+            String applicant = findApplicant(processInstanceId);
+            if (applicant == null) {
+                throw new IllegalStateException("无法解析流程申请人, processInstanceId=" + processInstanceId);
+            }
+            return List.of(applicant);
         }
 
 
@@ -156,6 +152,23 @@ public class CandidateResolver {
         }
 
         return result;
+    }
+
+    /**
+     * 解析流程申请人：Flowable 实例 → businessKey → 业务实例 createBy。
+     *
+     * @param processInstanceId Flowable 流程实例 ID
+     * @return 申请人用户 ID；实例缺失时返回 {@code null}
+     */
+    public String findApplicant(String processInstanceId) {
+        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+                .processInstanceId(processInstanceId).singleResult();
+        if (processInstance == null || !StringUtils.hasText(processInstance.getBusinessKey())) {
+            return null;
+        }
+        com.cat.common.entity.process.ProcessInstance catProcessInstance =
+                processInstanceMapper.selectInfoById(Integer.valueOf(processInstance.getBusinessKey()));
+        return catProcessInstance == null ? null : catProcessInstance.getCreateBy();
     }
 
     /**

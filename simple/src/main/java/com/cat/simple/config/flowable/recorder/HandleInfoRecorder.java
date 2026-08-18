@@ -69,6 +69,21 @@ public class HandleInfoRecorder {
     }
 
     /**
+     * 记录自动通过动作（审批人与申请人相同，系统免审）。
+     * 处理人取任务 assignee（触发时已校验与申请人一致），不依赖登录上下文。
+     */
+    public void recordAutoPass(ProcessInstance instance, Task task) {
+        Integer round = resolveRound(instance.getId(), task);
+        insert(buildBase(instance, task.getAssignee())
+                .setTaskId(task.getId())
+                .setTaskName(task.getName())
+                .setTaskDefinitionKey(task.getTaskDefinitionKey())
+                .setHandleType(HandleTypeEnum.AUTO_PASS.getCode())
+                .setRemark(HandleTypeEnum.AUTO_PASS.getName() + "（审批人与申请人相同）")
+                .setRound(round));
+    }
+
+    /**
      * 记录任务拒绝动作。
      */
     public void recordReject(ProcessHandleParam param, Task task) {

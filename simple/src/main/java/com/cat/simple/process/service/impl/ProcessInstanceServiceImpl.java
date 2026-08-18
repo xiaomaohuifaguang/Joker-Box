@@ -258,6 +258,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     }
 
     @Override
+    public void autoPass(String taskId) {
+        commandBus.execute(new AutoPassTaskCommand(taskId));
+    }
+
+    @Override
     public void reject(ProcessHandleParam param) {
         commandBus.execute(new RejectTaskCommand(param));
     }

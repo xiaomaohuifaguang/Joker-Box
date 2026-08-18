@@ -73,6 +73,16 @@ public interface ProcessInstanceService {
     void pass(ProcessHandleParam param);
 
     /**
+     * 自动通过（系统触发，无登录上下文）
+     * 节点配置 autoApproveIfSelf=1 且任务办理人与申请人一致时，
+     * 由任务创建监听器在事务提交后调用，完成任务并记录 auto_pass 到
+     * {@link com.cat.common.entity.process.ProcessHandleInfo}。
+     *
+     * @param taskId Flowable任务id
+     */
+    void autoPass(String taskId);
+
+    /**
      * 审批拒绝
      * 验证当前用户是否为指定任务的办理人, 若是则终止流程并记录到 {@link com.cat.common.entity.process.ProcessHandleInfo}。
      *

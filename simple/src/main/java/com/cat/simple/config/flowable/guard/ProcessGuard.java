@@ -124,4 +124,10 @@ public class ProcessGuard {
                 new LambdaQueryWrapper<ProcessInstance>()
                         .eq(ProcessInstance::getProcessInstanceId, flowableProcessInstanceId));
     }
+
+    public ProcessInstance selectByFlowableBusinessKey(String businessKey) {
+        return processInstanceMapper.selectOne(
+                new LambdaQueryWrapper<ProcessInstance>()
+                        .eq(ProcessInstance::getId, businessKey));
+    }
 }
