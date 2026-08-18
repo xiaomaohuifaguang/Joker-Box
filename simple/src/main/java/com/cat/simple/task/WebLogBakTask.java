@@ -17,8 +17,8 @@ public class WebLogBakTask {
     @Resource
     private WebLogMapper webLogMapper;
 
-//    @Scheduled(cron = "0 0 23 * * ?")
-    @Scheduled(initialDelay = 10, fixedDelay = 365 * 24 * 60 * 60, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(cron = "0 0 23 * * ?")
+//    @Scheduled(initialDelay = 10, fixedDelay = 365 * 24 * 60 * 60, timeUnit = TimeUnit.SECONDS)
     @SchedulerLock(name = "WebLogBakTask.bak", lockAtMostFor = "30m")
     public void bak() {
         String formatStrByLocalDate = DateTimeUtils.getFormatStrByLocalDate(DateTimeUtils.getLocalDateByDay(-1), DateTimeUtils.DATE_FORMAT_Y_M_D);
