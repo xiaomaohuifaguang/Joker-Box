@@ -65,6 +65,7 @@
         <opensearch.version>3.9.0</opensearch.version>
 <!--        <rocketmq.version>5.5.0</rocketmq.version>-->
         <rocketmq-spring.version>2.3.6</rocketmq-spring.version>
+        <shedlock-spring.version>7.8.0</shedlock-spring.version>
     </properties>
 
     <!-- springboot 版本 -->
@@ -264,6 +265,17 @@
                 <groupId>org.apache.rocketmq</groupId>
                 <artifactId>rocketmq-spring-boot-starter</artifactId>
                 <version>${rocketmq-spring.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.javacrumbs.shedlock</groupId>
+                <artifactId>shedlock-spring</artifactId>
+                <version>${shedlock-spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.javacrumbs.shedlock</groupId>
+                <artifactId>shedlock-provider-redis-spring</artifactId>
+                <version>${shedlock-spring.version}</version>
             </dependency>
 
 

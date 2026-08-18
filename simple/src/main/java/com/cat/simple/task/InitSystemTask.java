@@ -1,27 +1,16 @@
 package com.cat.simple.task;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.cat.common.entity.auth.Role;
 import com.cat.common.entity.auth.User;
 import com.cat.common.utils.CryptoUtils;
 import com.cat.simple.system.mapper.RoleMapper;
 import com.cat.simple.system.mapper.UserMapper;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,7 +44,7 @@ public class InitSystemTask {
     /**
      * 人员权限初始化
      */
-    @PostConstruct
+//    @PostConstruct
     private void initAuth(){
 
         // 初始化 系统 查看是否拥有系统运行必要 用户及角色

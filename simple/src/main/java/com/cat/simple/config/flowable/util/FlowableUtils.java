@@ -549,23 +549,6 @@ public class FlowableUtils {
     }
 
 
-//    @PostConstruct
-    private void clear(){
-        List<org.flowable.engine.runtime.ProcessInstance> processInstances = runtimeService.createProcessInstanceQuery().list();
-        for (ProcessInstance instance : processInstances) {
-            runtimeService.deleteProcessInstance(instance.getId(), "清空测试数据");
-        }
-        List<HistoricProcessInstance> historicInstances = historyService.createHistoricProcessInstanceQuery().list();
-        for (HistoricProcessInstance historicInstance : historicInstances) {
-            historyService.deleteHistoricProcessInstance(historicInstance.getId());
-        }
-        List<Deployment> deployments = repositoryService.createDeploymentQuery().list();
-        for (Deployment deployment : deployments) {
-            // true 表示级联删除，同时清理相关的流程实例和历史记录
-            repositoryService.deleteDeployment(deployment.getId(), true);
-        }
-    }
-
     public StartEvent getStartEvent(String processKey, String version) {
         // 1. 通过 Key 和 Version 精确查询流程定义
         org.flowable.engine.repository.ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()

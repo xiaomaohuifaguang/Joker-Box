@@ -4,14 +4,10 @@ import com.cat.common.entity.CONSTANTS;
 import com.cat.common.entity.auth.RegisterUserInfo;
 import com.cat.common.utils.who.WhoUtils;
 import com.cat.simple.system.service.UserService;
-import freemarker.template.TemplateException;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
-import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 
 @Component
 @Slf4j
@@ -21,7 +17,7 @@ public class UserRegisterTask {
     private UserService userService;
 
 
-    @PostConstruct
+//    @PostConstruct
     void init(){
         log.info("UserRegisterTask init");
 
