@@ -107,7 +107,8 @@ public class RoleController {
     @RequestMapping(value = "/allow", method = RequestMethod.POST)
     public HttpResult<?> allow(@RequestBody List<String> userRoleIds,@RequestParam("server") String server, @RequestParam("path") String path){
         boolean allow = roleService.allow(userRoleIds, server, path);
-        return HttpResult.back(allow ? HttpResultStatus.SUCCESS : HttpResultStatus.ERROR.setMsg("角色不在范伟内"));
+        return allow ? HttpResult.back(HttpResultStatus.SUCCESS)
+                : HttpResult.back(HttpResultStatus.ERROR).setMsg("角色不在范围内");
     }
 
     @Operation(summary = "角色选择器")

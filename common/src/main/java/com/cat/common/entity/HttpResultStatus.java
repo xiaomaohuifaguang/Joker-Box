@@ -25,12 +25,7 @@ public enum HttpResultStatus {
     }
 
     private final long code;
-    private String msg;
-
-    public HttpResultStatus setMsg(String msg) {
-        this.msg = msg;
-        return this;
-    }
+    private final String msg;
 
     public long code() {
         return this.code;
