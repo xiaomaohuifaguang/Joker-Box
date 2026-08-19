@@ -8,6 +8,7 @@ import com.cat.common.entity.SelectOption;
 import com.cat.common.entity.process.*;
 import com.cat.common.entity.process.constants.FormBindType;
 import com.cat.common.utils.UUIDUtils;
+import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.util.FlowableUtils;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.process.mapper.ProcessDefinitionBytearrayMapper;
@@ -24,9 +25,11 @@ import com.cat.simple.process.service.ProcessDefinitionService;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.bpmn.model.StartEvent;
+import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.RepositoryService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Document;
@@ -565,6 +568,18 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), processDefinition.getVersion());
         TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeId(processDefinition.getId(), processDefinition.getVersion(), startEvent.getId());
         processDefinition.setStartForm(taskFormVO);
+
+        List<UserTask> nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(), startEvent.getId());
+        if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway) && nextUserTasksSkipGateway.size() == 1 && nextUserTasksSkipGateway.get(0).getId().equals("applyNode")){
+            nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(), nextUserTasksSkipGateway.get(0).getId());
+        }
+        if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway)){
+            for (UserTask userTask : nextUserTasksSkipGateway) {
+                ApprovalContext from = ApprovalContext.from(userTask);
+            }
+        }
+
+
 
         return processDefinition;
     }

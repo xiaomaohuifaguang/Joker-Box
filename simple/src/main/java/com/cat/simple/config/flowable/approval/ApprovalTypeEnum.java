@@ -22,7 +22,10 @@ public enum ApprovalTypeEnum {
     /** 认领：候选人均可 claim，不预先指派 */
     CLAIM(4, "认领"),
     RANDOM_COUNTERSIGN(5, "随机多人会签"),
-    RANDOM_OR_SIGN(6, "随机多人或签");
+    RANDOM_OR_SIGN(6, "随机多人或签"),
+    CHOOSE(7, "上一节点选择1人"),
+    CHOOSE_COUNTERSIGN(8, "上一节点选择多人会签"),
+    CHOOSE_OR_SIGN(9, "上一节点选择多人或签");
 
     /** 数据库存储值 */
     private final int code;

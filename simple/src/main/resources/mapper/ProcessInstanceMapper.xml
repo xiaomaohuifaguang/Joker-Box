@@ -60,7 +60,7 @@
                     ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                WHERE task.ASSIGNEE_ = #{param.userId}
+                WHERE task.ASSIGNEE_ = #{param.userId} and task.TASK_DEF_KEY_  &lt;&gt; 'applyNode'
                 <if test="param.search != null and param.search != ''">
                     AND (
                         cpi.title LIKE CONCAT('%', #{param.search}, '%')
@@ -85,7 +85,7 @@
                     ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                WHERE task.ASSIGNEE_ IS NULL
+                WHERE task.ASSIGNEE_ IS NULL AND task.TASK_DEF_KEY_  &lt;&gt; 'applyNode'
                 <if test="param.search != null and param.search != ''">
                     AND (
                         cpi.title LIKE CONCAT('%', #{param.search}, '%')
@@ -108,7 +108,7 @@
                     SELECT PROC_INST_ID_, MAX(END_TIME_) AS handle_time
                     FROM ACT_HI_TASKINST
                     WHERE ASSIGNEE_ = #{param.userId}
-                      AND END_TIME_ IS NOT NULL
+                      AND END_TIME_ IS NOT NULL AND TASK_DEF_KEY_ &lt;&gt; 'applyNode'
                       <if test="param.startTime != null and param.startTime != ''">
                           AND START_TIME_ &gt;= #{param.startTime}
                       </if>
@@ -146,6 +146,26 @@
                   AND cpi.create_by = #{param.userId}
                 <include refid="commonFilters"/>
                 ORDER BY cpi.update_time DESC
+            </when>
+
+            <when test='param.type != null and param.type == "6"'>
+                SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName, cpd.process_name processDefinitionName
+                FROM ACT_RU_TASK task
+                INNER JOIN cat_process_instance cpi
+                ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
+                INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
+                INNER JOIN cat_user cu ON cpi.create_by = cu.id
+                WHERE task.ASSIGNEE_ = #{param.userId} and task.TASK_DEF_KEY_  = 'applyNode'
+                <if test="param.search != null and param.search != ''">
+                    AND (
+                    cpi.title LIKE CONCAT('%', #{param.search}, '%')
+                    OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
+                    )
+                </if>
+                <if test="param.processDefinitionId != null">
+                    AND cpi.process_definition_id = #{param.processDefinitionId}
+                </if>
+                ORDER BY task.CREATE_TIME_ DESC
             </when>
 
             <!-- -1 非法/默认：返回空集 -->

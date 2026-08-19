@@ -52,9 +52,9 @@ public class ApprovalUserTaskParseHandler implements BpmnParseHandler {
         registerCreateListener(userTask);
 
         switch (ctx.type()) {
-            case COUNTERSIGN, RANDOM_COUNTERSIGN -> setupMultiInstance(userTask, completionByPassRate(ctx.passRate()));
-            case OR_SIGN, RANDOM_OR_SIGN -> setupMultiInstance(userTask, "${nrOfCompletedInstances >= 1}");
-            case RANDOM, APPLICANT_SELF         -> userTask.setAssignee(SINGLE_ASSIGNEE_EXPRESSION);
+            case COUNTERSIGN, RANDOM_COUNTERSIGN, CHOOSE_COUNTERSIGN -> setupMultiInstance(userTask, completionByPassRate(ctx.passRate()));
+            case OR_SIGN, RANDOM_OR_SIGN, CHOOSE_OR_SIGN -> setupMultiInstance(userTask, "${nrOfCompletedInstances >= 1}");
+            case RANDOM, APPLICANT_SELF, CHOOSE         -> userTask.setAssignee(SINGLE_ASSIGNEE_EXPRESSION);
             case CLAIM                          -> userTask.setCandidateUsers(List.of(CANDIDATE_USERS_EXPRESSION));
             default -> { /* RANDOM / CLAIM 走运行期监听器 */ }
         }

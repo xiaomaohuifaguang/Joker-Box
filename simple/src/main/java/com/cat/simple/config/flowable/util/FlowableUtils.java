@@ -26,7 +26,6 @@ import org.flowable.engine.TaskService;
 import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.repository.Deployment;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.task.api.Task;
 import org.flowable.task.api.history.HistoricTaskInstance;
 import org.jspecify.annotations.NonNull;
@@ -584,5 +583,55 @@ public class FlowableUtils {
 
         throw new IllegalStateException("流程定义中未找到开始节点 (StartEvent)，请检查流程设计");
     }
+
+    public List<UserTask> findNextUserTasksSkipGateway(String processKey, String version, String currentNodeId){
+        org.flowable.engine.repository.ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey(processKey)
+                .processDefinitionVersion(Integer.valueOf(version))
+                .singleResult();
+        BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinition.getId());
+        Process mainProcess = bpmnModel.getMainProcess();
+        FlowElement currentElement = mainProcess.getFlowElement(currentNodeId);
+        if (!(currentElement instanceof FlowNode currentNode)) {
+            throw new IllegalArgumentException("节点不存在或非FlowNode: " + currentNodeId);
+        }
+
+        List<UserTask> result = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+
+        for (SequenceFlow sf : currentNode.getOutgoingFlows()) {
+            collectNextUserTasks(mainProcess, sf.getTargetRef(), result, visited);
+        }
+
+        return result;
+    }
+
+    private void collectNextUserTasks(Process process, String elementId, List<UserTask> result, Set<String> visited) {
+        // 防死循环
+        if (!visited.add(elementId)) {
+            return;
+        }
+
+        FlowElement element = process.getFlowElement(elementId);
+        if (element == null) {
+            return;
+        }
+
+        // ✅ 命中 UserTask → 收集并停止该分支
+        if (element instanceof UserTask) {
+            result.add((UserTask) element);
+            return;
+        }
+
+        // ✅ 是 FlowNode（网关 / ServiceTask / 中间事件等）→ 沿出线继续
+        if (element instanceof FlowNode flowNode) {
+
+            for (SequenceFlow sf : flowNode.getOutgoingFlows()) {
+                collectNextUserTasks(process, sf.getTargetRef(), result, visited);
+            }
+        }
+
+    }
+
 
 }

@@ -24,7 +24,7 @@ public class ProcessInstancePageParam extends PageParam implements Serializable 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "查询类型 0 草稿 1 我发起的(进行中) 2 待办 3 待认领 4 我已办的 5 我发起的(全部)")
+    @Schema(description = "查询类型 0 草稿 1 我发起的(进行中) 2 审批待办 3 审批待认领 4 审批已办 5 我发起的(全部) 6 申请人待办")
     private String type;
 
     @Schema(description = "用户id（服务端自动填充）")
@@ -45,7 +45,7 @@ public class ProcessInstancePageParam extends PageParam implements Serializable 
     public void init() {
         type = Objects.isNull(type) ? "" : type;
         switch (type) {
-            case "0", "1", "2", "3", "4", "5":
+            case "0", "1", "2", "3", "4", "5", "6":
                 break;
             default:
                 setType("-1");

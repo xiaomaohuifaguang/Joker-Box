@@ -109,6 +109,10 @@ public class CandidateResolver {
      */
     public List<String> resolve(ApprovalContext ctx, String processInstanceId) {
 
+        if(1 == 1){
+            throw new IllegalStateException("就想报个小错");
+        }
+
         if(ctx.type().equals(ApprovalTypeEnum.APPLICANT_SELF) && StringUtils.hasText(processInstanceId)){
             String applicant = findApplicant(processInstanceId);
             if (applicant == null) {
