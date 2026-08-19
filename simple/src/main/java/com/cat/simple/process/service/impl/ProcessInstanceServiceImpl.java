@@ -2,8 +2,11 @@ package com.cat.simple.process.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.Page;
+import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.*;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
+import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
+import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.command.*;
 import com.cat.simple.config.flowable.enums.BackTypeEnum;
 import com.cat.simple.config.flowable.enums.HandleTypeEnum;
@@ -18,9 +21,11 @@ import com.cat.simple.process.service.ProcessFormService;
 import com.cat.simple.system.mapper.UserMapper;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.model.StartEvent;
+import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -40,6 +45,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private com.cat.simple.process.service.ProcessDefinitionService processDefinitionService;
     @Resource private UserMapper userMapper;
     @Resource private ProcessDefinitionMapper processDefinitionMapper;
+    @Resource private CandidateResolver candidateResolver;
 
     @Override
     public ProcessInstance start(ProcessHandleParam param) {
@@ -103,6 +109,24 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 //                        task.getTaskDefinitionKey(), editable);
 //                instance.setTaskForm(taskForm);
             }
+
+
+            List<UserTask> nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(),
+                    task.getTaskDefinitionKey());
+            List<NextUserTaskInfo> nextUserTaskInfos = new ArrayList<>();
+            if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway)){
+                for (UserTask userTask : nextUserTasksSkipGateway) {
+                    ApprovalContext ctx = ApprovalContext.from(userTask);
+                    NextUserTaskInfo nextUserTask = new NextUserTaskInfo(ctx.type().getCode(), userTask.getId(), userTask.getName());
+                    if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
+                        LinkedHashSet<User> usersByCtxWithoutApplicant = candidateResolver.getUsersByCtxWithoutApplicant(ctx);
+                        nextUserTask.setCandidateUsers(usersByCtxWithoutApplicant);
+                    }
+                    nextUserTaskInfos.add(nextUserTask);
+                }
+            }
+            instance.setNextUserTaskInfos(nextUserTaskInfos);
+
         } else if (ProcessStatusEnum.DRAFT.getStatus().equals(instance.getProcessStatus())) {
             StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
             TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeIdWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId(), startEvent.getId());
@@ -116,6 +140,27 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 //                        startNodeId, true);
 //                instance.setTaskForm(draftForm);
 //            }
+
+            List<UserTask> nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(),
+                    startEvent.getId());
+            if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway) && nextUserTasksSkipGateway.size() == 1 && nextUserTasksSkipGateway.get(0).getId().equals("applyNode")){
+                nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(),
+                        nextUserTasksSkipGateway.get(0).getId());
+            }
+            List<NextUserTaskInfo> nextUserTaskInfos = new ArrayList<>();
+            if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway)){
+                for (UserTask userTask : nextUserTasksSkipGateway) {
+                    ApprovalContext ctx = ApprovalContext.from(userTask);
+                    NextUserTaskInfo nextUserTask = new NextUserTaskInfo(ctx.type().getCode(), userTask.getId(), userTask.getName());
+                    if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
+                        LinkedHashSet<User> usersByCtxWithoutApplicant = candidateResolver.getUsersByCtxWithoutApplicant(ctx);
+                        nextUserTask.setCandidateUsers(usersByCtxWithoutApplicant);
+                    }
+                    nextUserTaskInfos.add(nextUserTask);
+                }
+            }
+            instance.setNextUserTaskInfos(nextUserTaskInfos);
+
         }else {
             StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
             TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeIdWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId(), startEvent.getId());

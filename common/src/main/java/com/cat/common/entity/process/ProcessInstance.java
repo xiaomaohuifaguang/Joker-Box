@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 import com.cat.common.entity.dynamicForm.DynamicFormField;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -27,6 +28,7 @@ import java.util.List;
 @Accessors(chain = true)
 @TableName("cat_process_instance")
 @Schema(name = "ProcessInstance", description = "流程实例表")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProcessInstance implements Serializable {
 
 
@@ -109,5 +111,9 @@ public class ProcessInstance implements Serializable {
     @Schema(description = "分页列表展示字段")
     @TableField(exist = false)
     private List<DynamicFormField> listShowFormFields;
+
+    @Schema(description = "可能的下一个用户任务")
+    @TableField(exist = false)
+    private List<NextUserTaskInfo> nextUserTaskInfos;
 
 }

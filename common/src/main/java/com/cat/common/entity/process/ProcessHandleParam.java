@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,5 +55,10 @@ public class ProcessHandleParam implements Serializable {
 
     @Schema(description = "全局表单数据")
     private Map<String, Object> globalFormData;
+
+    @Schema(description = "需选择的处理人节点的候选人已选择人员")
+    private Map<String, List<Integer>> nodeCandidateUsersChoose;
+
+
 
 }

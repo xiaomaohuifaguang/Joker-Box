@@ -6,11 +6,15 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serial;
+import java.util.Objects;
+
 /**
  * <p>
  * 用户表
@@ -25,6 +29,7 @@ import java.io.Serial;
 @Accessors(chain = true)
 @TableName("cat_user")
 @Schema(name = "User", description = "用户表")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class User implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -73,4 +78,14 @@ public class User implements Serializable {
     @TableField(exist = false)
     private UserExtend userExtend;
 
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof User user)) return false;
+        return Objects.equals(id, user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }

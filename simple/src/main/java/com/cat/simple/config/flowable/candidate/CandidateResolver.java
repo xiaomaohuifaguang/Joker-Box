@@ -1,5 +1,6 @@
 package com.cat.simple.config.flowable.candidate;
 
+import com.cat.common.entity.auth.User;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.process.mapper.ProcessInstanceMapper;
@@ -109,10 +110,6 @@ public class CandidateResolver {
      */
     public List<String> resolve(ApprovalContext ctx, String processInstanceId) {
 
-        if(1 == 1){
-            throw new IllegalStateException("就想报个小错");
-        }
-
         if(ctx.type().equals(ApprovalTypeEnum.APPLICANT_SELF) && StringUtils.hasText(processInstanceId)){
             String applicant = findApplicant(processInstanceId);
             if (applicant == null) {
@@ -122,20 +119,9 @@ public class CandidateResolver {
         }
 
 
-        Set<String> set = new LinkedHashSet<>();
-        if (!ObjectUtils.isEmpty(ctx.candidateUsers())) {
-            set.addAll(userMapper.selectListByIds(ctx.candidateUsers()).stream().map(u -> String.valueOf(u.getId())).collect(Collectors.toSet()));
-        }
-        if (!ObjectUtils.isEmpty(ctx.candidateRoles())) {
-            set.addAll(userMapper.selectListByRoles(ctx.candidateRoles()).stream().map(u -> String.valueOf(u.getId())).collect(Collectors.toSet()));
-        }
-        // TODO: 用户组 → 用户 展开
-        if (!ObjectUtils.isEmpty(ctx.candidateGroups())) {
-//            set.addAll(ctx.candidateGroups());
-        }
-        if (!ObjectUtils.isEmpty(ctx.candidateDepts())) {
-            set.addAll(userMapper.selectListByOrgs(ctx.candidateDepts()).stream().map(u -> String.valueOf(u.getId())).collect(Collectors.toSet()));
-        }
+        LinkedHashSet<User> usersByCtxWithoutApplicant = getUsersByCtxWithoutApplicant(ctx);
+        Set<String> set = usersByCtxWithoutApplicant.stream().map(u -> String.valueOf(u.getId())).collect(Collectors.toCollection(LinkedHashSet::new));
+
         List<String> result = new java.util.ArrayList<>(List.copyOf(set));
         if (result.isEmpty()) {
             throw new IllegalStateException("候选人解析结果为空，请检查流程配置");
@@ -155,7 +141,34 @@ public class CandidateResolver {
             return new ArrayList<>(strings);
         }
 
+        if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
+            throw new IllegalStateException("请选择合适的审批人");
+        }
+
+
         return result;
+    }
+
+
+    public LinkedHashSet<User> getUsersByCtxWithoutApplicant(ApprovalContext ctx){
+        LinkedHashSet<User> userList = new LinkedHashSet<>();
+        if (!ObjectUtils.isEmpty(ctx.candidateUsers())) {
+            List<User> users = userMapper.selectListByIds(ctx.candidateUsers());
+            userList.addAll(users);
+        }
+        if (!ObjectUtils.isEmpty(ctx.candidateRoles())) {
+            List<User> users = userMapper.selectListByRoles(ctx.candidateRoles());
+            userList.addAll(users);
+        }
+        // TODO: 用户组 → 用户 展开
+        if (!ObjectUtils.isEmpty(ctx.candidateGroups())) {
+//            set.addAll(ctx.candidateGroups());
+        }
+        if (!ObjectUtils.isEmpty(ctx.candidateDepts())) {
+            List<User> users = userMapper.selectListByOrgs(ctx.candidateDepts());
+            userList.addAll(users);
+        }
+        return userList;
     }
 
     /**

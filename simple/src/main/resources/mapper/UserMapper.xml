@@ -66,7 +66,7 @@
         where role_id = #{roleId}
     </select>
     <select id="selectListByRole" resultType="com.cat.common.entity.auth.User">
-        SELECT cu.*
+        SELECT cu.id, cu.nickname
         FROM cat_user cu
         INNER JOIN cat_user_role cur ON cu.id = cur.user_id
         <where>
@@ -75,7 +75,7 @@
         </where>
     </select>
     <select id="selectListByRoles" resultType="com.cat.common.entity.auth.User">
-        SELECT cu.*
+        SELECT cu.id, cu.nickname
         FROM cat_user cu
         INNER JOIN cat_user_role cur ON cu.id = cur.user_id
         <where>
@@ -89,7 +89,7 @@
         </where>
     </select>
     <select id="selectListByOrg" resultType="com.cat.common.entity.auth.User">
-        SELECT cu.*
+        SELECT cu.id, cu.nickname
         FROM cat_user cu
         INNER JOIN cat_org_user cou ON cu.id = cou.user_id
         <where>
@@ -98,7 +98,7 @@
         </where>
     </select>
     <select id="selectListByOrgs" resultType="com.cat.common.entity.auth.User">
-        SELECT cu.*
+        SELECT cu.id, cu.nickname
         FROM cat_user cu
         INNER JOIN cat_org_user cou ON cu.id = cou.user_id
         <where>
@@ -112,7 +112,7 @@
         </where>
     </select>
     <select id="selectListByIds" resultType="com.cat.common.entity.auth.User">
-        select * from cat_user
+        select id, nickname from cat_user
         <where>
             deleted = 0
             <if test="userIds == null or userIds.size() == 0">

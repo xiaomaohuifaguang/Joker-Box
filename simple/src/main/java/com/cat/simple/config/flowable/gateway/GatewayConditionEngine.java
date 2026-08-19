@@ -62,6 +62,8 @@ public class GatewayConditionEngine {
         return evaluateNode(ruleTree.get(0), globalFormData);
     }
 
+
+
     public List<ProcessGatewayConditionNode> loadRuleTree(Long conditionId) {
         List<ProcessGatewayConditionNode> nodes = nodeMapper.selectList(
                 new LambdaQueryWrapper<ProcessGatewayConditionNode>()

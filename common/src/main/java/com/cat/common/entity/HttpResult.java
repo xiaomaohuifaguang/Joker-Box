@@ -1,5 +1,6 @@
 package com.cat.common.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,6 +19,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 @Accessors(chain = true)
 @Schema(description = "响应")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class HttpResult<T> {
 
     @Schema(description = "状态码")

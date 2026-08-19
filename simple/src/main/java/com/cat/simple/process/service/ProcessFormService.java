@@ -36,5 +36,7 @@ public interface ProcessFormService {
 
     List<DynamicFormField> getGlobalFields(Integer processInstanceId);
 
+    List<DynamicFormField> getGlobalFieldsWithoutVal(Integer processDefinitionId, String processVersion);
+
 
 }

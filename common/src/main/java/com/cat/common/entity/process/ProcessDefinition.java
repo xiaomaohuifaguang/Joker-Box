@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.cat.common.entity.process.designer.RawData;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -29,6 +30,7 @@ import java.util.Map;
 @Accessors(chain = true)
 @TableName("cat_process_definition")
 @Schema(name = "ProcessDefinition", description = "流程定义信息表")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProcessDefinition implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -105,5 +107,10 @@ public class ProcessDefinition implements Serializable {
     @Schema(description = "发起流程时的表单模板配置")
     @TableField(exist = false)
     private TaskFormVO startForm;
+
+    @Schema(description = "可能的下一个用户任务")
+    @TableField(exist = false)
+    private List<NextUserTaskInfo> nextUserTaskInfos;
+
 
 }

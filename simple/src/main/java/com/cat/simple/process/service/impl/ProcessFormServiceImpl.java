@@ -216,6 +216,24 @@ public class ProcessFormServiceImpl implements ProcessFormService {
         return List.of();
     }
 
+    @Override
+    public List<DynamicFormField> getGlobalFieldsWithoutVal(Integer processDefinitionId, String processVersion) {
+        ProcessDefinitionForm globalBinding = processDefinitionFormMapper.selectOne(
+                new LambdaQueryWrapper<ProcessDefinitionForm>()
+                        .eq(ProcessDefinitionForm::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessDefinitionForm::getVersion, processVersion)
+                        .eq(ProcessDefinitionForm::getBindType, FormBindType.GLOBAL));
+        if(Objects.nonNull(globalBinding)){
+            return dynamicFormFieldMapper.selectList(
+                    new LambdaQueryWrapper<DynamicFormField>()
+                            .eq(DynamicFormField::getFormId, globalBinding.getFormId())
+                            .eq(DynamicFormField::getVersion, globalBinding.getFormVersion())
+                            .orderByAsc(DynamicFormField::getSort));
+        }
+
+        return List.of();
+    }
+
     private DynamicForm loadDynamicForm(String formId, String formVersion, List<ProcessNodeFieldPermission> permissions){
 
         boolean exists = dynamicFormPublishHistoryMapper.exists(new LambdaQueryWrapper<DynamicFormPublishHistory>()

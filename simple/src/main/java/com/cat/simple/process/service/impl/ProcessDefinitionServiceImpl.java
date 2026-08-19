@@ -5,10 +5,13 @@ import com.cat.common.entity.DTO;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.SelectOption;
+import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.*;
 import com.cat.common.entity.process.constants.FormBindType;
 import com.cat.common.utils.UUIDUtils;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
+import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
+import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.util.FlowableUtils;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.process.mapper.ProcessDefinitionBytearrayMapper;
@@ -70,6 +73,8 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     private GatewayConditionEngine gatewayConditionEngine;
     @Resource
     private GatewayConditionXmlInjector gatewayConditionXmlInjector;
+    @Resource
+    private CandidateResolver candidateResolver;
 
     @Resource
     private FlowableUtils flowableUtils;
@@ -569,16 +574,25 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeId(processDefinition.getId(), processDefinition.getVersion(), startEvent.getId());
         processDefinition.setStartForm(taskFormVO);
 
-        List<UserTask> nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(), startEvent.getId());
+        List<UserTask> nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(),
+                startEvent.getId());
         if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway) && nextUserTasksSkipGateway.size() == 1 && nextUserTasksSkipGateway.get(0).getId().equals("applyNode")){
-            nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(), nextUserTasksSkipGateway.get(0).getId());
+            nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(),
+                    nextUserTasksSkipGateway.get(0).getId());
         }
+        List<NextUserTaskInfo> nextUserTaskInfos = new ArrayList<>();
         if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway)){
             for (UserTask userTask : nextUserTasksSkipGateway) {
-                ApprovalContext from = ApprovalContext.from(userTask);
+                ApprovalContext ctx = ApprovalContext.from(userTask);
+                NextUserTaskInfo nextUserTask = new NextUserTaskInfo(ctx.type().getCode(), userTask.getId(), userTask.getName());
+                if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
+                    LinkedHashSet<User> usersByCtxWithoutApplicant = candidateResolver.getUsersByCtxWithoutApplicant(ctx);
+                    nextUserTask.setCandidateUsers(usersByCtxWithoutApplicant);
+                }
+                nextUserTaskInfos.add(nextUserTask);
             }
         }
-
+        processDefinition.setNextUserTaskInfos(nextUserTaskInfos);
 
 
         return processDefinition;

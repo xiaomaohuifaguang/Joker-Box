@@ -2,6 +2,7 @@ package com.cat.common.entity;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,6 +23,7 @@ import java.util.List;
 @NoArgsConstructor
 @Accessors(chain = true)
 @Schema(description = "分页")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Page<T> implements IPage<T> {
 
     @Schema(description = "记录")
