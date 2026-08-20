@@ -26,7 +26,6 @@ public class ChatMessage implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-
     @Schema(description = "id")
     @TableId(type = IdType.AUTO)
     private Integer id;

@@ -54,9 +54,24 @@ public class CandidateResolver {
             throw new IllegalStateException("activityId=" + execution.getCurrentActivityId() + " 缺少 approvalType");
         }
         List<String> pool = resolve(ctx, execution.getProcessInstanceId());
-        if (ctx.type() == ApprovalTypeEnum.RANDOM) {
+
+        if(ctx.type().equals(ApprovalTypeEnum.CHOOSE)){
+            Object variableLocal = execution.getVariable("choose_"+execution.getCurrentActivityId());
+            if (variableLocal instanceof List<?> list) {
+                List<Integer> chooseUsers = (List<Integer>) list;
+                String one = String.valueOf(chooseUsers.get(0));
+                if(!pool.contains(one)){
+                    throw new IllegalStateException("选择人不在候选人内");
+                }
+                return one;
+            }
+        }
+
+
+        if (ctx.type().equals(ApprovalTypeEnum.RANDOM)) {
             return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
         }
+
         // APPLICANT_SELF：resolve 已返回发起人单例
         return pool.get(0);
     }
@@ -92,6 +107,17 @@ public class CandidateResolver {
         }
 
         List<String> resolve = resolve(ctx, null);
+        if(ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN) ){
+            Object chooseUsersObject = execution.getVariable("choose_"+execution.getCurrentActivityId());
+            if (chooseUsersObject instanceof List<?> list) {
+                List<Integer> chooseUsers = (List<Integer>) list;
+                List<String> chooseUsersStrList = chooseUsers.stream()
+                        .map(String::valueOf)
+                        .toList();
+                execution.setVariable(cacheKey, chooseUsersStrList);
+                return chooseUsersStrList;
+            }
+        }
 
         execution.setVariable(cacheKey, resolve);
 
@@ -139,9 +165,9 @@ public class CandidateResolver {
             return new ArrayList<>(strings);
         }
 
-        if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
-            throw new IllegalStateException("请选择合适的审批人");
-        }
+//        if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
+//            throw new IllegalStateException("请选择合适的审批人");
+//        }
 
 
         return result;

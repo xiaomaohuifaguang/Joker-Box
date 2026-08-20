@@ -108,6 +108,17 @@ public class ProcessGuard {
         return definition;
     }
 
+    public ProcessDefinition assertDefinitionExistAndNoDraft(Integer definitionId) {
+        ProcessDefinition definition = processDefinitionMapper.selectById(definitionId);
+        if (definition == null) {
+            throw new IllegalArgumentException("流程定义不存在: " + definitionId);
+        }
+        if ("0".equals(definition.getStatus())) {
+            throw new IllegalStateException("流程定义未经发布: " + definitionId);
+        }
+        return definition;
+    }
+
     /** 按业务 ID 查询流程实例。 */
     public ProcessInstance getInstance(Integer id) {
         return processInstanceMapper.selectById(id);

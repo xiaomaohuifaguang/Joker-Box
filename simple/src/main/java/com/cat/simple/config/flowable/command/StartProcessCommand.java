@@ -1,11 +1,17 @@
 package com.cat.simple.config.flowable.command;
 
+import com.cat.common.entity.auth.User;
+import com.cat.common.entity.process.NextUserTaskInfo;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.simple.config.flowable.approval.ApprovalContext;
+import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
+import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.flowable.gateway.GatewayConditionEngine;
 import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
 import com.cat.simple.config.flowable.hook.context.StartContext;
+import com.cat.simple.config.flowable.util.FlowableUtils;
 import com.cat.simple.config.process.ProcessCodeGenerator;
 import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.Resource;
@@ -19,6 +25,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 启动流程命令，根据流程定义创建新的流程实例。
@@ -33,6 +40,8 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
     @Resource private com.cat.simple.process.service.ProcessDefinitionService processDefinitionService;
     @Resource private RepositoryService repositoryService;
     @Resource private GatewayConditionEngine gatewayConditionEngine;
+    @Resource private FlowableUtils flowableUtils;
+    @Resource private CandidateResolver candidateResolver;
 
     private final ProcessHandleParam param;
 
@@ -85,8 +94,43 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
 
         }
 
+        Map<String, Object> variables = new HashMap<>();
+
+        Map<String, List<Integer>> nodeCandidateUsersChoose = param.getNodeCandidateUsersChoose();
+
+        List<UserTask> startNextUserTasksSkipGateway = flowableUtils.findStartNextUserTasksSkipGateway(definition.getProcessKey(), instance.getProcessDefinitionVersion());
+
+        for (UserTask userTask : startNextUserTasksSkipGateway) {
+            ApprovalContext ctx = ApprovalContext.from(userTask);
+            if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
+                if(Objects.isNull(nodeCandidateUsersChoose)){
+                    throw new IllegalStateException("请选择处理人");
+                }
+                List<Integer> chooseUsers = nodeCandidateUsersChoose.get(userTask.getId());
+                List<Integer> chooseUsersFilterNull = chooseUsers.stream()
+                        .filter(Objects::nonNull)
+                        .toList();
+                if(CollectionUtils.isEmpty(chooseUsersFilterNull)){
+                    throw new IllegalStateException("请选择合适的处理人");
+                }
+                if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) && chooseUsersFilterNull.size() > 1){
+                    throw new IllegalStateException("请选择合适的处理人");
+                }
+                LinkedHashSet<User> usersByCtxWithoutApplicant = candidateResolver.getUsersByCtxWithoutApplicant(ctx);
+                List<Integer>  candidateUsers = usersByCtxWithoutApplicant.stream().map(User::getId).toList();
+                boolean hasInvalid = chooseUsersFilterNull.stream()
+                        .anyMatch(user -> !candidateUsers.contains(user));
+                if(hasInvalid){
+                    throw new IllegalStateException("请选择合适的处理人");
+                }
+                variables.put("choose_"+userTask.getId(), chooseUsersFilterNull);
+            }
+        }
+
+
         org.flowable.engine.runtime.ProcessInstance flowableInstance =
-                runtimeService.startProcessInstanceByKey(definition.getProcessKey(), String.valueOf(instance.getId()));
+                runtimeService.startProcessInstanceByKey(definition.getProcessKey(), String.valueOf(instance.getId()), variables);
+
         instance.setProcessInstanceId(flowableInstance.getProcessInstanceId());
 
         processInstanceMapper.update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ProcessInstance>()
@@ -96,16 +140,6 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
                 .set(ProcessInstance::getProcessInstanceId, instance.getProcessInstanceId())
                 .set(ProcessInstance::getProcessStatus, ProcessStatusEnum.ACTIVE.getStatus())
                 .set(ProcessInstance::getUpdateTime, now));
-
-//        // 创建表单实例并写入数据
-//        String startNodeId = processDefinitionService.resolveStartEventNodeId(param.getProcessDefinitionId());
-//        processFormService.createFormInstanceIfNeeded(instance.getId(), definition.getId(),
-//                definition.getVersion(), startNodeId);
-//        processFormService.writeFormData(instance.getId(), definition.getId(),
-//                definition.getVersion(), startNodeId,
-//                param.getNodeFormData(), param.getGlobalFormData(), false);
-
-//        processFormService.writeFormData(instance, param.getGlobalFormData());
 
         // 兜底：trivial 流程立即结束
         if (runtimeService.createProcessInstanceQuery()

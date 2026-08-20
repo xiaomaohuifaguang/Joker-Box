@@ -171,6 +171,10 @@ public class ProcessFormServiceImpl implements ProcessFormService {
 
     @Override
     public void writeFormData(ProcessInstance instance, Map<String, Object> formRawData) {
+        if(Objects.isNull(formRawData)){
+            return;
+        }
+
         FormData formData = new FormData();
 
         formData.setData(formRawData);

@@ -574,24 +574,8 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeId(processDefinition.getId(), processDefinition.getVersion(), startEvent.getId());
         processDefinition.setStartForm(taskFormVO);
 
-        List<UserTask> nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(),
-                startEvent.getId());
-        if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway) && nextUserTasksSkipGateway.size() == 1 && nextUserTasksSkipGateway.get(0).getId().equals("applyNode")){
-            nextUserTasksSkipGateway = flowableUtils.findNextUserTasksSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion(),
-                    nextUserTasksSkipGateway.get(0).getId());
-        }
-        List<NextUserTaskInfo> nextUserTaskInfos = new ArrayList<>();
-        if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway)){
-            for (UserTask userTask : nextUserTasksSkipGateway) {
-                ApprovalContext ctx = ApprovalContext.from(userTask);
-                NextUserTaskInfo nextUserTask = new NextUserTaskInfo(ctx.type().getCode(), userTask.getId(), userTask.getName());
-                if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
-                    LinkedHashSet<User> usersByCtxWithoutApplicant = candidateResolver.getUsersByCtxWithoutApplicant(ctx);
-                    nextUserTask.setCandidateUsers(usersByCtxWithoutApplicant);
-                }
-                nextUserTaskInfos.add(nextUserTask);
-            }
-        }
+
+        List<NextUserTaskInfo> nextUserTaskInfos = flowableUtils.findStartNextUserTaskInfosSkipGateway(processDefinition.getProcessKey(), processDefinition.getVersion());
         processDefinition.setNextUserTaskInfos(nextUserTaskInfos);
 
 

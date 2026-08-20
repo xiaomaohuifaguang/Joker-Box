@@ -2,6 +2,7 @@ package com.cat.simple.config.flowable.util;
 
 import com.alibaba.fastjson.JSON;
 import com.cat.common.entity.DTO;
+import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.*;
 import com.cat.common.entity.process.constants.ConditionTypeConstants;
 import com.cat.common.entity.process.constants.FieldPermissionConstants;
@@ -11,6 +12,7 @@ import com.cat.common.entity.process.designer.Node;
 import com.cat.common.entity.process.designer.RawData;
 import com.cat.common.utils.JSONUtils;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
+import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.enums.BackAssigneePolicyEnum;
 import com.cat.simple.config.flowable.enums.BackTypeEnum;
@@ -582,6 +584,48 @@ public class FlowableUtils {
 //        }
 
         throw new IllegalStateException("流程定义中未找到开始节点 (StartEvent)，请检查流程设计");
+    }
+
+    public List<NextUserTaskInfo> findStartNextUserTaskInfosSkipGateway(String processKey, String version){
+        List<UserTask> nextUserTasksSkipGateway = findStartNextUserTasksSkipGateway(processKey, version);
+
+        return makeNextUserTaskInfos(nextUserTasksSkipGateway);
+    }
+
+    public List<NextUserTaskInfo> findNextUserTaskInfosSkipGateway(String processKey, String version, String currentNodeId ){
+
+        List<UserTask> nextUserTasksSkipGateway = findNextUserTasksSkipGateway(processKey, version,
+                currentNodeId);
+
+        return makeNextUserTaskInfos(nextUserTasksSkipGateway);
+    }
+
+    public List<NextUserTaskInfo> makeNextUserTaskInfos(List<UserTask> userTasks){
+        List<NextUserTaskInfo> userTaskInfos = new ArrayList<>();
+        if(!CollectionUtils.isEmpty(userTasks)){
+            for (UserTask userTask : userTasks) {
+                ApprovalContext ctx = ApprovalContext.from(userTask);
+                NextUserTaskInfo nextUserTask = new NextUserTaskInfo(ctx.type().getCode(), userTask.getId(), userTask.getName());
+                if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
+                    LinkedHashSet<User> usersByCtxWithoutApplicant = candidateResolver.getUsersByCtxWithoutApplicant(ctx);
+                    nextUserTask.setCandidateUsers(usersByCtxWithoutApplicant);
+                }
+                userTaskInfos.add(nextUserTask);
+            }
+        }
+        return userTaskInfos;
+    }
+
+    public List<UserTask> findStartNextUserTasksSkipGateway(String processKey, String version){
+        StartEvent startEvent = getStartEvent(processKey, version);
+
+        List<UserTask> nextUserTasksSkipGateway = findNextUserTasksSkipGateway(processKey, version,
+                startEvent.getId());
+        if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway) && nextUserTasksSkipGateway.size() == 1 && nextUserTasksSkipGateway.get(0).getId().equals("applyNode")){
+            nextUserTasksSkipGateway = findNextUserTasksSkipGateway(processKey, version,
+                    nextUserTasksSkipGateway.get(0).getId());
+        }
+        return nextUserTasksSkipGateway;
     }
 
     public List<UserTask> findNextUserTasksSkipGateway(String processKey, String version, String currentNodeId){
