@@ -27,6 +27,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.cat.common.entity.process.constants.VariablesConstants.CHOOSE_PRE;
+
 /**
  * 启动流程命令，根据流程定义创建新的流程实例。
  */
@@ -123,7 +125,7 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
                 if(hasInvalid){
                     throw new IllegalStateException("请选择合适的处理人");
                 }
-                variables.put("choose_"+userTask.getId(), chooseUsersFilterNull);
+                variables.put(CHOOSE_PRE+userTask.getId(), chooseUsersFilterNull);
             }
         }
 

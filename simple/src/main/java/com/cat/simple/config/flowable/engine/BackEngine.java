@@ -26,6 +26,8 @@ import org.springframework.util.ObjectUtils;
 import java.util.List;
 import java.util.Objects;
 
+import static com.cat.common.entity.process.constants.VariablesConstants.CACHE_ASSIGNEES;
+
 @Slf4j
 @Component
 public class BackEngine {
@@ -111,7 +113,7 @@ public class BackEngine {
 
         boolean isTargetNodeMultiInstance = flowableUtils.isMultiInstance(task.getProcessDefinitionId(), param.getTargetNodeId());
         if(isTargetNodeMultiInstance && BackAssigneePolicyEnum.of(cfg.getBackAssigneePolicy()).equals(BackAssigneePolicyEnum.REASSIGN)){
-            runtimeService.removeVariable(task.getProcessInstanceId(), "cachedAssignees_" + param.getTargetNodeId());
+            runtimeService.removeVariable(task.getProcessInstanceId(), CACHE_ASSIGNEES + param.getTargetNodeId());
         }
 
         // 2. 统一的 Flowable 状态变更（消除 if-else 重复代码）

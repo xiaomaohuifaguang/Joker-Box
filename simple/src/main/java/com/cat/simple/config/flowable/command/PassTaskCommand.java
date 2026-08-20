@@ -19,6 +19,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 
+import static com.cat.common.entity.process.constants.VariablesConstants.CHOOSE_PRE;
+
 
 public class PassTaskCommand extends ProcessCommand<Void> {
 
@@ -123,7 +125,7 @@ public class PassTaskCommand extends ProcessCommand<Void> {
                 if(hasInvalid){
                     throw new IllegalStateException("请选择合适的处理人");
                 }
-                variables.put("choose_"+userTask.getId(), chooseUsersFilterNull);
+                variables.put(CHOOSE_PRE+userTask.getId(), chooseUsersFilterNull);
             }
         }
 

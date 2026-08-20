@@ -23,6 +23,9 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import static com.cat.common.entity.process.constants.VariablesConstants.CACHE_ASSIGNEES;
+import static com.cat.common.entity.process.constants.VariablesConstants.CHOOSE_PRE;
+
 /**
  * 候选人解析器，负责把 BPMN 上的候选源（用户 / 角色 / 用户组 / 部门）展开为最终用户 ID 列表。
  * 作为 Spring Bean 被多实例 collection 表达式 {@code ${candidateResolver.resolveAssignees(execution)}} 调用。
@@ -56,7 +59,7 @@ public class CandidateResolver {
         List<String> pool = resolve(ctx, execution.getProcessInstanceId());
 
         if(ctx.type().equals(ApprovalTypeEnum.CHOOSE)){
-            Object variableLocal = execution.getVariable("choose_"+execution.getCurrentActivityId());
+            Object variableLocal = execution.getVariable(CHOOSE_PRE+execution.getCurrentActivityId());
             if (variableLocal instanceof List<?> list) {
                 List<Integer> chooseUsers = (List<Integer>) list;
                 String one = String.valueOf(chooseUsers.get(0));
@@ -100,7 +103,7 @@ public class CandidateResolver {
             log.warn("activityId={} 缺少 approvalType, 候选人为空", execution.getCurrentActivityId());
             return List.of();
         }
-        String cacheKey = "cachedAssignees_" + execution.getCurrentActivityId();
+        String cacheKey = CACHE_ASSIGNEES + execution.getCurrentActivityId();
         Object variableLocal = execution.getVariable(cacheKey);
         if (variableLocal instanceof List<?> list) {
             return (List<String>) list;
@@ -108,7 +111,7 @@ public class CandidateResolver {
 
         List<String> resolve = resolve(ctx, null);
         if(ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN) ){
-            Object chooseUsersObject = execution.getVariable("choose_"+execution.getCurrentActivityId());
+            Object chooseUsersObject = execution.getVariable(CHOOSE_PRE+execution.getCurrentActivityId());
             if (chooseUsersObject instanceof List<?> list) {
                 List<Integer> chooseUsers = (List<Integer>) list;
                 List<String> chooseUsersStrList = chooseUsers.stream()
