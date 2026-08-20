@@ -7,6 +7,7 @@ import com.cat.common.entity.PageParam;
 import com.cat.common.entity.SelectOption;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessDefinitionBytearray;
+import com.cat.common.entity.process.ProcessDefinitionPageParam;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -31,9 +32,9 @@ public interface ProcessDefinitionService {
 
     ProcessDefinition info(ProcessDefinition processDefinition, String version);
 
-    Page<ProcessDefinition> queryPage(PageParam pageParam);
+    Page<ProcessDefinition> queryPage(ProcessDefinitionPageParam pageParam);
 
-    List<ProcessDefinition> deployList();
+    List<ProcessDefinition> deployList(String processCategory);
 
     List<ProcessDefinitionBytearray> versionList(Integer processDefinitionId);
 

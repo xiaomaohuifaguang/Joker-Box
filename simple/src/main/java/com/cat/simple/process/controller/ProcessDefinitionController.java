@@ -3,6 +3,7 @@ package com.cat.simple.process.controller;
 import com.cat.common.entity.*;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessDefinitionBytearray;
+import com.cat.common.entity.process.ProcessDefinitionPageParam;
 import com.cat.simple.process.service.ProcessDefinitionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -69,19 +70,23 @@ public class ProcessDefinitionController {
 
     @Operation(summary = "分页")
     @RequestMapping(value = "/queryPage", method = RequestMethod.POST)
-    public HttpResult<Page<ProcessDefinition>> queryPage(@RequestBody PageParam pageParam) {
+    public HttpResult<Page<ProcessDefinition>> queryPage(@RequestBody ProcessDefinitionPageParam pageParam) {
         return HttpResult.back(processDefinitionService.queryPage(pageParam));
     }
 
     @Operation(summary = "已部署流程列表")
+    @Parameters({
+            @Parameter(name = "processCategory", description = "流程分类", required = false)
+    })
     @RequestMapping(value = "/deployList", method = RequestMethod.POST)
-    public HttpResult<List<ProcessDefinition>> deployList() {
-        return HttpResult.back(processDefinitionService.deployList());
+    public HttpResult<List<ProcessDefinition>> deployList(@RequestParam(required = false) String processCategory) {
+        return HttpResult.back(processDefinitionService.deployList(processCategory));
     }
 
     @Operation(summary = "版本列表")
     @Parameters({
-            @Parameter(name = "processDefinitionId", description = "流程定义id", required = true)
+            @Parameter(name = "processDefinitionId", description = "流程定义id", required = true),
+            @Parameter(name = "processCategory", description = "流程分类", required = false)
     })
     @RequestMapping(value = "/versionList", method = RequestMethod.POST)
     public HttpResult<List<ProcessDefinitionBytearray>> versionList(@RequestParam Integer processDefinitionId) {

@@ -1,8 +1,8 @@
 package com.cat.simple.process.mapper;
 
-import com.cat.common.entity.PageParam;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cat.common.entity.process.ProcessDefinitionPageParam;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -20,7 +20,7 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface ProcessDefinitionMapper extends BaseMapper<ProcessDefinition> {
-   Page<ProcessDefinition> selectPage(@Param("page") Page<ProcessDefinition> page,@Param("param") PageParam pageParam);
+   Page<ProcessDefinition> selectPage(@Param("page") Page<ProcessDefinition> page,@Param("param") ProcessDefinitionPageParam pageParam);
 
 
 

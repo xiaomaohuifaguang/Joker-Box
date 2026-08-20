@@ -4,6 +4,9 @@
 
     <!-- 公共筛选条件片段：search、processDefinitionId、processStatus、时间范围 -->
     <sql id="commonFilters">
+        <if test="param.processCategory != null and param.processCategory != ''">
+            AND cpd.process_category = #{param.processCategory}
+        </if>
         <if test="param.search != null and param.search != ''">
             AND (
                 cpi.title LIKE CONCAT('%', #{param.search}, '%')
@@ -60,16 +63,8 @@
                     ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                WHERE task.ASSIGNEE_ = #{param.userId} and task.TASK_DEF_KEY_  &lt;&gt; 'applyNode'
-                <if test="param.search != null and param.search != ''">
-                    AND (
-                        cpi.title LIKE CONCAT('%', #{param.search}, '%')
-                        OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
-                    )
-                </if>
-                <if test="param.processDefinitionId != null">
-                    AND cpi.process_definition_id = #{param.processDefinitionId}
-                </if>
+                WHERE cpi.deleted = '0' and task.ASSIGNEE_ = #{param.userId} and task.TASK_DEF_KEY_  &lt;&gt; 'applyNode'
+                <include refid="commonFilters"/>
                 ORDER BY task.CREATE_TIME_ DESC
             </when>
 
@@ -85,16 +80,8 @@
                     ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                WHERE task.ASSIGNEE_ IS NULL AND task.TASK_DEF_KEY_  &lt;&gt; 'applyNode'
-                <if test="param.search != null and param.search != ''">
-                    AND (
-                        cpi.title LIKE CONCAT('%', #{param.search}, '%')
-                        OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
-                    )
-                </if>
-                <if test="param.processDefinitionId != null">
-                    AND cpi.process_definition_id = #{param.processDefinitionId}
-                </if>
+                WHERE cpi.deleted = '0' and  task.ASSIGNEE_ IS NULL AND task.TASK_DEF_KEY_  &lt;&gt; 'applyNode'
+                <include refid="commonFilters"/>
                 ORDER BY task.CREATE_TIME_ DESC
             </when>
 
@@ -121,18 +108,7 @@
                     GROUP BY PROC_INST_ID_
                 ) latest ON latest.PROC_INST_ID_ = cpi.process_instance_id
                 WHERE cpi.deleted = '0'
-                <if test="param.search != null and param.search != ''">
-                    AND (
-                        cpi.title LIKE CONCAT('%', #{param.search}, '%')
-                        OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
-                    )
-                </if>
-                <if test="param.processDefinitionId != null">
-                    AND cpi.process_definition_id = #{param.processDefinitionId}
-                </if>
-                <if test="param.processStatus != null and param.processStatus != ''">
-                    AND cpi.process_status = #{param.processStatus}
-                </if>
+                <include refid="commonFilters"/>
                 ORDER BY latest.handle_time DESC
             </when>
 
@@ -155,16 +131,8 @@
                 ON cpi.process_instance_id = task.PROC_INST_ID_ AND cpi.deleted = '0'
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                WHERE task.ASSIGNEE_ = #{param.userId} and task.TASK_DEF_KEY_  = 'applyNode'
-                <if test="param.search != null and param.search != ''">
-                    AND (
-                    cpi.title LIKE CONCAT('%', #{param.search}, '%')
-                    OR cpi.code LIKE CONCAT('%', #{param.search}, '%')
-                    )
-                </if>
-                <if test="param.processDefinitionId != null">
-                    AND cpi.process_definition_id = #{param.processDefinitionId}
-                </if>
+                WHERE cpi.deleted = '0' and  task.ASSIGNEE_ = #{param.userId} and task.TASK_DEF_KEY_  = 'applyNode'
+                <include refid="commonFilters"/>
                 ORDER BY task.CREATE_TIME_ DESC
             </when>
 

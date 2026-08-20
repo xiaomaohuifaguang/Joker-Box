@@ -8,6 +8,7 @@ import com.cat.common.entity.SelectOption;
 import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.*;
 import com.cat.common.entity.process.constants.FormBindType;
+import com.cat.common.entity.process.enums.CategoryTypeEnum;
 import com.cat.common.utils.UUIDUtils;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
@@ -84,7 +85,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     @Transactional
     public boolean add(ProcessDefinition processDefinition) throws ParserConfigurationException, IOException, SAXException {
 
-        processDefinition.setProcessKey(UUIDUtils.getRandomStringOnlyLetters(10));
+        processDefinition.setProcessKey("process_"+UUIDUtils.getRandomStringOnlyLetters(10));
         processDefinition.setProcessName(processDefinition.getProcessName());
         processDefinition = flowableUtils.build(processDefinition);
 
@@ -95,6 +96,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         LocalDateTime now = LocalDateTime.now();
         processDefinition.setCreateTime(now);
         processDefinition.setUpdateTime(now);
+
+        CategoryTypeEnum categoryTypeEnum = CategoryTypeEnum.of(processDefinition.getProcessCategory());
+        if(categoryTypeEnum == null){
+            throw new IllegalStateException("流程分类不合法");
+        }
+
+
 
         int insert = processDefinitionMapper.insert(processDefinition);
 
@@ -365,7 +373,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     }
 
     @Override
-    public Page<ProcessDefinition> queryPage(PageParam pageParam) {
+    public Page<ProcessDefinition> queryPage(ProcessDefinitionPageParam pageParam) {
         Page<ProcessDefinition> page = new Page<>(pageParam);
         page = processDefinitionMapper.selectPage(page, pageParam);
 
@@ -378,10 +386,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     }
 
     @Override
-    public List<ProcessDefinition> deployList() {
-        return processDefinitionMapper
-                .selectList(new LambdaQueryWrapper<ProcessDefinition>()
-                        .eq(ProcessDefinition::getStatus, "1"));
+    public List<ProcessDefinition> deployList(String processCategory) {
+        LambdaQueryWrapper<ProcessDefinition> processDefinitionLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        processDefinitionLambdaQueryWrapper.eq(ProcessDefinition::getStatus, "1");
+        if(StringUtils.hasText(processCategory)){
+            processDefinitionLambdaQueryWrapper.eq(ProcessDefinition::getProcessCategory, processCategory);
+        }
+        return processDefinitionMapper.selectList(processDefinitionLambdaQueryWrapper);
     }
 
     @Override

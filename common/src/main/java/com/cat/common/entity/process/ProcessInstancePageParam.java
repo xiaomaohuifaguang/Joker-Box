@@ -27,6 +27,9 @@ public class ProcessInstancePageParam extends PageParam implements Serializable 
     @Schema(description = "查询类型 0 草稿 1 我发起的(进行中) 2 审批待办 3 审批待认领 4 审批已办 5 我发起的(全部) 6 申请人待办")
     private String type;
 
+    @Schema(description = "流程分类")
+    private String processCategory;
+
     @Schema(description = "用户id（服务端自动填充）")
     private String userId;
 
