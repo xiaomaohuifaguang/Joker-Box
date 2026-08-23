@@ -66,6 +66,7 @@
 <!--        <rocketmq.version>5.5.0</rocketmq.version>-->
         <rocketmq-spring.version>2.3.6</rocketmq-spring.version>
         <shedlock-spring.version>7.8.0</shedlock-spring.version>
+        <redisson-spring.version>4.7.0</redisson-spring.version>
     </properties>
 
     <!-- springboot 版本 -->
@@ -276,6 +277,12 @@
                 <groupId>net.javacrumbs.shedlock</groupId>
                 <artifactId>shedlock-provider-redis-spring</artifactId>
                 <version>${shedlock-spring.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson-spring.version}</version>
             </dependency>
 
 

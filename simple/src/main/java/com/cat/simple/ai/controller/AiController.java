@@ -6,13 +6,17 @@ import com.cat.common.entity.ai.chat.ChatMessage;
 import com.cat.common.entity.ai.chat.ChatRequestParam;
 import com.cat.common.entity.ai.chat.ChatSession;
 import com.cat.common.entity.ai.model.AiModel;
+import com.cat.common.entity.file.FileInfo;
 import com.cat.simple.ai.service.AiChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -53,6 +57,25 @@ public class AiController {
     @RequestMapping(value = "/models", method = RequestMethod.POST)
     public HttpResult<List<AiModel>> chatModels() {
         return HttpResult.back(aiChatService.chatModels());
+    }
+
+
+    @Operation(summary = "文件上传")
+    @Parameters({
+            @Parameter(name = "uploadFile", schema = @Schema(format = "binary"), description = "文件", required = true)
+    })
+    @RequestMapping(value = "/fileUpload", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public HttpResult<FileInfo> fileUpload(@RequestPart(value = "uploadFile") MultipartFile uploadFile) throws IOException {
+        return HttpResult.back(aiChatService.fileUpload(uploadFile));
+    }
+
+    @Operation(summary = "文件下载")
+    @Parameters({
+            @Parameter(name = "fileId", description = "文件唯一id", required = true)
+    })
+    @RequestMapping(value = "/fileDownload", method = RequestMethod.GET)
+    public void downloadDynamicForm(@RequestParam("fileId") String fileId) throws IOException {
+        aiChatService.fileDownload(fileId);
     }
 
 

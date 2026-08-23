@@ -27,7 +27,7 @@ public interface FileService {
 
     DTO<?> uploadAvatar(MultipartFile uploadFile, String userId) throws IOException;
 
-    DTO<FileInfo> upload(MultipartFile uploadFile, String parentId, String realPath) throws IOException;
+    DTO<FileInfo> upload(MultipartFile uploadFile, String parentId, String realPath, String userId) throws IOException;
 
     /**
      * 创建文件夹
@@ -57,6 +57,16 @@ public interface FileService {
     DTO<FileInfo> uploadDynamicForm(MultipartFile uploadFile) throws IOException;
 
     void downloadDynamicForm(String fileId) throws IOException;
+
+    DTO<FileInfo> uploadAgentFile(MultipartFile file) throws IOException;
+
+    void downloadAgentFile(String fileId) throws IOException;
+
+    String getAgentFileBase64(String fileId);
+
+    String getAgentFileBase64WithoutMineType(String fileId);
+
+    FileInfo getAgentFileInfoById(String fileId);
 
 
 }

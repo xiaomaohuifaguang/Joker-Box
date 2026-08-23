@@ -48,6 +48,9 @@ public class AiModel implements Serializable {
     @Schema(description = "基础URL")
     private String baseUrl;
 
+    @Schema(description = "图像理解")
+    private Boolean vision;
+
     @Schema(description = "completions请求路径")
     private String completionsPath;
 

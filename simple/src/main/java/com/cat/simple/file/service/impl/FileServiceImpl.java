@@ -35,6 +35,7 @@ import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 
@@ -68,13 +69,16 @@ public class FileServiceImpl implements FileService {
 
     private final static String DYNAMIC_FORM = "/动态表单/";
 
+    private final static String AGENT_FILE = "/AGENT_FILE/";
+
     @Override
     @Transactional
     public DTO<FileInfo> upload(MultipartFile uploadFile, String parentId) throws IOException {
         if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && notExistFolder(parentId)){
             return DTO.error("文件夹不存在",null);
         }
-        return upload(uploadFile, parentId, UPLOAD_PATH+SecurityUtils.getLoginUser().getUserId()+"/");
+        String userId = Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId();
+        return upload(uploadFile, parentId, UPLOAD_PATH+SecurityUtils.getLoginUser().getUserId()+"/", userId);
     }
 
     @Override
@@ -84,8 +88,8 @@ public class FileServiceImpl implements FileService {
             return DTO.error("只有尊贵的VIP才能上传超过100M的文件",null);
         }
 
-        String filename = CatUUID.randomUUID();
-        String realFilename = "/头像/"+SecurityUtils.getLoginUser().getUserId();
+//        String filename = CatUUID.randomUUID();
+        String realFilename = "/头像/"+ Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId();
         new Thread(()->{
             try {
                 minioService.putObject(BUCKET_NAME, realFilename, uploadFile.getInputStream(), uploadFile.getContentType());
@@ -99,7 +103,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public DTO<?> uploadAvatar(MultipartFile uploadFile, String userId) throws IOException {
 
-        String filename = CatUUID.randomUUID();
+//        String filename = CatUUID.randomUUID();
 
         String realFilename = "/头像/"+userId;
         new Thread(()->{
@@ -113,7 +117,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public DTO<FileInfo> upload(MultipartFile uploadFile, String parentId, String realPath) throws IOException {
+    public DTO<FileInfo> upload(MultipartFile uploadFile, String parentId, String realPath, String userId) throws IOException {
         long size = uploadFile.getSize();
         if(!SecurityUtils.isAdmin() && ( size >  100 * 1000 * 1000) ){
             return DTO.error("只有尊贵的VIP才能上传超过100M的文件，当然了没有成为VIP的方法",null);
@@ -126,7 +130,7 @@ public class FileServiceImpl implements FileService {
                 .setParentId(parentId)
                 .setSize(uploadFile.getSize())
                 .setContentType(uploadFile.getContentType())
-                .setUserId(Integer.parseInt(SecurityUtils.getLoginUser().getUserId()));
+                .setUserId(Integer.parseInt(userId));
         new Thread(()->{
             try {
                 minioService.putObject(BUCKET_NAME, realPath+fileInfo.getId(), uploadFile.getInputStream(), uploadFile.getContentType());
@@ -306,12 +310,41 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public DTO<FileInfo> uploadDynamicForm(MultipartFile uploadFile) throws IOException {
-        return upload(uploadFile, DYNAMIC_FORM,DYNAMIC_FORM);
+        String userId = Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId();
+        return upload(uploadFile, DYNAMIC_FORM,DYNAMIC_FORM, userId);
     }
 
     @Override
     public void downloadDynamicForm(String fileId) throws IOException {
         download(fileId, DYNAMIC_FORM);
+    }
+
+    @Override
+    public DTO<FileInfo> uploadAgentFile(MultipartFile file) throws IOException {
+        String userId = Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId();
+        return upload(file, AGENT_FILE, AGENT_FILE, userId);
+    }
+
+    @Override
+    public void downloadAgentFile(String fileId) throws IOException {
+        download(fileId, AGENT_FILE);
+    }
+
+    @Override
+    public String getAgentFileBase64(String fileId) {
+        FileInfo fileInfo = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getId, fileId));
+        return minioService.getBase64(BUCKET_NAME, AGENT_FILE+fileInfo.getId());
+    }
+
+    @Override
+    public String getAgentFileBase64WithoutMineType(String fileId) {
+        FileInfo fileInfo = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getId, fileId));
+        return minioService.getBase64WithoutMimeType(BUCKET_NAME, AGENT_FILE+fileInfo.getId());
+    }
+
+    @Override
+    public FileInfo getAgentFileInfoById(String fileId) {
+        return fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getParentId, AGENT_FILE).eq(FileInfo::getId, fileId));
     }
 
     private boolean notExistFolder(String folderId){

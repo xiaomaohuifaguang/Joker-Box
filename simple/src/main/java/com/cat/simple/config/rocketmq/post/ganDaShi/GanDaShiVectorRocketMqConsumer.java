@@ -1,4 +1,4 @@
-package com.cat.simple.config.rocketmq.post;
+package com.cat.simple.config.rocketmq.post.ganDaShi;
 
 
 import com.cat.common.entity.ganDaShi.GanDaShiPost;

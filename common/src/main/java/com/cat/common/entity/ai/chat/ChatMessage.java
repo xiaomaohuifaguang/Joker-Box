@@ -1,9 +1,13 @@
 package com.cat.common.entity.ai.chat;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.Fastjson2TypeHandler;
+import com.cat.common.entity.file.FileInfo;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,14 +17,16 @@ import lombok.experimental.Accessors;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Accessors(chain = true)
-@TableName("cat_chat_message")
+@TableName(value  = "cat_chat_message", autoResultMap = true)
 @Schema(name = "ChatMessage", description = "ai会话消息表")
+//@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatMessage implements Serializable {
 
     @Serial
@@ -41,6 +47,10 @@ public class ChatMessage implements Serializable {
 
     @Schema(description = "消息内容")
     private String content;
+
+    @Schema(description = "附件")
+    @TableField(typeHandler = Fastjson2TypeHandler.class)
+    private List<FileInfo> files;
 
     @Schema(description = "思考内容")
     private String reasonContent;

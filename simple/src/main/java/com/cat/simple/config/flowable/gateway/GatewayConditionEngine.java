@@ -12,6 +12,11 @@ import com.cat.simple.process.mapper.ProcessGatewayConditionMapper;
 import com.cat.simple.process.mapper.ProcessGatewayConditionNodeMapper;
 import com.cat.simple.process.service.ProcessFormService;
 import jakarta.annotation.Resource;
+import org.flowable.common.engine.impl.de.odysseus.el.ExpressionFactoryImpl;
+import org.flowable.common.engine.impl.de.odysseus.el.ObjectValueExpression;
+import org.flowable.common.engine.impl.de.odysseus.el.util.SimpleContext;
+import org.flowable.common.engine.impl.javax.el.ExpressionFactory;
+import org.flowable.common.engine.impl.javax.el.ValueExpression;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -85,6 +90,40 @@ public class GatewayConditionEngine {
             attachChildren(root, parentToChildren);
         }
         return roots;
+    }
+
+    private boolean evaluate(Integer processDefinitionId, String version,
+                             String sequenceFlowId, Map<String, Object> globalFormData, Map<String, Object> variables){
+        ProcessGatewayCondition condition = conditionMapper.selectOne(
+                new LambdaQueryWrapper<ProcessGatewayCondition>()
+                        .eq(ProcessGatewayCondition::getProcessDefinitionId, processDefinitionId)
+                        .eq(ProcessGatewayCondition::getVersion, version)
+                        .eq(ProcessGatewayCondition::getSequenceFlowId, sequenceFlowId));
+        if(Boolean.TRUE.equals(condition.getIsDefault())){
+            return true;
+        }
+
+        // 1. 创建 JUEL 上下文并设置变量
+        SimpleContext context = new SimpleContext();
+        ExpressionFactory factory = new ExpressionFactoryImpl();
+        context.setVariable("amount", factory.createValueExpression(150.0, Double.class));
+        context.setVariable("approved", factory.createValueExpression(false, Boolean.class));
+
+        // 2. 用 JUEL 解析 Flowable 同款表达式
+
+
+        // 解析 ${amount > 100}
+        ValueExpression expr1 = factory.createValueExpression(context, "${amount > 100}", Boolean.class);
+        Boolean result1 = (Boolean) expr1.getValue(context);
+        System.out.println("amount > 100 = " + result1); // true
+
+        // 解析 ${false}
+        ValueExpression expr2 = factory.createValueExpression(context, "${false}", Boolean.class);
+        Boolean result2 = (Boolean) expr2.getValue(context);
+        System.out.println("false = " + result2); // false
+
+
+        return false;
     }
 
     private void attachChildren(ProcessGatewayConditionNode parent,

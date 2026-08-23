@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.cat.common.utils.*;
 import com.cat.common.utils.base64.Base64Utils;
 import com.cat.common.utils.googleauth.GoogleAuthUtils;
+import com.cat.simple.ai.tools.system.UserInfoVO;
 import com.cat.simple.config.cache.CacheKeyEnum;
 import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.config.security.SecurityUtils;
@@ -209,6 +210,54 @@ public class UserServiceImpl implements UserService {
         userInfo.setAuthPaths(menuService.queryAllPathByAuth());
 
         return userInfo;
+    }
+
+    @Override
+    public UserInfoVO getUserInfoVO(String userId) {
+
+        UserInfoVO userInfoVO = new UserInfoVO();
+
+        User user = userMapper.selectById(userId);
+
+        BeanUtils.copyProperties(user, userInfoVO);
+
+        UserExtend userExtend = userExtendMapper.selectById(user.getId());
+
+        userInfoVO.setSex(userExtend.getSex());
+        userInfoVO.setMail(userExtend.getMail());
+        userInfoVO.setPhone(userExtend.getPhone());
+
+        return userInfoVO;
+    }
+
+    @Override
+    public List<UserInfoVO> getUserInfoVOList(String search) {
+        List<UserInfoVO> userInfoVOList = new ArrayList<>();
+
+        List<User> users = userMapper.selectList(new LambdaQueryWrapper<User>().like(User::getUsername, search)
+                .or().like(User::getNickname, search));
+
+
+
+        for (User user : users) {
+            UserInfoVO userInfoVO = new UserInfoVO();
+            BeanUtils.copyProperties(user, userInfoVO);
+            UserExtend userExtend = userExtendMapper.selectById(user.getId());
+
+            userInfoVO.setSex(userExtend.getSex());
+            userInfoVO.setMail(userExtend.getMail());
+            userInfoVO.setPhone(userExtend.getPhone());
+
+            userInfoVOList.add(userInfoVO);
+        }
+
+
+
+
+
+
+
+        return userInfoVOList;
     }
 
     @Override

@@ -56,6 +56,8 @@ public class CONSTANTS {
      * 根目录
      */
     public static final String FILE_ALL_PARENT = "0";
+
+    public static final String PROCESS_SPECIAL_NODE_APPLY = "applyNode";
     
 
 

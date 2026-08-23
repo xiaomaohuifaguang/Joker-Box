@@ -4,18 +4,24 @@ import com.cat.common.entity.ai.model.AiModel;
 import com.cat.common.entity.ai.model.ModelType;
 import com.cat.simple.ai.service.AiModelService;
 import com.cat.simple.ai.service.LlmService;
+import com.cat.simple.config.security.SecurityUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -24,6 +30,9 @@ public class LlmServiceImpl implements LlmService {
 
     @Resource
     private AiModelService aiModelService;
+
+    @Resource
+    private ToolCallbackProvider systemToolsProvider;
 
 
     @Override
@@ -45,21 +54,32 @@ public class LlmServiceImpl implements LlmService {
     }
 
 
-
     @Override
-    public OpenAiApi buildOpenAiApi(AiModel aiModel){
+    public OpenAiApi buildOpenAiApi(AiModel aiModel) {
         String base_url = aiModel.getBaseUrl();
         String api_key = aiModel.getApiKey();
         String embeddingsPath = aiModel.getEmbeddingsPath();
         String completionsPath = aiModel.getCompletionsPath();
         OpenAiApi.Builder builder = OpenAiApi.builder().baseUrl(base_url).apiKey(api_key);
-        if(StringUtils.hasText(completionsPath)){
+        if (StringUtils.hasText(completionsPath)) {
             builder.completionsPath(completionsPath);
         }
-        if(StringUtils.hasText(embeddingsPath)){
+        if (StringUtils.hasText(embeddingsPath)) {
             builder.embeddingsPath(embeddingsPath);
         }
         return builder.build();
     }
+
+    @Override
+    public OpenAiChatModel buildOpenAiChatModel(AiModel aiModel) {
+        OpenAiApi openAiApi = buildOpenAiApi(aiModel);
+        return OpenAiChatModel.builder().openAiApi(openAiApi)
+                .defaultOptions(OpenAiChatOptions.builder().model(aiModel.getModel())
+                        .toolCallbacks(systemToolsProvider.getToolCallbacks())
+                        .toolContext(Map.of("userId", Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId()))
+                        .streamUsage(true).temperature(1.0)
+                        .build()).build();
+    }
+
 
 }

@@ -1,11 +1,13 @@
 package com.cat.simple.config.minio;
 
 import io.minio.*;
+import io.minio.errors.MinioException;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.util.Base64;
 
 /***
  * Minio 业务
@@ -26,43 +28,43 @@ public class MinioService {
         try {
             return minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
     /**
      * 创建 bucket
+     *
      * @param bucketName bucketName
      */
     public void createBucket(String bucketName) {
         try {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
     /**
      * 删除 bucket
+     *
      * @param bucketName bucketName
      */
     public void removeBucket(String bucketName) {
         try {
             minioClient.removeBucket(RemoveBucketArgs.builder().bucket(bucketName).build());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
     /**
      * 上传本地文件
-     * @param bucketName bucketName
-     * @param object 对象唯一名称
+     *
+     * @param bucketName     bucketName
+     * @param object         对象唯一名称
      * @param uploadFilePath 本地文件路径
-     * @param contentType contentType取值最好在org.springframework.http.MediaType
+     * @param contentType    contentType取值最好在org.springframework.http.MediaType
      */
     public void uploadObject(String bucketName, String object, String uploadFilePath, String contentType) {
         try {
@@ -74,15 +76,15 @@ public class MinioService {
                             .filename(uploadFilePath)
                             .build());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
     /**
      * 下载对象到本地
-     * @param bucketName bucketName
-     * @param object 对象唯一名称
+     *
+     * @param bucketName       bucketName
+     * @param object           对象唯一名称
      * @param downloadFilePath 本地下载文件路径
      */
     public void downloadObject(String bucketName, String object, String downloadFilePath) {
@@ -99,8 +101,9 @@ public class MinioService {
 
     /**
      * 流上传到minio
-     * @param bucketName bucketName
-     * @param object 对象唯一名称
+     *
+     * @param bucketName  bucketName
+     * @param object      对象唯一名称
      * @param inputStream 输入流
      * @param contentType contentType取值最好在org.springframework.http.MediaType
      */
@@ -113,15 +116,15 @@ public class MinioService {
                             .build());
             return objectWriteResponse.etag();
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
     /**
      * 获取对象流
+     *
      * @param bucketName bucketName
-     * @param object 对象唯一名称
+     * @param object     对象唯一名称
      * @return 对象输入流
      */
     public InputStream getObject(String bucketName, String object) {
@@ -132,7 +135,6 @@ public class MinioService {
                             .object(object)
                             .build());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -147,24 +149,62 @@ public class MinioService {
                             .length(length)
                             .build());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
     /**
      * 删除对象
+     *
      * @param bucketName bucketName
-     * @param object 对象唯一名称
+     * @param object     对象唯一名称
      */
     public void removeObject(String bucketName, String object) {
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder().bucket(bucketName).object(object).build());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+
+
+    public String getBase64(String bucketName, String object) {
+        try (GetObjectResponse response = minioClient.getObject(
+                GetObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(object)
+                        .build())) {
+
+            // ✅ 正确方式：从响应头中获取 Content-Type
+            String mimeType = response.headers().get("Content-Type");
+            if (mimeType == null || mimeType.isEmpty()) {
+                mimeType = "application/octet-stream";
+            }
+
+            byte[] fileBytes = response.readAllBytes(); // Java 9+
+            String base64 = Base64.getEncoder().encodeToString(fileBytes);
+
+            return "data:" + mimeType + ";base64," + base64;
+        } catch (IOException | MinioException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    public String getBase64WithoutMimeType(String bucketName, String object) {
+        try (GetObjectResponse response = minioClient.getObject(
+                GetObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(object)
+                        .build())) {
+
+            byte[] fileBytes = response.readAllBytes(); // Java 9+
+            return Base64.getEncoder().encodeToString(fileBytes);
+        } catch (IOException | MinioException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
 

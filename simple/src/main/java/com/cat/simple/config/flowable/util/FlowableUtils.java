@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.cat.common.entity.CONSTANTS.PROCESS_SPECIAL_NODE_APPLY;
 import static com.cat.simple.config.flowable.enums.ExtensionElementEnum.*;
 
 @Component
@@ -621,7 +622,7 @@ public class FlowableUtils {
 
         List<UserTask> nextUserTasksSkipGateway = findNextUserTasksSkipGateway(processKey, version,
                 startEvent.getId());
-        if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway) && nextUserTasksSkipGateway.size() == 1 && nextUserTasksSkipGateway.get(0).getId().equals("applyNode")){
+        if(!CollectionUtils.isEmpty(nextUserTasksSkipGateway) && nextUserTasksSkipGateway.size() == 1 && nextUserTasksSkipGateway.get(0).getId().equals(PROCESS_SPECIAL_NODE_APPLY)){
             nextUserTasksSkipGateway = findNextUserTasksSkipGateway(processKey, version,
                     nextUserTasksSkipGateway.get(0).getId());
         }

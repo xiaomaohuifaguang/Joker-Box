@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.cat.common.entity.CONSTANTS.PROCESS_SPECIAL_NODE_APPLY;
 import static com.cat.common.entity.process.constants.VariablesConstants.CHOOSE_PRE;
 
 /**
@@ -181,7 +182,7 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
         }
 
         List<Task> list = taskService.createTaskQuery().processInstanceId(result.getProcessInstanceId()).list();
-        if(!CollectionUtils.isEmpty(list) && list.size() == 1 &&  list.get(0).getTaskDefinitionKey().equals("applyNode")){
+        if(!CollectionUtils.isEmpty(list) && list.size() == 1 &&  list.get(0).getTaskDefinitionKey().equals(PROCESS_SPECIAL_NODE_APPLY)){
             Task task = list.get(0);
 
             taskService.complete(task.getId());

@@ -1,5 +1,7 @@
 package com.cat.common.entity.ai.chat;
 
+import com.cat.common.entity.file.FileInfo;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +10,7 @@ import lombok.experimental.Accessors;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 /***
  * <TODO description class purpose>
@@ -21,6 +24,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Accessors(chain = true)
 @Schema(name = "ChatRequestPram", description = "chat接口请求参数")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatRequestParam implements Serializable {
 
     @Serial
@@ -34,6 +38,9 @@ public class ChatRequestParam implements Serializable {
 
     @Schema(description = "内容")
     private String content;
+
+    @Schema(description = "文件id")
+    private List<String> fileIds;
 
     @Schema(description = "流式响应")
     private boolean stream = false;

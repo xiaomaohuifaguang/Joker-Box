@@ -3,6 +3,7 @@ package com.cat.simple.system.service;
 import com.cat.common.entity.DTO;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.*;
+import com.cat.simple.ai.tools.system.UserInfoVO;
 import freemarker.template.TemplateException;
 import jakarta.mail.MessagingException;
 import org.springframework.web.multipart.MultipartFile;
@@ -83,6 +84,10 @@ public interface UserService {
      */
     UserInfo getUserInfo();
 
+    UserInfoVO getUserInfoVO(String userId);
+
+
+    List<UserInfoVO> getUserInfoVOList(String search);
 
     /**
      * 发送验证码
