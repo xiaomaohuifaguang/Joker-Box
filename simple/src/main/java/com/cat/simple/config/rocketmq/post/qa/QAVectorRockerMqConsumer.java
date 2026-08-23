@@ -37,9 +37,9 @@ public class QAVectorRockerMqConsumer implements RocketMQListener<QAMessage> {
 
         boolean b = opensearchUtils.insertOrUpdate(QAMessage.INDEX, String.valueOf(message.getId()), message);
         if(b){
-            log.info("干大事向量化SESSION id:{}成功: {} questionMessageId {} answerMessageId", message.getSessionId(), message.getQuestionMessageId(), message.getAnswerMessageId());
+            log.info("qa向量化SESSION id:{}成功: {} questionMessageId {} answerMessageId", message.getSessionId(), message.getQuestionMessageId(), message.getAnswerMessageId());
         }else {
-            log.info("干大事向量化SESSION id:{}失败: {} questionMessageId {} answerMessageId", message.getSessionId(), message.getQuestionMessageId(), message.getAnswerMessageId());
+            log.info("qa向量化SESSION id:{}失败: {} questionMessageId {} answerMessageId", message.getSessionId(), message.getQuestionMessageId(), message.getAnswerMessageId());
         }
     }
 }
