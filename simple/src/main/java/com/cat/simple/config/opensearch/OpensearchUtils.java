@@ -25,7 +25,7 @@ import java.util.Map;
 @Component
 public class OpensearchUtils {
 
-    @Value("${custom.opensearch.index_prefix}")
+    @Value("${opensearch.index_prefix}")
     private String INDEX_PREFIX;
 
     @Resource

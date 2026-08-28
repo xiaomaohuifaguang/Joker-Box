@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GanDaShiVectorRocketMqProductor {
 
-    @Value("${custom.rocket.ganDaShi.topic}")
+    @Value("${rocketmq.custom.ganDaShi.topic}")
     private String topic;
 
     @Resource

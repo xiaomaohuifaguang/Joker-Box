@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /***
  * JSON工具类
@@ -70,6 +72,23 @@ public class JSONUtils {
             JavaType javaType = mapper.getTypeFactory()
                     .constructCollectionType(List.class, clazz);
             return mapper.readValue(jsonStr, javaType);
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    public static List<Map<String, Object>> parseMapList(String jsonStr) {
+        if (jsonStr == null || jsonStr.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            TypeFactory tf = mapper.getTypeFactory();
+            // 元素类型：Map<String, Object>
+            JavaType mapType = tf.constructMapType(Map.class, String.class, Object.class);
+            // 集合类型：List<Map<String, Object>>
+            JavaType listType = tf.constructCollectionType(List.class, mapType);
+            return mapper.readValue(jsonStr, listType);
         } catch (Exception e) {
             return Collections.emptyList();
         }

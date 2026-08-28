@@ -1,8 +1,8 @@
-package com.cat.simple.ai.controller;
+package com.cat.simple.system.controller;
 
 import com.cat.common.entity.*;
 import com.cat.common.entity.system.SystemPrompt;
-import com.cat.simple.ai.service.SystemPromptService;
+import com.cat.simple.system.service.SystemPromptService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;

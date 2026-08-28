@@ -12,6 +12,8 @@ public interface GanDaShiPostService {
 
     boolean add(GanDaShiPost ganDaShiPost);
 
+    boolean addWithUserId(GanDaShiPost ganDaShiPost);
+
     boolean delete(GanDaShiPost ganDaShiPost);
 
     GanDaShiPost info(GanDaShiPost ganDaShiPost);

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class QAVectorRockerMqProductor {
 
-    @Value("${custom.rocket.qa.topic}")
+    @Value("${rocketmq.custom.qa.topic}")
     private String topic;
 
 

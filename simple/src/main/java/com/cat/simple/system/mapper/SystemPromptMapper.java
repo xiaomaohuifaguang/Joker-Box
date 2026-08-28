@@ -1,4 +1,4 @@
-package com.cat.simple.ai.mapper;
+package com.cat.simple.system.mapper;
 
 import com.cat.common.entity.system.SystemPrompt;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;

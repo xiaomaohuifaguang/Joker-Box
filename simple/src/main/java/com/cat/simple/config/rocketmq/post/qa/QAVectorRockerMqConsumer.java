@@ -14,8 +14,8 @@ import java.util.List;
 
 @Component
 @RocketMQMessageListener(
-        topic = "${custom.rocket.qa.topic}",
-        consumerGroup = "${custom.rocket.qa.group}",
+        topic = "${rocketmq.custom.qa.topic}",
+        consumerGroup = "${rocketmq.custom.qa.group}",
         consumeThreadNumber  = 2,
         consumeThreadMax = 2
 )

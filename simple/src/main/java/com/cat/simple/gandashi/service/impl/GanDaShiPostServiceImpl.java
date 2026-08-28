@@ -48,6 +48,13 @@ public class GanDaShiPostServiceImpl implements GanDaShiPostService {
     @Transactional
     public boolean add(GanDaShiPost ganDaShiPost) {
 
+        ganDaShiPost.setCreateBy(Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId());
+
+        return addWithUserId(ganDaShiPost);
+    }
+
+    @Override
+    public boolean addWithUserId(GanDaShiPost ganDaShiPost) {
         if (!StringUtils.hasText(ganDaShiPost.getContent())) {
             return false;
         }
@@ -59,7 +66,6 @@ public class GanDaShiPostServiceImpl implements GanDaShiPostService {
         }
 
         ganDaShiPost.setId(null);
-        ganDaShiPost.setCreateBy(Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId());
         ganDaShiPost.setCreateTime(LocalDateTime.now());
         ganDaShiPost.setDeleted("0");
         ganDaShiPost.setViewCount(0);

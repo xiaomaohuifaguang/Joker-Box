@@ -1,13 +1,13 @@
-package com.cat.simple.ai.service.impl;
+package com.cat.simple.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.system.SystemPrompt;
 import com.cat.simple.config.security.SecurityUtils;
-import com.cat.simple.ai.mapper.SystemPromptMapper;
+import com.cat.simple.system.mapper.SystemPromptMapper;
 import com.cat.simple.system.mapper.UserMapper;
-import com.cat.simple.ai.service.SystemPromptService;
+import com.cat.simple.system.service.SystemPromptService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 

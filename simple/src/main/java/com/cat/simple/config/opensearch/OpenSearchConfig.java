@@ -30,16 +30,16 @@ import java.security.NoSuchAlgorithmException;
 @Configuration
 public class OpenSearchConfig {
 
-    @Value("${custom.opensearch.host}")
+    @Value("${opensearch.host}")
     private String OPENSEARCH_HOST;
 
-    @Value("${custom.opensearch.port}")
+    @Value("${opensearch.port}")
     private Integer OPENSEARCH_PORT;
 
-    @Value("${custom.opensearch.username}")
+    @Value("${opensearch.username}")
     private String OPENSEARCH_USERNAME;
 
-    @Value("${custom.opensearch.password}")
+    @Value("${opensearch.password}")
     private String OPENSEARCH_PASSWORD;
 
 

@@ -50,7 +50,7 @@ import java.util.UUID;
 @Slf4j
 public class FileServiceImpl implements FileService {
 
-    @Value("${custom.minio.bucketName}")
+    @Value("${minio.bucketName}")
     private String BUCKET_NAME;
 
     @Resource

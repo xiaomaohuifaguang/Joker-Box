@@ -1,4 +1,4 @@
-package com.cat.simple.ai.service;
+package com.cat.simple.system.service;
 
 
 import com.cat.common.entity.Page;
