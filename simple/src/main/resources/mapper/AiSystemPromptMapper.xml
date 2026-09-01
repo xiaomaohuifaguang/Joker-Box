@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.ai.mapper.AiSystemPromptMapper">
+
+
+    <select id="selectPage" resultType="com.cat.common.entity.ai.systemPrompt.AiSystemPrompt">
+        SELECT *
+        FROM cat_ai_system_prompt
+        <where>
+            <if test="param.search != null and param.search != ''">
+                prompt like concat('%', #{param.search},'%')
+            </if>
+        </where>
+    </select>
+</mapper>

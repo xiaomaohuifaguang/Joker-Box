@@ -34,6 +34,9 @@ public class LlmServiceImpl implements LlmService {
     @Resource
     private ToolCallbackProvider systemToolsProvider;
 
+    @Resource
+    private ToolCallbackProvider fileParseToolsProvider;
+
 
     @Override
     public List<Float> vector(String text) {
@@ -76,6 +79,7 @@ public class LlmServiceImpl implements LlmService {
         return OpenAiChatModel.builder().openAiApi(openAiApi)
                 .defaultOptions(OpenAiChatOptions.builder().model(aiModel.getModel())
                         .toolCallbacks(systemToolsProvider.getToolCallbacks())
+                        .toolCallbacks(fileParseToolsProvider.getToolCallbacks())
                         .toolContext(Map.of("userId", Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId()))
                         .streamUsage(true).temperature(1.0)
                         .build()).build();

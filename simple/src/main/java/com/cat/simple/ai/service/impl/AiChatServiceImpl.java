@@ -9,6 +9,7 @@ import com.cat.common.entity.ai.chat.ChatSession;
 import com.cat.common.entity.ai.chat.QAMessage;
 import com.cat.common.entity.ai.model.AiModel;
 import com.cat.common.entity.ai.model.ModelType;
+import com.cat.common.entity.ai.systemPrompt.AiSystemPrompt;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.file.FileInfo;
 import com.cat.common.utils.IOUtils;
@@ -17,6 +18,7 @@ import com.cat.simple.ai.mapper.ChatMessageMapper;
 import com.cat.simple.ai.mapper.ChatSessionMapper;
 import com.cat.simple.ai.service.AiChatService;
 import com.cat.simple.ai.service.AiModelService;
+import com.cat.simple.ai.service.AiSystemPromptService;
 import com.cat.simple.ai.service.LlmService;
 import com.cat.simple.config.rocketmq.post.qa.QAVectorRockerMqProductor;
 import com.cat.simple.config.security.SecurityUtils;
@@ -49,6 +51,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -74,12 +77,27 @@ public class AiChatServiceImpl implements AiChatService {
     private FileService fileService;
 
     @Resource
+    private AiSystemPromptService aiSystemPromptService;
+
+    @Resource
     private QAVectorRockerMqProductor qaVectorRockerMqProductor;
 
-    private static final List<MimeType> ALLOW_IMAGE_TYPE = List.of(Media.Format.IMAGE_JPEG, Media.Format.IMAGE_PNG, Media.Format.IMAGE_GIF, Media.Format.IMAGE_WEBP);
+    private static final List<MimeType> ALLOW_IMAGE_TYPE = List.of(
+            Media.Format.IMAGE_JPEG,
+            Media.Format.IMAGE_PNG,
+            Media.Format.IMAGE_GIF,
+            Media.Format.IMAGE_WEBP
+    );
 
 
-    private static final List<MimeType> ALLOW_DOC_TYPE = List.of(Media.Format.DOC_DOCX, Media.Format.DOC_TXT, Media.Format.DOC_MD);
+    private static final List<MimeType> ALLOW_DOC_TYPE = List.of(
+            Media.Format.DOC_PDF,
+            Media.Format.DOC_DOC,
+            Media.Format.DOC_DOCX,
+            Media.Format.DOC_XLS,
+            Media.Format.DOC_XLSX,
+            MimeType.valueOf("application/vnd.ms-powerpoint"),
+            MimeType.valueOf("application/vnd.openxmlformats-officedocument.presentationml.presentation"));
 
 
     // ✅ OPT: 移除未使用的 okhttp3.* 和 ThreadPoolTaskExecutor 导入/注入
@@ -219,58 +237,12 @@ public class AiChatServiceImpl implements AiChatService {
 
     private Prompt buildPrompt(List<ChatMessage> chatMessages, boolean vision){
         List<Message> messages = new ArrayList<>();
-        String username = Objects.requireNonNull(SecurityUtils.getLoginUser()).getUsername();
 
-        messages.add(SystemMessage.builder().text("""
-        你是一个专业的AI助手，请严格遵循以下角色设定进行对话：
+        AiSystemPrompt systemPrompt = aiSystemPromptService.info(-1);
 
-        ## 角色身份
-        - 名称：希斯莱杰
-        - 身份：小丑
-        - 性格特征：搞怪，癫狂，说一些奇怪的话
-
-        ## 行为规范
-        1. 始终以第一人称"希斯莱杰"的口吻回复，不要暴露AI身份
-        2. 保持角色一致性，不跳出人设，不使用"作为AI"等表述
-        3. 回复风格应符合角色性格：搞怪，癫狂，说一些奇怪的话
-        4. 对超出角色知识范围的问题，用符合人设的方式委婉回应，而非直接拒绝
-
-        ## 对话约束
-        - 语言：中文
-        - 禁止输出任何与角色无关的元信息、解释或免责声明
-        """).build());
-
-
-//        messages.add(SystemMessage.builder().text("""
-//        # 角色
-//
-//        你是一位精通唐代诗人李白的古典文学学者，名为「青莲客」。你依托中华古诗词与典籍知识库（含《全唐诗》《李太白全集》《新唐书·文艺传》等原典及历代诗话评注），为用户提供关于李白生平、作品、文学成就、时代背景及文化影响的深度问答服务。
-//
-//        # 核心知识域
-//
-//        你的知识范围限定于以下主题，超出范围请明确告知「超出知识边界」：
-//
-//        1. **生平事迹**：身世（701-762）、籍贯争议（碎叶/江油）、入长安待诏翰林（742-744）、赐金还山、安史之乱中入永王李璘幕及下狱流夜郎、晚年投靠族叔李阳冰等关键节点。
-//        2. **交游关系**：与杜甫、高适、王维、孟浩然、贺知章、汪伦等人的交往及唱和作品。
-//        3. **诗歌作品**：存世约 1000 余首（含《李太白全集》30 卷），涵盖乐府、古风、绝句、律诗等体裁。重点作品如《将进酒》《蜀道难》《行路难》《梦游天姥吟留别》《静夜思》《望庐山瀑布》《早发白帝城》《赠汪伦》《月下独酌》《庐山谣》等。
-//        4. **艺术风格**：浪漫主义、奇绝想象、豪放飘逸、仙气与侠气并存；与杜甫并称「李杜」，后世誉「诗仙」。
-//        5. **思想渊源**：儒、道、侠三家思想交融；受庄子、屈原影响；好剑术、求仙访道、纵酒放歌。
-//        6. **历史评价**：从同时代杜甫「笔落惊风雨，诗成泣鬼神」到后世历代诗话的品评。
-//        7. **文化影响**：对后世诗词、书画、戏曲、现代传播的影响。
-//
-//        # 能力边界
-//
-//        - **能做**：作品赏析、背景考据、版本比对、典故溯源、交游关系梳理、风格演变分析、古文今译。
-//        - **限制做**：不编造李白未流传的佚诗；不对存疑作品（如《忆秦娥·箫声咽》真伪之争）下定论，需呈现学术争议；不做与李白无关的延伸。
-//        - **拒绝做**：不生成违反法律法规的内容；不对李白进行脱离史实的娱乐化演绎。
-//
-//        ## 风格
-//
-//        - 文风典雅而不晦涩，专业术语需附简释（如「歌行体」「古风」需说明）
-//        - 引用原句须用「」标注，长段引用用引用块
-//        - 涉及学术争议时，呈现主流观点及依据，不做武断结论
-//        - 可适度引用历代诗话原评（如严羽《沧浪诗话》、胡应麟《诗薮》）
-//        """).build());
+        if(Objects.nonNull(systemPrompt) && StringUtils.hasText(systemPrompt.getPrompt())){
+            messages.add(SystemMessage.builder().text(systemPrompt.getPrompt()).build());
+        }
 
         for (ChatMessage chatMessage : chatMessages) {
             MessageType messageType = switch (chatMessage.getRole()){
@@ -282,13 +254,14 @@ public class AiChatServiceImpl implements AiChatService {
             };
 
             List<Media> mediaList = new ArrayList<>();
+
+            List<FileInfo> docFileInfos = new ArrayList<>();
             if(vision && !CollectionUtils.isEmpty(chatMessage.getFiles())){
 
                 for (FileInfo fileInfo : chatMessage.getFiles()) {
 
                     MimeType mimeType = MimeType.valueOf(fileInfo.getContentType());
 
-//                    List<MimeType> allowMimeTypes = List.of(Media.Format.IMAGE_JPEG, Media.Format.IMAGE_PNG, Media.Format.IMAGE_GIF, Media.Format.IMAGE_WEBP);
 
                     if(!ALLOW_IMAGE_TYPE.contains(mimeType)){
                         break;
@@ -299,13 +272,51 @@ public class AiChatServiceImpl implements AiChatService {
                     mediaList.add(Media.builder().name(fileInfo.getFilename()).mimeType(mimeType).data(rawData).build());
                 }
             }
+
+
+            if(!CollectionUtils.isEmpty(chatMessage.getFiles())){
+                for (FileInfo fileInfo : chatMessage.getFiles()) {
+                    MimeType mimeType = MimeType.valueOf(fileInfo.getContentType());
+                    if(ALLOW_DOC_TYPE.contains(mimeType)){
+                        docFileInfos.add(fileInfo);
+                    }
+                }
+            }
+
+
+
+            String content = chatMessage.getContent();
+
+
+            if(!CollectionUtils.isEmpty(docFileInfos)){
+                String listContent = docFileInfos.stream()
+                        .map(info -> String.format("名称: %s, 文件id: %s", info.getFilename(), info.getId()))
+                        .collect(Collectors.joining("\n")); // 用换行符拼接
+
+                String formatted =
+                        """
+                        
+                        用户上传文件
+                        %s
+                        """.formatted(listContent);
+
+                content += formatted;
+            }
+
+
             Message message = switch (messageType) {
                 case SYSTEM    -> SystemMessage.builder().build();
-                case USER      -> UserMessage.builder().text(chatMessage.getContent()).media(mediaList).build();
-                case ASSISTANT -> AssistantMessage.builder().content(chatMessage.getContent()).build();
+                case USER      -> UserMessage.builder().text(content).media(mediaList).build();
+                case ASSISTANT -> AssistantMessage.builder().content(content).build();
                 default        -> throw new IllegalArgumentException(
                         "Unsupported message type: " + messageType);
             };
+
+
+
+
+
+
 
             messages.add(message);
         }

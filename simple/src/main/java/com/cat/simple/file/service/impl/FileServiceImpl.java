@@ -7,6 +7,7 @@ import com.cat.common.entity.file.FileInfo;
 import com.cat.common.utils.CatUUID;
 import com.cat.common.utils.IOUtils;
 import com.cat.common.utils.ServletUtils;
+import com.cat.common.utils.UUIDUtils;
 import com.cat.simple.config.minio.MinioService;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.file.mapper.FileInfoMapper;
@@ -17,7 +18,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
@@ -29,14 +29,18 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 
 /***
@@ -70,6 +74,9 @@ public class FileServiceImpl implements FileService {
     private final static String DYNAMIC_FORM = "/动态表单/";
 
     private final static String AGENT_FILE = "/AGENT_FILE/";
+
+    @Value("${custom.file.local-tmp}")
+    private String LOCAL_FILE_TMP;
 
     @Override
     @Transactional
@@ -345,6 +352,39 @@ public class FileServiceImpl implements FileService {
     @Override
     public FileInfo getAgentFileInfoById(String fileId) {
         return fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getParentId, AGENT_FILE).eq(FileInfo::getId, fileId));
+    }
+
+    @Override
+    public String saveLocalAgentFileById(String fileId){
+        FileInfo agentFileInfoById = getAgentFileInfoById(fileId);
+
+        String path = LOCAL_FILE_TMP + UUIDUtils.randomUUID() + "/" + agentFileInfoById.getFilename();
+
+        // 使用 try-with-resources 确保 InputStream 自动关闭
+        try (InputStream inputStream = minioService.getObject(BUCKET_NAME, AGENT_FILE + fileId)) {
+
+            Path destinationPath = Paths.get(path);
+
+            // 可选：如果需要确保文件的父目录存在，可以加上以下代码
+            File parentDir = destinationPath.getParent().toFile();
+            if (!parentDir.exists()) {
+                boolean mkdir = parentDir.mkdirs();
+                if(!mkdir){
+                    throw new IllegalStateException("文件夹创建失败");
+                }
+            }
+
+            // 将 InputStream 复制到本地文件
+            // StandardCopyOption.REPLACE_EXISTING 表示如果文件已存在则覆盖
+            Files.copy(inputStream, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+
+            System.out.println("文件已成功保存到: " + path);
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RuntimeException("保存文件到本地失败", e);
+        }
+        return path;
     }
 
     private boolean notExistFolder(String folderId){

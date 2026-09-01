@@ -68,5 +68,7 @@ public interface FileService {
 
     FileInfo getAgentFileInfoById(String fileId);
 
+    String saveLocalAgentFileById(String fileId);
+
 
 }

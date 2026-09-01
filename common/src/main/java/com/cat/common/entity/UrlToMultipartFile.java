@@ -1,4 +1,4 @@
-package com.cat.common.entity.utils;
+package com.cat.common.entity;
 
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;

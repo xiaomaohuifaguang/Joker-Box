@@ -26,7 +26,7 @@ import java.util.List;
 @Accessors(chain = true)
 @TableName(value  = "cat_chat_message", autoResultMap = true)
 @Schema(name = "ChatMessage", description = "ai会话消息表")
-//@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatMessage implements Serializable {
 
     @Serial

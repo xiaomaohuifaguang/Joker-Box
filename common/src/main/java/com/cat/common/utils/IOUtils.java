@@ -1,6 +1,6 @@
 package com.cat.common.utils;
 
-import com.cat.common.entity.utils.UrlToMultipartFile;
+import com.cat.common.entity.UrlToMultipartFile;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +34,10 @@ public class IOUtils {
             return fileName.substring(fileName.lastIndexOf(".") + 1);
         }
         return null;
+    }
+
+    public static String fileNameWithoutType(String fileName){
+        return  fileName.substring(0, fileName.lastIndexOf('.'));
     }
 
     public static void saveStream(InputStream inputStream, OutputStream outputStream) throws IOException {
