@@ -55,7 +55,7 @@ public class SystemPromptServiceImpl implements SystemPromptService {
     @Override
     public List<SystemPrompt> queryAll() {
         return systemPromptMapper.selectList(new LambdaQueryWrapper<SystemPrompt>()
-                .select(SystemPrompt::getPrompt)
+                .select(SystemPrompt::getId,SystemPrompt::getPrompt)
                 .gt(SystemPrompt::getDeadTime, LocalDateTime.now()));
     }
 }
