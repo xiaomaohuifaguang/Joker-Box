@@ -9,6 +9,7 @@ import com.cat.common.entity.ai.chat.ChatSession;
 import com.cat.common.entity.ai.chat.QAMessage;
 import com.cat.common.entity.ai.model.AiModel;
 import com.cat.common.entity.ai.model.ModelType;
+import com.cat.common.entity.ai.systemPrompt.AiSystemPrompt;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.file.FileInfo;
 import com.cat.common.utils.UUIDUtils;
@@ -162,7 +163,9 @@ public class AiChatServiceImpl implements AiChatService {
         // 2. 构建大模型请求
         AiModel aiModel = aiModelService.getOneWithRealApiKeyById(chatRequestParam.getModelId());
 
-        CatAiService catAiService = aiServicesBuilder.makeAiService(aiModel, CatAiService.class);
+        AiSystemPrompt defaultSystemPrompt = aiSystemPromptService.info(-1);
+
+        CatAiService catAiService = aiServicesBuilder.makeAiService(aiModel, CatAiService.class, defaultSystemPrompt.getPrompt());
 
 
 

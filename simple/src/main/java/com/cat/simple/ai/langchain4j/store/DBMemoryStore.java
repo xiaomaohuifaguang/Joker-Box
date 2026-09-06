@@ -28,7 +28,8 @@ public class DBMemoryStore implements ChatMemoryStore {
 
         AiMemory aiMemory = aiMemoryMapper.selectOne(new LambdaQueryWrapper<AiMemory>().eq(AiMemory::getSessionId, memoryId));
         if(Objects.nonNull(aiMemory) && StringUtils.hasText(aiMemory.getMessages())){
-            return ChatMessageDeserializer.messagesFromJson(aiMemory.getMessages());
+            List<ChatMessage> chatMessages = ChatMessageDeserializer.messagesFromJson(aiMemory.getMessages());
+            return chatMessages;
         }else {
             return new ArrayList<>();
         }

@@ -12,6 +12,7 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class AiServicesBuilder {
@@ -27,24 +28,25 @@ public class AiServicesBuilder {
     @Resource
     private ModelBuilder modelBuilder;
 
-    public <T> T makeAiService(AiModel aiModel, Class<T> aiService){
+
+
+    public <T> T makeAiService(AiModel aiModel, Class<T> aiService, String systemPrompt){
         ChatModel chatModel = modelBuilder.makeChatModel(aiModel);
         StreamingChatModel streamingChatModel = modelBuilder.makeStreamingChatModel(aiModel);
-
-        return AiServices.builder(aiService)
-                .chatModel(chatModel)
-                .streamingChatModel(streamingChatModel)
-                .chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder().id(memoryId).chatMemoryStore(store).maxMessages(10).build())
-                .tools(weatherTools, systemTools, fileParseTools).build();
+        return makeAiService(chatModel, streamingChatModel, aiService, systemPrompt);
     }
 
 
-    public <T> T makeAiService(ChatModel chatModel, StreamingChatModel streamingChatModel, Class<T> aiService){
-        return AiServices.builder(aiService)
-                .chatModel(chatModel)
-                .streamingChatModel(streamingChatModel)
-                .chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder().id(memoryId).chatMemoryStore(store).maxMessages(10).build())
-                .tools(weatherTools, systemTools, fileParseTools).build();
+    public <T> T makeAiService(ChatModel chatModel, StreamingChatModel streamingChatModel, Class<T> aiService, String systemPrompt){
+        AiServices<T> builder = AiServices.builder(aiService);
+        builder.chatModel(chatModel);
+        builder.streamingChatModel(streamingChatModel);
+        if(StringUtils.hasText(systemPrompt)){
+            builder.systemMessage(systemPrompt);
+        }
+        builder.chatMemoryProvider(memoryId -> MessageWindowChatMemory.builder().id(memoryId).chatMemoryStore(store).alwaysKeepSystemMessageFirst(true).maxMessages(20).build());
+        builder.tools(weatherTools, systemTools, fileParseTools);
+        return builder.build();
     }
 
 
