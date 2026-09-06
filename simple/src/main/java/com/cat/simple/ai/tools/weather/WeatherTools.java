@@ -1,7 +1,6 @@
 package com.cat.simple.ai.tools.weather;
 
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
+import dev.langchain4j.agent.tool.P;
 import org.springframework.stereotype.Component;
 
 
@@ -9,10 +8,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class WeatherTools{
 
-    @Tool(description = "获取指定城市的当前天气信息")
+    @dev.langchain4j.agent.tool.Tool("获取指定城市的当前天气信息")
     public String getWeather(
-            @ToolParam(description = "天气查询请求") WeatherRequest request
+             @P("天气查询请求") WeatherRequest request
     ) {
-        return "It's always sunny in " + request.getCity() + "!";
+        return "暴风雨， " + request.getCity() + "!";
     }
 }

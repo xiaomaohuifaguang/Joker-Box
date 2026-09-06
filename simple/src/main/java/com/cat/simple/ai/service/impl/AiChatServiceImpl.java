@@ -9,48 +9,39 @@ import com.cat.common.entity.ai.chat.ChatSession;
 import com.cat.common.entity.ai.chat.QAMessage;
 import com.cat.common.entity.ai.model.AiModel;
 import com.cat.common.entity.ai.model.ModelType;
-import com.cat.common.entity.ai.systemPrompt.AiSystemPrompt;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.file.FileInfo;
-import com.cat.common.utils.IOUtils;
 import com.cat.common.utils.UUIDUtils;
+import com.cat.simple.ai.core.Role;
+import com.cat.simple.ai.langchain4j.aiService.AiServicesBuilder;
+import com.cat.simple.ai.langchain4j.aiService.CatAiService;
 import com.cat.simple.ai.mapper.ChatMessageMapper;
 import com.cat.simple.ai.mapper.ChatSessionMapper;
 import com.cat.simple.ai.service.AiChatService;
 import com.cat.simple.ai.service.AiModelService;
 import com.cat.simple.ai.service.AiSystemPromptService;
-import com.cat.simple.ai.service.LlmService;
 import com.cat.simple.config.rocketmq.post.qa.QAVectorRockerMqProductor;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.file.service.FileService;
+import dev.langchain4j.data.message.Content;
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.invocation.InvocationParameters;
+import dev.langchain4j.model.output.TokenUsage;
+import dev.langchain4j.service.Result;
+import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.*;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.content.Media;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
-import reactor.util.context.Context;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -61,17 +52,10 @@ public class AiChatServiceImpl implements AiChatService {
     private AiModelService aiModelService;
 
     @Resource
-    private LlmService llmService;
-
-    @Resource
     private ChatSessionMapper chatSessionMapper;
 
     @Resource
     private ChatMessageMapper chatMessageMapper;
-
-    // ✅ OPT: 注入编程式事务模板，替代流式场景下不可用的 @Transactional
-    @Resource
-    private TransactionTemplate transactionTemplate;
 
     @Resource
     private FileService fileService;
@@ -82,20 +66,24 @@ public class AiChatServiceImpl implements AiChatService {
     @Resource
     private QAVectorRockerMqProductor qaVectorRockerMqProductor;
 
+
+    @Resource
+    private AiServicesBuilder aiServicesBuilder;
+
     private static final List<MimeType> ALLOW_IMAGE_TYPE = List.of(
-            Media.Format.IMAGE_JPEG,
-            Media.Format.IMAGE_PNG,
-            Media.Format.IMAGE_GIF,
-            Media.Format.IMAGE_WEBP
+            MimeType.valueOf("image/jpeg"),
+            MimeType.valueOf("image/png"),
+            MimeType.valueOf("image/gif"),
+            MimeType.valueOf("image/webp")
     );
 
 
     private static final List<MimeType> ALLOW_DOC_TYPE = List.of(
-            Media.Format.DOC_PDF,
-            Media.Format.DOC_DOC,
-            Media.Format.DOC_DOCX,
-            Media.Format.DOC_XLS,
-            Media.Format.DOC_XLSX,
+            MimeType.valueOf("application/pdf"),
+            MimeType.valueOf("application/msword"),
+            MimeType.valueOf("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            MimeType.valueOf("application/vnd.ms-excel"),
+            MimeType.valueOf("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
             MimeType.valueOf("application/vnd.ms-powerpoint"),
             MimeType.valueOf("application/vnd.openxmlformats-officedocument.presentationml.presentation"));
 
@@ -123,7 +111,7 @@ public class AiChatServiceImpl implements AiChatService {
                 .setCreateTime(now)
                 .setContent(chatRequestParam.getContent())
                 .setFiles(fileInfos)
-                .setRole(MessageType.USER.getValue());
+                .setRole(Role.USER.name());
 
         ChatMessage ansMessage = new ChatMessage()
                 .setMessageId(UUIDUtils.randomUUID());
@@ -141,7 +129,7 @@ public class AiChatServiceImpl implements AiChatService {
             // ✅ FIX: 上一版已修复为 getSessionId，此处保留；增加排序保证上下文顺序
             chatMessages = chatMessageMapper.selectList(new LambdaQueryWrapper<ChatMessage>()
                     .eq(ChatMessage::getSessionId, chatSession.getSessionId())
-                    .orderByAsc(ChatMessage::getCreateTime)
+                    .orderByAsc(ChatMessage::getId)
             );
         } else {
             // ✅ OPT: 用用户首条消息截断作为默认标题，避免列表空白 + 作为"待AI生成"标记
@@ -173,23 +161,148 @@ public class AiChatServiceImpl implements AiChatService {
 
         // 2. 构建大模型请求
         AiModel aiModel = aiModelService.getOneWithRealApiKeyById(chatRequestParam.getModelId());
-        OpenAiChatModel openAiChatModel = llmService.buildOpenAiChatModel(aiModel);
-        Prompt prompt = buildPrompt(chatMessages, aiModel.getVision());
 
-//        OpenAiChatModel openAiChatModel = llmService.buildOpenAiChatModel(aiModel);
+        CatAiService catAiService = aiServicesBuilder.makeAiService(aiModel, CatAiService.class);
 
+
+
+        List<Content> contents = new ArrayList<>();
+        if(aiModel.getVision() && !CollectionUtils.isEmpty(askMessage.getFiles())){
+            for (FileInfo fileInfo : askMessage.getFiles()) {
+                MimeType mimeType = MimeType.valueOf(fileInfo.getContentType());
+                if(!ALLOW_IMAGE_TYPE.contains(mimeType)){
+                    break;
+                }
+                String agentFileBase64 = fileService.getAgentFileBase64WithoutMineType(fileInfo.getId());
+                contents.add(ImageContent.from(agentFileBase64, fileInfo.getContentType()));
+            }
+        }
+
+
+
+        List<FileInfo> docFileInfos = new ArrayList<>();
+        if(!CollectionUtils.isEmpty(askMessage.getFiles())){
+            for (FileInfo fileInfo : askMessage.getFiles()) {
+                MimeType mimeType = MimeType.valueOf(fileInfo.getContentType());
+                if(ALLOW_DOC_TYPE.contains(mimeType)){
+                    docFileInfos.add(fileInfo);
+                }
+            }
+        }
+        String askContent = askMessage.getContent();
+        if(!CollectionUtils.isEmpty(docFileInfos)){
+            String listContent = docFileInfos.stream()
+                    .map(info -> String.format("名称: %s, 文件id: %s", info.getFilename(), info.getId()))
+                    .collect(Collectors.joining("\n")); // 用换行符拼接
+
+            String formatted =
+                    """
+                    用户上传文件
+                    %s
+                    """.formatted(listContent);
+            askContent += formatted;
+        }
+
+
+        InvocationParameters invocationParameters = InvocationParameters.from("userId", userId);
 
         // 3. 分流处理
         if (chatRequestParam.isStream()) {
 
-            return handleStreamChat(openAiChatModel, prompt, chatSession, askMessage, ansMessage);
+            SseEmitter sseEmitter = new SseEmitter(300_000L);
 
+
+
+            TokenStream tokenStream = catAiService.chatStream(chatSession.getSessionId(),askContent,contents, invocationParameters);
+
+            ChatMessage chunkMessage = new ChatMessage();
+            chunkMessage.setSessionId(ansMessage.getSessionId());
+            chunkMessage.setMessageId(ansMessage.getMessageId());
+
+            tokenStream.onToolExecuted(exec -> log.info("工具执行: {}", exec))       // ② 工具执行过程可观测
+                    .onCompleteResponse(response -> {                            // ③ ⭐ 流式版的 Result
+                        // ChatResponse ≈ Result 的元数据部分：
+                        String fullText = response.aiMessage().text();           //   完整答案
+                        TokenUsage usage  = response.tokenUsage();               //   token 用量（含工具轮次累计）
+                        String thinking = response.aiMessage().thinking();
+
+                        ansMessage.setContent(fullText);
+                        ansMessage.setReasonContent(thinking);
+                        ansMessage.setCreateTime(LocalDateTime.now());
+                        ansMessage.setTokenCount(usage.totalTokenCount());
+                        chatMessageMapper.insert(ansMessage);
+                        try {
+                            sseEmitter.send(HttpResult.back("[DONE]"));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                        sseEmitter.complete();
+
+                        QAMessage qaMessage = new QAMessage(
+                                UUIDUtils.randomUUID(),
+                                chatSession.getSessionId(),
+                                askMessage.getMessageId(),
+                                askMessage.getContent(),
+                                null,
+                                ansMessage.getMessageId(),
+                                ansMessage.getContent(),
+                                null,
+                                chatSession.getUserId(),
+                                LocalDateTime.now()
+                        );
+                        qaVectorRockerMqProductor.send(qaMessage);
+
+                    })
+                    .onPartialResponseWithContext((partialResponse, partialResponseContext) -> {
+                        chunkMessage.setContent(partialResponse.text());
+                        chunkMessage.setReasonContent(null);
+                        try {
+                            sseEmitter.send(HttpResult.back(chunkMessage));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .onPartialThinkingWithContext((partialThinking, ctx) -> {
+                        chunkMessage.setContent(null);
+                        chunkMessage.setReasonContent(partialThinking.text());
+                        try {
+                            sseEmitter.send(HttpResult.back(chunkMessage));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .onError((throwable) -> {
+
+                    })
+                    .start();
+
+            return sseEmitter;
         } else {
 
-//            return HttpResult.back(handleStreamChatBackChatMessage(openAiChatModel, prompt, chatSession, askMessage, ansMessage));
-            return HttpResult.back(handleSyncChat(openAiChatModel, prompt, chatSession, askMessage, ansMessage));
+            Result<String> result = catAiService.chatResult(chatSession.getSessionId(), askContent, contents, invocationParameters);
+            ansMessage.setContent(result.content());
+            ansMessage.setReasonContent(result.finalResponse().aiMessage().thinking());
+            ansMessage.setCreateTime(LocalDateTime.now());
+            ansMessage.setTokenCount(result.tokenUsage().totalTokenCount());
+            chatMessageMapper.insert(ansMessage);
+            QAMessage qaMessage = new QAMessage(
+                    UUIDUtils.randomUUID(),
+                    chatSession.getSessionId(),
+                    askMessage.getMessageId(),
+                    askMessage.getContent(),
+                    null,
+                    ansMessage.getMessageId(),
+                    ansMessage.getContent(),
+                    null,
+                    chatSession.getUserId(),
+                    LocalDateTime.now()
+            );
+            qaVectorRockerMqProductor.send(qaMessage);
+            return HttpResult.back(ansMessage);
         }
     }
+
+
 
     @Override
     public List<ChatSession> sessions() {
@@ -230,380 +343,6 @@ public class AiChatServiceImpl implements AiChatService {
     @Override
     public void fileDownload(String fileId) throws IOException {
         fileService.downloadAgentFile(fileId);
-    }
-
-
-
-
-    private Prompt buildPrompt(List<ChatMessage> chatMessages, boolean vision){
-        List<Message> messages = new ArrayList<>();
-
-        AiSystemPrompt systemPrompt = aiSystemPromptService.info(-1);
-
-        if(Objects.nonNull(systemPrompt) && StringUtils.hasText(systemPrompt.getPrompt())){
-            messages.add(SystemMessage.builder().text(systemPrompt.getPrompt()).build());
-        }
-
-        for (ChatMessage chatMessage : chatMessages) {
-            MessageType messageType = switch (chatMessage.getRole()){
-                case "user" -> MessageType.USER;
-                case "assistant" -> MessageType.ASSISTANT;
-                case "system" -> MessageType.SYSTEM;
-                default -> throw new IllegalArgumentException(
-                        "Unsupported message type: " + chatMessage.getRole());
-            };
-
-            List<Media> mediaList = new ArrayList<>();
-
-            List<FileInfo> docFileInfos = new ArrayList<>();
-            if(vision && !CollectionUtils.isEmpty(chatMessage.getFiles())){
-
-                for (FileInfo fileInfo : chatMessage.getFiles()) {
-
-                    MimeType mimeType = MimeType.valueOf(fileInfo.getContentType());
-
-
-                    if(!ALLOW_IMAGE_TYPE.contains(mimeType)){
-                        break;
-                    }
-                    String agentFileBase64 = fileService.getAgentFileBase64WithoutMineType(fileInfo.getId());
-                    byte[] rawData = Base64.getDecoder().decode(agentFileBase64);
-
-                    mediaList.add(Media.builder().name(fileInfo.getFilename()).mimeType(mimeType).data(rawData).build());
-                }
-            }
-
-
-            if(!CollectionUtils.isEmpty(chatMessage.getFiles())){
-                for (FileInfo fileInfo : chatMessage.getFiles()) {
-                    MimeType mimeType = MimeType.valueOf(fileInfo.getContentType());
-                    if(ALLOW_DOC_TYPE.contains(mimeType)){
-                        docFileInfos.add(fileInfo);
-                    }
-                }
-            }
-
-
-
-            String content = chatMessage.getContent();
-
-
-            if(!CollectionUtils.isEmpty(docFileInfos)){
-                String listContent = docFileInfos.stream()
-                        .map(info -> String.format("名称: %s, 文件id: %s", info.getFilename(), info.getId()))
-                        .collect(Collectors.joining("\n")); // 用换行符拼接
-
-                String formatted =
-                        """
-                        
-                        用户上传文件
-                        %s
-                        """.formatted(listContent);
-
-                content += formatted;
-            }
-
-
-            Message message = switch (messageType) {
-                case SYSTEM    -> SystemMessage.builder().build();
-                case USER      -> UserMessage.builder().text(content).media(mediaList).build();
-                case ASSISTANT -> AssistantMessage.builder().content(content).build();
-                default        -> throw new IllegalArgumentException(
-                        "Unsupported message type: " + messageType);
-            };
-
-
-
-
-
-
-
-            messages.add(message);
-        }
-        return Prompt.builder().messages(messages).build();
-    }
-
-    private ChatMessage handleSyncChat(OpenAiChatModel chatModel, Prompt prompt,ChatSession chatSession, ChatMessage askMessage, ChatMessage ansMessage ){
-        ChatResponse chatResponse = chatModel.call(prompt);
-        AssistantMessage output = chatResponse.getResult().getOutput();
-        String content = output.getText();
-
-
-        ansMessage.setContent(content)
-                .setRole(MessageType.ASSISTANT.getValue())
-                .setCreateTime(LocalDateTime.now());
-
-        Object reasoningContentObj = output.getMetadata().get("reasoningContent");
-        Object o = output.getMetadata().get("reasoning_content");
-        if (Objects.nonNull(reasoningContentObj)) {
-            ansMessage.setReasonContent(reasoningContentObj.toString());
-        }
-
-        Usage usage = chatResponse.getMetadata().getUsage();
-        ansMessage.setTokenCount(usage.getTotalTokens());
-
-        transactionTemplate.executeWithoutResult(status -> {
-            chatSession.setUpdateTime(LocalDateTime.now());
-            chatSessionMapper.updateById(chatSession);
-            chatMessageMapper.insert(ansMessage);
-        });
-
-        QAMessage qaMessage = new QAMessage(
-                UUIDUtils.randomUUID(),
-                chatSession.getSessionId(),
-                askMessage.getMessageId(),
-                askMessage.getContent(),
-                null,
-                ansMessage.getMessageId(),
-                ansMessage.getContent(),
-                null,
-                chatSession.getUserId(),
-                LocalDateTime.now()
-        );
-
-        qaVectorRockerMqProductor.send(qaMessage);
-
-
-        return ansMessage;
-    }
-
-
-    private ChatMessage handleStreamChatBackChatMessage(
-            OpenAiChatModel chatModel, Prompt prompt,
-            ChatSession chatSession, ChatMessage askMessage, ChatMessage ansMessage) {
-
-        StringBuilder answer = new StringBuilder();
-        StringBuilder answerReason = new StringBuilder();
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<Throwable> errorRef = new AtomicReference<>();
-        Disposable subscription = chatModel.stream(prompt).subscribe(
-                // --- onNext ---
-                chatResponse -> {
-                    try {
-                        if (Objects.nonNull(chatResponse.getMetadata().getUsage())) {
-                            ansMessage.setTokenCount(
-                                    chatResponse.getMetadata().getUsage().getTotalTokens());
-                        }
-
-                        AssistantMessage output = chatResponse.getResult().getOutput();
-                        String text = output.getText();
-                        Object reasoningContentObj = output.getMetadata().get("reasoningContent");
-
-                        if (StringUtils.hasText(text)) {
-                            answer.append(text);
-                        }
-                        if (Objects.nonNull(reasoningContentObj)) {
-                            answerReason.append(reasoningContentObj.toString());
-                        }
-                    } catch (Exception e) {
-                        // onNext 中的异常不会自动触发 onError，需手动捕获
-                        log.error("处理流式chunk异常, sessionId={}", ansMessage.getSessionId(), e);
-                    }
-                },
-
-                // --- onError ---
-                error -> {
-                    log.error("流式响应异常, sessionId={}", ansMessage.getSessionId(), error);
-                    errorRef.set(error);
-                    latch.countDown();
-                },
-
-                // --- onComplete ---
-                () -> {
-                    try {
-                        ansMessage.setContent(answer.toString())
-                                .setReasonContent(answerReason.toString())
-                                .setRole(MessageType.ASSISTANT.getValue())
-                                .setCreateTime(LocalDateTime.now());
-
-                        transactionTemplate.executeWithoutResult(status -> {
-                            chatMessageMapper.insert(ansMessage);
-                            chatSession.setUpdateTime(LocalDateTime.now());
-                            chatSessionMapper.updateById(chatSession);
-                        });
-
-                        QAMessage qaMessage = new QAMessage(
-                                UUIDUtils.randomUUID(),
-                                chatSession.getSessionId(),
-                                askMessage.getMessageId(),
-                                askMessage.getContent(),
-                                null,
-                                ansMessage.getMessageId(),
-                                ansMessage.getContent(),
-                                null,
-                                chatSession.getUserId(),
-                                LocalDateTime.now()
-                        );
-                        qaVectorRockerMqProductor.send(qaMessage);
-
-                    } catch (Exception e) {
-                        log.error("流结束持久化或MQ发送失败, sessionId={}",
-                                ansMessage.getSessionId(), e);
-                        errorRef.set(e);
-                    } finally {
-                        latch.countDown(); // ← 无论成功失败都必须释放
-                    }
-                }
-        );
-
-        // === 阻塞等待流完成 ===
-        try {
-            boolean completed = latch.await(10, TimeUnit.MINUTES);
-            if (!completed) {
-                subscription.dispose(); // 超时主动取消订阅，释放资源
-                throw new IllegalStateException(
-                        "流式响应超时(5min), sessionId=" + ansMessage.getSessionId());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            subscription.dispose();
-            throw new RuntimeException("等待流式响应被中断", e);
-        }
-
-        // 流过程中或持久化阶段有异常 → 抛出
-        if (errorRef.get() != null) {
-            throw new RuntimeException("流式处理失败, sessionId=" + ansMessage.getSessionId(),
-                    errorRef.get());
-        }
-
-        return ansMessage; // ✅ 此时 content/reasonContent/tokenCount 已全部填充
-    }
-
-
-    private SseEmitter handleStreamChat(OpenAiChatModel chatModel, Prompt prompt,ChatSession chatSession, ChatMessage askMessage, ChatMessage ansMessage ) {
-        SseEmitter emitter = new SseEmitter(300_000L);
-        StringBuilder answer = new StringBuilder();       // ✅ OPT: StringBuffer → StringBuilder
-        StringBuilder answerReason = new StringBuilder();
-        AtomicReference<Disposable> subscriptionRef = new AtomicReference<>();
-
-
-        Flux<ChatResponse> flux = chatModel.stream(prompt);
-
-
-
-        Disposable subscription = flux.subscribe(
-                // --- onNext: 处理每个增量 chunk ---
-                chatResponse -> {
-
-                    ChatMessage streamChunk = new ChatMessage()
-                            .setMessageId(ansMessage.getMessageId())
-                            .setSessionId(ansMessage.getSessionId());
-
-                    if (Objects.nonNull(chatResponse.getMetadata().getUsage())) {
-                        ChatResponseMetadata metadata = chatResponse.getMetadata();
-                        Usage usage = metadata.getUsage();
-                        if(usage.getTotalTokens()>0){
-                            ansMessage.setTokenCount(usage.getTotalTokens());
-                        }
-
-                    }
-
-                    Generation result = chatResponse.getResult();
-                    if(Objects.isNull(result)){
-                        return;
-                    }
-                    AssistantMessage output = result.getOutput();
-                    String text = output.getText();
-
-                    Object reasoningContentObj = output.getMetadata().get("reasoningContent");
-
-                    boolean hasContent = StringUtils.hasText(text);
-                    boolean hasReason = Objects.nonNull(reasoningContentObj);
-
-                    // 过滤无效增量，避免前端收到空推送
-                    if (!hasContent && !hasReason) {
-                        return;
-                    }
-
-                    // 累积完整内容用于最终落库
-                    if (hasContent) {
-                        answer.append(text);
-                    }
-                    if (hasReason) {
-                        answerReason.append(reasoningContentObj.toString());
-                    }
-
-                    try {
-                        streamChunk.setContent(hasContent ? text : "")
-                                .setReasonContent(hasReason ? reasoningContentObj.toString() : "");
-                        streamChunk.setRole(MessageType.ASSISTANT.getValue());
-                        emitter.send(HttpResult.back(streamChunk));
-                    } catch (IOException e) {
-                        // ✅ FIX: 客户端断开时主动取消上游流，防止 Token 浪费和资源泄漏
-                        log.warn("SSE推送失败(客户端可能已断开)，取消上游LLM流, sessionId={}",
-                                ansMessage.getSessionId(), e);
-                        Disposable d = subscriptionRef.get();
-                        if (d != null && !d.isDisposed()) {
-                            d.dispose();
-                        }
-                    } catch (Exception e) {
-                        log.error("SSE单次推送数据异常, sessionId={}", ansMessage.getSessionId(), e);
-                        emitter.completeWithError(e);
-                    }
-                },
-
-                // --- onError: 大模型返回致命错误 ---
-                error -> {
-                    log.error("流式响应处理异常, sessionId={}", ansMessage.getSessionId(), error);
-                    emitter.completeWithError(error);
-                },
-
-                // --- onComplete: 流正常结束 ---
-                () -> {
-                    try {
-                        // ✅ FIX: 流完全结束后才持久化，确保数据库写入完整内容
-                        ansMessage.setContent(answer.toString())
-                                .setReasonContent(answerReason.toString())
-                                .setRole(MessageType.ASSISTANT.getValue())
-                                .setCreateTime(LocalDateTime.now());
-
-                        // ✅ FIX: 使用编程式事务保证落库原子性
-                        transactionTemplate.executeWithoutResult(status -> {
-                            chatMessageMapper.insert(ansMessage);
-                            chatSession.setUpdateTime(LocalDateTime.now());
-                            chatSessionMapper.updateById(chatSession);
-                        });
-
-                        QAMessage qaMessage = new QAMessage(
-                                UUIDUtils.randomUUID(),
-                                chatSession.getSessionId(),
-                                askMessage.getMessageId(),
-                                askMessage.getContent(),
-                                null,
-                                ansMessage.getMessageId(),
-                                ansMessage.getContent(),
-                                null,
-                                chatSession.getUserId(),
-                                LocalDateTime.now()
-                        );
-
-                        qaVectorRockerMqProductor.send(qaMessage);
-
-                        // ✅ OPT: 结束标记统一使用 HttpResult 格式，避免前端特殊解析裸字符串
-                        emitter.send(HttpResult.back("[DONE]"));
-                        emitter.complete();
-                    } catch (Exception e) {
-                        log.error("流结束持久化或发送DONE标记失败, sessionId={}",
-                                ansMessage.getSessionId(), e);
-                        emitter.completeWithError(e);
-                    }
-                }
-        );
-
-        // ✅ FIX: 保存订阅引用，建立 Emitter ↔ Flux 双向生命周期绑定
-        subscriptionRef.set(subscription);
-        Runnable cancelUpstream = () -> {
-            Disposable d = subscriptionRef.get();
-            if (d != null && !d.isDisposed()) {
-                d.dispose();
-                log.info("SSE连接关闭，已取消上游LLM流式请求, sessionId={}", ansMessage.getSessionId());
-            }
-        };
-        emitter.onCompletion(cancelUpstream);
-        emitter.onTimeout(cancelUpstream);
-        emitter.onError(t -> cancelUpstream.run());
-
-        return emitter;
     }
 
 }

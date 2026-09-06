@@ -4,7 +4,6 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.User;
 import com.cat.common.entity.ganDaShi.GanDaShiPost;
 import com.cat.common.entity.ganDaShi.GanDaShiPostPageParam;
-import com.cat.simple.ai.service.LlmService;
 import com.cat.simple.config.opensearch.OpensearchUtils;
 import com.cat.simple.config.rocketmq.post.ganDaShi.GanDaShiVectorRocketMqProductor;
 import com.cat.simple.config.security.SecurityUtils;
@@ -39,8 +38,6 @@ public class GanDaShiPostServiceImpl implements GanDaShiPostService {
     private UserService userService;
     @Resource
     private OpensearchUtils opensearchUtils;
-    @Resource
-    private LlmService llmService;
     @Resource
     private GanDaShiVectorRocketMqProductor ganDaShiVectorRocketMqProductor;
 

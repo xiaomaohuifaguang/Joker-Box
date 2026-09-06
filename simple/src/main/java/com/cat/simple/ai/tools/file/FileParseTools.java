@@ -6,10 +6,8 @@ import com.cat.common.entity.minerU.ParseResponse;
 import com.cat.common.utils.IOUtils;
 import com.cat.simple.file.service.FileService;
 import com.cat.simple.remote.mineru.MinerUClient;
+import dev.langchain4j.agent.tool.P;
 import jakarta.annotation.Resource;
-import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,8 +26,9 @@ public class FileParseTools {
     private FileService fileService;
 
 
-    @Tool(description = "通过文件id将文件转markdown格式 注意仅支持文档类型 ")
-    public String parseToMarkdown(@ToolParam(required = true, description = "文件id") String fileId, ToolContext toolContext) throws IOException {
+    @dev.langchain4j.agent.tool.Tool("通过文件id将文件转markdown格式 注意仅支持文档类型")
+    public String parseToMarkdown( @P("文件id") String fileId) throws IOException {
+
 
         String savePath = fileService.saveLocalAgentFileById(fileId);
 

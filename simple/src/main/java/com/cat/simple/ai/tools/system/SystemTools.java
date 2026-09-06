@@ -1,18 +1,17 @@
 package com.cat.simple.ai.tools.system;
 
 import com.cat.simple.system.service.UserService;
+import dev.langchain4j.agent.tool.P;
+import dev.langchain4j.invocation.InvocationParameters;
 import jakarta.annotation.Resource;
-import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 
 @Component
@@ -32,7 +31,7 @@ public class SystemTools {
     @Resource
     private UserService userService;
 
-    @Tool(description = "获取当前日期和时间。当用户询问'现在几点''今天几号''今天周几'等时间相关问题时调用此工具。")
+    @dev.langchain4j.agent.tool.Tool("获取当前日期和时间。当用户询问'现在几点''今天几号''今天周几'等时间相关问题时调用此工具。")
     public String getCurrentTime() {
 
         ZonedDateTime zdt = ZonedDateTime.now();
@@ -42,19 +41,20 @@ public class SystemTools {
 
 
 
-    @Tool(description = "获取当前用户信息。当用户询问'我是谁''你认识我吗''我的角色''我的机构'，注意仅能获取当前用户信息")
-    public UserInfoVO getUserInfo(ToolContext toolContext) {
+    @dev.langchain4j.agent.tool.Tool("获取当前用户信息。当用户询问'我是谁''你认识我吗''我的角色''我的机构'，注意仅能获取当前用户信息")
+    public UserInfoVO getUserInfo(InvocationParameters parameters) {
 
-        Object userId = toolContext.getContext().get("userId");
-        if (Objects.isNull(userId)) {
+        String userId = parameters.get("userId");
+        if(!StringUtils.hasText(userId)){
             throw new IllegalStateException("工具上下文中缺少 userId");
         }
-        return userService.getUserInfoVO(userId.toString());
+        return userService.getUserInfoVO(userId);
+
     }
 
 
-    @Tool(description = "获取其他用户信息基础信息。当用户询问'帮我查一下张三的联系方式''李四的邮箱''系统内有王五这个人吗'")
-    public List<UserInfoVO> getOtherUserInfo(@ToolParam(required = true, description = "检索关键词") String search) {
+    @dev.langchain4j.agent.tool.Tool("获取其他用户信息基础信息。当用户询问'帮我查一下张三的联系方式''李四的邮箱''系统内有王五这个人吗'")
+    public List<UserInfoVO> getOtherUserInfo( @P("检索关键词") String search) {
         return userService.getUserInfoVOList(search);
     }
 

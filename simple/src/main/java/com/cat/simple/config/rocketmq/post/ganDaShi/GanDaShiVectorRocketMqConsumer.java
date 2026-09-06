@@ -2,7 +2,7 @@ package com.cat.simple.config.rocketmq.post.ganDaShi;
 
 
 import com.cat.common.entity.ganDaShi.GanDaShiPost;
-import com.cat.simple.ai.service.LlmService;
+import com.cat.simple.ai.langchain4j.vector.VectorService;
 import com.cat.simple.config.opensearch.OpensearchUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -24,13 +24,14 @@ public class GanDaShiVectorRocketMqConsumer implements RocketMQListener<GanDaShi
 
     @Resource
     private OpensearchUtils opensearchUtils;
+
     @Resource
-    private LlmService llmService;
+    private VectorService vectorService;
 
     @Override
     public void onMessage(GanDaShiPost ganDaShiPost) {
 
-        List<Float> vector = llmService.vector(ganDaShiPost.getText());
+        List<Float> vector = vectorService.vector(ganDaShiPost.getText());
 
         ganDaShiPost.setTextEmbeddings(vector);
 

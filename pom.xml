@@ -61,7 +61,7 @@
         <jackson-bom.version>2.17.0</jackson-bom.version>
         <spring.ai.version>1.1.8</spring.ai.version>
         <spring.ai.alibaba.version>1.1.2.3</spring.ai.alibaba.version>
-        <langchain4j.version>1.16.3</langchain4j.version>
+        <langchain4j.version>1.20.0</langchain4j.version>
         <opensearch.version>3.9.0</opensearch.version>
 <!--        <rocketmq.version>5.5.0</rocketmq.version>-->
         <rocketmq-spring.version>2.3.6</rocketmq-spring.version>

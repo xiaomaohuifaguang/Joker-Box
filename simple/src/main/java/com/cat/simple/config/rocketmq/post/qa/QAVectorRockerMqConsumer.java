@@ -2,7 +2,7 @@ package com.cat.simple.config.rocketmq.post.qa;
 
 
 import com.cat.common.entity.ai.chat.QAMessage;
-import com.cat.simple.ai.service.LlmService;
+import com.cat.simple.ai.langchain4j.vector.VectorService;
 import com.cat.simple.config.opensearch.OpensearchUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +25,15 @@ public class QAVectorRockerMqConsumer implements RocketMQListener<QAMessage> {
 
     @Resource
     private OpensearchUtils opensearchUtils;
+
     @Resource
-    private LlmService llmService;
+    private VectorService vectorService;
 
     @Override
     public void onMessage(QAMessage message) {
-        List<Float> questionEmbeddings = llmService.vector(message.getQuestion());
+        List<Float> questionEmbeddings = vectorService.vector(message.getQuestion());
         message.setQuestionEmbeddings(questionEmbeddings);
-        List<Float> answerEmbeddings = llmService.vector(message.getAnswer());
+        List<Float> answerEmbeddings = vectorService.vector(message.getAnswer());
         message.setAnswerEmbeddings(answerEmbeddings);
 
         boolean b = opensearchUtils.insertOrUpdate(QAMessage.INDEX, String.valueOf(message.getId()), message);
