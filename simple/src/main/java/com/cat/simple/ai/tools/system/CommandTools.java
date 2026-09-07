@@ -31,7 +31,8 @@ public class CommandTools {
             "taskkill /f", "net user", "powershell -enc", "Remove-Item -Recurse"
     };
 
-    private static  final String WORK_DIR = "/Users/six6/todo/tmp/workspace";
+    @Value("${custom.ai.workspace}")
+    private String WORK_DIR;
 
     // chcp 探测结果缓存：code page 在 JVM 生命周期内不变，没必要每次起进程
     private static volatile Charset cachedWindowsCharset;
