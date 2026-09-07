@@ -1,16 +1,15 @@
 package com.cat.simple.ai.tools.system;
 
 import com.cat.simple.system.service.UserService;
-import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.invocation.InvocationParameters;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+
 import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Map;
 
 
@@ -26,6 +25,8 @@ public class SystemTools {
             DayOfWeek.FRIDAY, "星期五", DayOfWeek.SATURDAY, "星期六",
             DayOfWeek.SUNDAY, "星期日"
     );
+
+
 
 
     @Resource
@@ -53,10 +54,7 @@ public class SystemTools {
     }
 
 
-    @dev.langchain4j.agent.tool.Tool("获取其他用户信息基础信息。当用户询问'帮我查一下张三的联系方式''李四的邮箱''系统内有王五这个人吗'")
-    public List<UserInfoVO> getOtherUserInfo( @P("检索关键词") String search) {
-        return userService.getUserInfoVOList(search);
-    }
+
 
 
 

@@ -14,6 +14,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ModelBuilder {
 
+
+
+
     public ChatModel makeChatModel(AiModel aiModel){
         return OpenAiChatModel.builder()
                 .apiKey(aiModel.getApiKey())
@@ -23,6 +26,7 @@ public class ModelBuilder {
                 .temperature(1D)
                 .logRequests(true)
                 .logResponses(true)
+                .maxRetries(10)
                 .build();
     }
 
