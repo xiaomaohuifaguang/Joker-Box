@@ -126,7 +126,7 @@ public class AiChatServiceImpl implements AiChatService {
             if (Objects.isNull(chatSession)) {
                 throw new IllegalStateException("sessionId is error");
             }
-            chatSession.setUpdateTime(now);
+//            chatSession.setUpdateTime(now);
             // ✅ FIX: 上一版已修复为 getSessionId，此处保留；增加排序保证上下文顺序
             chatMessages = chatMessageMapper.selectList(new LambdaQueryWrapper<ChatMessage>()
                     .eq(ChatMessage::getSessionId, chatSession.getSessionId())
@@ -151,13 +151,11 @@ public class AiChatServiceImpl implements AiChatService {
                     .setUpdateTime(now)
                     .setTitle(defaultTitle);
 
-            chatSessionMapper.insert(chatSession);
         }
 
         askMessage.setSessionId(chatSession.getSessionId());
         ansMessage.setSessionId(chatSession.getSessionId());
 
-        chatMessageMapper.insert(askMessage);
         chatMessages.add(askMessage);
 
         // 2. 构建大模型请求
@@ -233,6 +231,10 @@ public class AiChatServiceImpl implements AiChatService {
                         ansMessage.setReasonContent(thinking);
                         ansMessage.setCreateTime(LocalDateTime.now());
                         ansMessage.setTokenCount(usage.totalTokenCount());
+                        if(!StringUtils.hasText(chatRequestParam.getSessionId())){
+                            chatSessionMapper.insert(chatSession);
+                        }
+                        chatMessageMapper.insert(askMessage);
                         chatMessageMapper.insert(ansMessage);
                         try {
                             sseEmitter.send(HttpResult.back("[DONE]"));
@@ -275,7 +277,7 @@ public class AiChatServiceImpl implements AiChatService {
                         }
                     })
                     .onError((throwable) -> {
-
+                        log.info(throwable.getMessage());
                     })
                     .start();
 
@@ -287,6 +289,10 @@ public class AiChatServiceImpl implements AiChatService {
             ansMessage.setReasonContent(result.finalResponse().aiMessage().thinking());
             ansMessage.setCreateTime(LocalDateTime.now());
             ansMessage.setTokenCount(result.tokenUsage().totalTokenCount());
+            if(!StringUtils.hasText(chatRequestParam.getSessionId())){
+                chatSessionMapper.insert(chatSession);
+            }
+            chatMessageMapper.insert(askMessage);
             chatMessageMapper.insert(ansMessage);
             QAMessage qaMessage = new QAMessage(
                     UUIDUtils.randomUUID(),

@@ -2,6 +2,7 @@ package com.cat.simple.ai.langchain4j.aiService;
 
 import com.cat.common.entity.ai.model.AiModel;
 import com.cat.simple.ai.langchain4j.ModelBuilder;
+import com.cat.simple.ai.langchain4j.guardrails.SystemInputGuardrail;
 import com.cat.simple.ai.langchain4j.skill.SkillsBuilder;
 import com.cat.simple.ai.langchain4j.store.DBMemoryStore;
 import com.cat.simple.ai.tools.file.FileParseTools;
@@ -40,6 +41,9 @@ public class AiServicesBuilder {
     @Resource
     private SkillsBuilder skillsBuilder;
 
+    @Resource
+    private SystemInputGuardrail systemInputGuardrail;
+
 
 
     public <T> T makeAiService(AiModel aiModel, Class<T> aiService, String systemPrompt){
@@ -65,6 +69,7 @@ public class AiServicesBuilder {
         builder.tools(systemTools, commandTools, fileParseTools);
         builder.toolProvider(skills.toolProvider());
         builder.maxToolCallingRoundTrips(10);
+        builder.inputGuardrails(systemInputGuardrail);
         return builder.build();
     }
 
