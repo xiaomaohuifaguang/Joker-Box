@@ -1,10 +1,10 @@
-package com.cat.simple.service.impl;
+package ${implPackage};
 
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
-import com.cat.common.entity.${tableNameUp};
-import com.cat.simple.mapper.${tableNameUp}Mapper;
-import com.cat.simple.service.${tableNameUp}Service;
+import ${entityPackage}.${tableNameUp};
+import ${mapperPackage}.${tableNameUp}Mapper;
+import ${servicePackage}.${tableNameUp}Service;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 

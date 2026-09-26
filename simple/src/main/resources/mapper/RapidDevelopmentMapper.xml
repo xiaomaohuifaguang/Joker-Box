@@ -4,9 +4,11 @@
     <select id="queryAllFields" resultType="com.cat.common.entity.rapidDevelopment.FieldInfo">
         SHOW FULL COLUMNS FROM  ${tableName};
     </select>
-    <select id="tableNameList" resultType="java.lang.String">
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_name LIKE 'cat\_%';
+    <select id="getBaseTableInfo" resultType="com.cat.common.entity.rapidDevelopment.TableInfo">
+        SELECT TABLE_NAME  AS tableName,
+               TABLE_COMMENT AS tableComment
+        FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE()      -- ← 自动取当前库
+          AND TABLE_NAME = #{tableName};
     </select>
 </mapper>

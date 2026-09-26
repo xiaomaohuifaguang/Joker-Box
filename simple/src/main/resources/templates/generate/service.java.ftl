@@ -1,9 +1,9 @@
-package com.cat.simple.service;
+package ${servicePackage};
 
 
 import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
-import com.cat.common.entity.${tableNameUp};
+import ${entityPackage}.${tableNameUp};
 
 public interface ${tableNameUp}Service {
 

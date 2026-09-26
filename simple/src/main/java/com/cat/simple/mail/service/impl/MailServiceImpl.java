@@ -73,7 +73,7 @@ public class MailServiceImpl implements MailService {
 
     private void sendMail(String templateName,HashMap<String, Object> map, String to, String subject) throws IOException, TemplateException, MessagingException {
 
-        Template template = freeMarkerConfigurer.getConfiguration().getTemplate(templateName);
+        Template template = freeMarkerConfigurer.getConfiguration().getTemplate("mail/" + templateName);
 
         map.put("nowYear", LocalDate.now().getYear());
         String  htmlText = FreeMarkerTemplateUtils.processTemplateIntoString(template, map);

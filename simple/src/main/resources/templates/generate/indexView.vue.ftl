@@ -147,8 +147,8 @@
 import { House, Search, Plus, View, Edit, Delete, Document, List } from '@element-plus/icons-vue'
 import { http, alert, confirm } from '@/utils';
 import { onMounted, ref } from 'vue';
-import ${tableNameUp}InfoView from './${tableNameUp}InfoView.vue';
-import ${tableNameUp}AddView from './${tableNameUp}AddView.vue';
+import ${tableNameUp}InfoView from '..${tableNameUp}InfoView.vue';
+import ${tableNameUp}AddView from '..${tableNameUp}AddView.vue';
 
 const loading = ref(false)
 const multipleSelection = ref([])

@@ -1,6 +1,7 @@
 package com.cat.simple.rapiddev.mapper;
 
 import com.cat.common.entity.rapidDevelopment.FieldInfo;
+import com.cat.common.entity.rapidDevelopment.TableInfo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -11,7 +12,5 @@ public interface RapidDevelopmentMapper {
 
     List<FieldInfo> queryAllFields(@Param("tableName") String tableName);
 
-
-    List<String> tableNameList();
-
+    TableInfo getBaseTableInfo(@Param("tableName") String tableName);
 }

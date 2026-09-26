@@ -1,7 +1,7 @@
-package com.cat.simple.controller;
+package ${controllerPackage};
 
 import com.cat.common.entity.*;
-import com.cat.simple.service.${tableNameUp}Service;
+import ${servicePackage}.${tableNameUp}Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
@@ -9,14 +9,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import ${entityPackage}.${tableNameUp};
 
 @RestController
 @RequestMapping("/${tableNameDown}")
-@Tag(name = "${tableNameDown}")
+@Tag(name = "${tableComment}")
 public class ${tableNameUp}Controller {
 
-@Resource
-private ${tableNameUp}Service ${tableNameDown}Service;
+    @Resource
+    private ${tableNameUp}Service ${tableNameDown}Service;
 
     @Operation(summary = "添加")
     @RequestMapping(value = "/add",method = RequestMethod.POST)

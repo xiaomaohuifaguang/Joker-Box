@@ -9,5 +9,7 @@ public interface RapidDevelopmentService {
 
     SampleCode generate(String tableName) throws IOException, TemplateException;
 
+    void download(String tableName) throws IOException, TemplateException;
+
 
 }
