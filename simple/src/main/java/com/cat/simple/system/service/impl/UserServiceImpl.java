@@ -513,27 +513,29 @@ public class UserServiceImpl implements UserService {
         User userByUsername = userMapper.selectById(userId);
         if(ObjectUtils.isEmpty(userByUsername)) return DTO.error("账号不存在");
         UserExtend userExtend = userExtendMapper.selectById(userId);
-
+        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
         if(ObjectUtils.isEmpty(userExtend)){
             userExtend = new UserExtend().setUserId(Integer.valueOf(userId));
             userExtendMapper.insert(userExtend);
 
         }
 
-        if(!userByUsername.getUsername().equals(userInfo.getUsername())){
-            if(!RegexUtils.validate(userInfo.getUsername(), RegexUtils.ACCOUNT_REGEX)){
-                return DTO.error("账号不符合规范");
+        if(StringUtils.hasText(userInfo.getUsername())){
+            if(!userByUsername.getUsername().equals(userInfo.getUsername())){
+                if(!RegexUtils.validate(userInfo.getUsername(), RegexUtils.ACCOUNT_REGEX)){
+                    return DTO.error("账号不符合规范");
+                }
+                if(exist(userInfo.getUsername())){
+                    return DTO.error("账号已存在");
+                }
+                userByUsername.setUsername(userInfo.getUsername());
+                userUpdateWrapper.set("username",userByUsername.getUsername());
             }
-            if(exist(userInfo.getUsername())){
-                return DTO.error("账号已存在");
-            }
-            userByUsername.setUsername(userInfo.getUsername());
-
         }
 
+
         userByUsername.setNickname(userInfo.getNickname());
-        UpdateWrapper<User> userUpdateWrapper = new UpdateWrapper<>();
-        userUpdateWrapper.set("username",userByUsername.getUsername());
+
         userUpdateWrapper.set("nickname",userByUsername.getNickname());
         userUpdateWrapper.eq("id", userId);
         userMapper.update(userUpdateWrapper);

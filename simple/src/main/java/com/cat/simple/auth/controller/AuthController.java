@@ -115,7 +115,7 @@ public class AuthController {
             @Parameter(name = "newPassword", description = "新密码", required = true)
     })
     @RequestMapping(value = "/changePassword", method = RequestMethod.POST)
-    public HttpResult<?> changePassword( @RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword) throws IOException {
+        public HttpResult<?> changePassword( @RequestParam("oldPassword") String oldPassword, @RequestParam("newPassword") String newPassword) throws IOException {
         return HttpResult.back(userService.changePassword(oldPassword, newPassword));
     }
 
