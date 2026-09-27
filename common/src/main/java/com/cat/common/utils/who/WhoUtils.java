@@ -4,7 +4,10 @@ import cn.hutool.extra.pinyin.PinyinUtil;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +50,7 @@ public class WhoUtils {
         return Long.parseLong("1" + phoneTwoNum.charAt(phoneTwoRandomIndex) + (100000000 + RANDOM.nextInt(899999999)));
     }
 
-    public static String getRandomCount(String name){
+    public static String getRandomAccount(String name){
         return  PinyinUtil.getPinyin(name,"");
     }
 
@@ -67,22 +70,18 @@ public class WhoUtils {
         return familyName.get(RANDOM.nextInt(familyName.size())) + name;
     }
 
-    public static List<String> readCat(String path){
+    public static List<String> readCat(String path) {
         List<String> cats = new ArrayList<>();
-        try {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            URL resource = classLoader.getResource(path);
-            assert resource != null;
-            String file = resource.getFile();
-            BufferedReader reader = new BufferedReader(new FileReader(file));
+        try (InputStream in = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(path);
+             BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(in, StandardCharsets.UTF_8))) {
             String line;
-            // 逐行读取文件
             while ((line = reader.readLine()) != null) {
-                // 处理每一行
                 cats.add(line);
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("读取资源失败: " + path, e);
         }
         return cats;
     }

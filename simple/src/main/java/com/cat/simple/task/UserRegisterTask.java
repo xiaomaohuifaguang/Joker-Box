@@ -6,7 +6,11 @@ import com.cat.common.utils.who.WhoUtils;
 import com.cat.simple.system.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.TimeUnit;
 
 
 @Component
@@ -18,6 +22,8 @@ public class UserRegisterTask {
 
 
 //    @PostConstruct
+    @Scheduled(initialDelay = 10, fixedDelay = 365 * 24 * 60 * 60, timeUnit = TimeUnit.SECONDS)
+    @SchedulerLock(name = "UserRegisterTask.init", lockAtMostFor = "30m")
     void init(){
         log.info("UserRegisterTask init");
 
@@ -27,10 +33,10 @@ public class UserRegisterTask {
 
                 int sex = WhoUtils.RANDOM.nextInt(2);
                 String randomName = WhoUtils.getRandomName(sex);
-                String randomCount = WhoUtils.getRandomCount(randomName);
+                String randomAccount = WhoUtils.getRandomAccount(randomName);
                 String randomEmail = WhoUtils.getRandomEmail();
 
-                registerUserInfo.setUsername(randomCount);
+                registerUserInfo.setUsername(randomAccount);
                 registerUserInfo.setPassword(CONSTANTS.DEFAULT_PASSWORD);
                 registerUserInfo.setNickname(randomName);
                 registerUserInfo.setMail(randomEmail);

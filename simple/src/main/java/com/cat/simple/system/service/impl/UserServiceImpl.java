@@ -501,7 +501,7 @@ public class UserServiceImpl implements UserService {
         map.put("secret", secret);
         String base64 = Base64Utils.encodeImageToBase64(
                 GoogleAuthUtils
-                        .generateQRCodeImage(secret, SecurityUtils.getLoginUser().getUsername(), applicationName)
+                        .generateQRCodeImage(secret, Objects.requireNonNull(SecurityUtils.getLoginUser()).getUsername(), applicationName)
         );
         map.put("base64", base64);
         return map;
