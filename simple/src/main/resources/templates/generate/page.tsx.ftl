@@ -280,7 +280,7 @@ export default function ${tableNameUp}Page() {
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        确认删除「{deleting?.name}」？
+                        确认删除「」？
                     </AlertDialogTitle>
                     <AlertDialogDescription>此操作不可撤销。</AlertDialogDescription>
                 </AlertDialogHeader>
