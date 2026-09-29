@@ -558,11 +558,13 @@ public class UserServiceImpl implements UserService {
         List<Integer> orgIds = orgMapper.getOrgIdsByUserId(userId);
         List<Org> orgs = new ArrayList<>();
         orgIds.forEach(id->{
-            Org orgInfo = orgMapper.selectById(id);
+            Org orgInfo = orgMapper.getOrgWithFullPath(id);
             if(ObjectUtils.isEmpty(orgInfo)){
                 if(id.equals(ORG_PARENT)){
                     orgInfo = new Org().setId(ORG_PARENT).setName(NIUBI_ORG_NAME);
                 }
+            }else {
+                orgInfo.setName(orgInfo.getFullPath());
             }
             if(!ObjectUtils.isEmpty(orgInfo)){
                 orgs.add(orgInfo);

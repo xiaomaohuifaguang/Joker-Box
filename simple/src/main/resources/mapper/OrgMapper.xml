@@ -27,4 +27,34 @@
             cou.user_id = #{userId}
         </where>
     </select>
+    <select id="getOrgWithFullPath" resultType="com.cat.common.entity.auth.Org">
+        WITH RECURSIVE path AS (
+            SELECT
+                id,
+                parent_id,
+                name,
+                deleted,
+                create_time,
+                update_time,
+                CAST(name AS CHAR(500)) AS full_path
+            FROM cat_org
+            WHERE parent_id IN (0, -1)          -- 根节点
+            UNION ALL
+            SELECT
+                o.id,
+                o.parent_id,
+                o.name,
+                o.deleted,
+                o.create_time,
+                o.update_time,
+                CONCAT(p.full_path, '/', o.name)
+            FROM cat_org o
+                     JOIN path p ON o.parent_id = p.id
+        )
+        SELECT id, parent_id, name, deleted, create_time, update_time, full_path
+        FROM path
+        <where>
+            deleted = '0' and id = #{id}
+        </where>
+    </select>
 </mapper>

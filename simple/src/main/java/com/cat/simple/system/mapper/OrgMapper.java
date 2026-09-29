@@ -28,6 +28,8 @@ public interface OrgMapper extends BaseMapper<Org> {
 
     List<Integer> getOrgIdsByUserId(@Param("userId") String userId);
 
+    Org getOrgWithFullPath(@Param("id") Integer id);
+
 
 
 }
