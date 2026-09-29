@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.form.mapper.DynamicFormFieldTemplateMapper">
+    <select id="selectPage" resultType="com.cat.common.entity.dynamicForm.DynamicFormFieldTemplate">
+        SELECT * FROM cat_dynamic_form_field_template
+        <where>
+            <if test="param.search != null and param.search != ''">
+                and ( title like concat('%',#{param.search},'%') or description like concat('%',#{param.search},'%') )
+            </if>
+        </where>
+    </select>
+</mapper>
