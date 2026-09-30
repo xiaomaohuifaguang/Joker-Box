@@ -91,25 +91,10 @@
                 FROM cat_process_instance cpi
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                INNER JOIN (
-                    SELECT PROC_INST_ID_, MAX(END_TIME_) AS handle_time
-                    FROM ACT_HI_TASKINST
-                    WHERE ASSIGNEE_ = #{param.userId}
-                      AND END_TIME_ IS NOT NULL AND TASK_DEF_KEY_ &lt;&gt; 'applyNode'
-                      <if test="param.startTime != null and param.startTime != ''">
-                          AND START_TIME_ &gt;= #{param.startTime}
-                      </if>
-                      <if test="param.endTime != null and param.endTime != ''">
-                          AND START_TIME_ &lt;= #{param.endTime}
-                      </if>
-                      <if test="param.startTime == null or param.startTime == ''">
-                          AND START_TIME_ &gt;= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-                      </if>
-                    GROUP BY PROC_INST_ID_
-                ) latest ON latest.PROC_INST_ID_ = cpi.process_instance_id
+                INNER JOIN cat_process_handle_info cphi ON cpi.id = cphi.process_instance_id and cphi.task_definition_key is not null and cphi.task_definition_key &lt;&gt; 'applyNode'
                 WHERE cpi.deleted = '0'
                 <include refid="commonFilters"/>
-                ORDER BY latest.handle_time DESC
+                ORDER BY cphi.handle_time DESC
             </when>
 
             <!-- 5 我发起的(全部)：当前用户创建的所有流程实例 -->
@@ -124,6 +109,7 @@
                 ORDER BY cpi.update_time DESC
             </when>
 
+            <!-- 6 申请中心待办 -->
             <when test='param.type != null and param.type == "6"'>
                 SELECT cpi.*, task.ID_ AS task_id, task.NAME_ AS taskName, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM ACT_RU_TASK task
