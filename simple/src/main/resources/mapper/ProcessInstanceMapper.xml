@@ -87,14 +87,14 @@
 
             <!-- 4 我已办的：按实例查（去重），不携带 taskId/taskName，按“我最后一次办结时间”倒序 -->
             <when test='param.type != null and param.type == "4"'>
-                SELECT cpi.*, cu.nickname createByName, cpd.process_name processDefinitionName
+                SELECT distinct cpi.*, cu.nickname createByName, cpd.process_name processDefinitionName
                 FROM cat_process_instance cpi
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
                 INNER JOIN cat_process_handle_info cphi ON cpi.id = cphi.process_instance_id and cphi.task_definition_key is not null and cphi.task_definition_key &lt;&gt; 'applyNode'
                 WHERE cpi.deleted = '0'
                 <include refid="commonFilters"/>
-                ORDER BY cphi.handle_time DESC
+                ORDER BY cpi.create_time DESC
             </when>
 
             <!-- 5 我发起的(全部)：当前用户创建的所有流程实例 -->

@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 import com.cat.common.entity.Page;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Update;
 
 
 /**
@@ -54,6 +55,33 @@ public interface ProcessDefinitionMapper extends BaseMapper<ProcessDefinition> {
 
    @Delete("DELETE FROM cat_process_instance")
    int deleteInstance();
+
+   @Update("TRUNCATE TABLE cat_process_instance_form")
+   void truncateInstanceForm();
+
+   @Update("TRUNCATE TABLE cat_process_node_field_permission")
+   void truncateNodeFieldPermission();
+
+   @Update("TRUNCATE TABLE cat_process_handle_info")
+   void truncateHandleInfo();
+
+   @Update("TRUNCATE TABLE cat_process_gateway_condition_node")
+   void truncateGatewayConditionNode();
+
+   @Update("TRUNCATE TABLE cat_process_gateway_condition")
+   void truncateGatewayCondition();
+
+   @Update("TRUNCATE TABLE cat_process_definition_form")
+   void truncateDefinitionForm();
+
+   @Update("TRUNCATE TABLE cat_process_definition_bytearray")
+   void truncateDefinitionBytearray();
+
+   @Update("TRUNCATE TABLE cat_process_definition")
+   void truncateDefinition();
+
+   @Update("TRUNCATE TABLE cat_process_instance")
+   void truncateInstance();
 
 
 
