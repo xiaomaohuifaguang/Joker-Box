@@ -11,6 +11,8 @@ import java.io.Serial;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.IdType;
+
 
 <#list entityImportPackages as pkg>
 import ${pkg};
