@@ -1,4 +1,4 @@
-package com.cat.simple.info.controller;
+package com.cat.simple.system.controller;
 
 import com.cat.common.entity.HttpResult;
 import com.cat.common.entity.system.SystemPrompt;
@@ -26,7 +26,6 @@ public class SystemController {
     public HttpResult<List<SystemPrompt>> prompt() {
         return HttpResult.back(promptService.queryAll());
     }
-
 
 
 
