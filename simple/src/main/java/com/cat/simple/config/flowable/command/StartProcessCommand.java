@@ -184,7 +184,11 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
         List<Task> list = taskService.createTaskQuery().processInstanceId(result.getProcessInstanceId()).list();
         if(!CollectionUtils.isEmpty(list) && list.size() == 1 &&  list.get(0).getTaskDefinitionKey().equals(PROCESS_SPECIAL_NODE_APPLY)){
             Task task = list.get(0);
-
+            ProcessHandleParam passParam = new ProcessHandleParam();
+            passParam.setProcessInstanceId(result.getId());
+            passParam.setRemark("开始申请申请人节点自动通过");
+            passParam.setTaskId(task.getId());
+            recorder.recordPass(passParam,task);
             taskService.complete(task.getId());
         }
 

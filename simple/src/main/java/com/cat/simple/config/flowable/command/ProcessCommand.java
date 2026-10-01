@@ -25,8 +25,8 @@ public abstract class ProcessCommand<T> {
         validate();
         beforeHook();
         T result = doExecute();
-        afterHook(result);
         record(result);
+        afterHook(result);
         return result;
     }
 

@@ -115,6 +115,10 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     task.getTaskDefinitionKey());
             instance.setNextUserTaskInfos(nextUserTaskInfosSkipGateway);
 
+            ProcessTrack processTrack = flowableUtils.getProcessTrack(task.getProcessInstanceId());
+            processTrack.setCurrentNodeId(task.getTaskDefinitionKey());
+            instance.setProcessTrack(processTrack);
+
         } else if (ProcessStatusEnum.DRAFT.getStatus().equals(instance.getProcessStatus())) {
             StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
             TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeIdWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId(), startEvent.getId());
@@ -133,9 +137,11 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
             instance.setNextUserTaskInfos(nextUserTaskInfos);
 
         }else {
-            StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
-            TaskFormVO taskFormVO = processFormService.buildTaskFormByNodeIdWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId(), startEvent.getId());
+//            StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
+            TaskFormVO taskFormVO = processFormService.buildGlobalFormWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId());
             instance.setTaskForm(taskFormVO);
+            ProcessTrack processTrack = flowableUtils.getProcessTrack(instance.getProcessInstanceId());
+            instance.setProcessTrack(processTrack);
         }
         return instance;
     }

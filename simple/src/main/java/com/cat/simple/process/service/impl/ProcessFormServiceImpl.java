@@ -154,7 +154,7 @@ public class ProcessFormServiceImpl implements ProcessFormService {
         if(Objects.isNull(formConfig) || !formConfig.isInheritMainForm()){
             return null;
         }
-//
+
         ProcessInstanceForm processInstanceForm = processInstanceFormMapper
                 .selectOne(new LambdaQueryWrapper<ProcessInstanceForm>().eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId).isNull(ProcessInstanceForm::getNodeId));
         if(Objects.isNull(processInstanceForm) || !StringUtils.hasText(processInstanceForm.getFormInstanceId())){
@@ -164,6 +164,23 @@ public class ProcessFormServiceImpl implements ProcessFormService {
         TaskFormVO taskFormVO = new TaskFormVO();
         DynamicForm form = dynamicFormService.infoInstance(processInstanceForm.getFormInstanceId());
         loadPermission(form, formConfig.getGlobalFieldPermissions());
+        taskFormVO.setGlobalForm(form);
+
+        return taskFormVO;
+    }
+
+    @Override
+    public TaskFormVO buildGlobalFormWithData(Integer processDefinitionId, String processVersion, Integer processInstanceId) {
+
+        ProcessInstanceForm processInstanceForm = processInstanceFormMapper
+                .selectOne(new LambdaQueryWrapper<ProcessInstanceForm>().eq(ProcessInstanceForm::getProcessInstanceId, processInstanceId).isNull(ProcessInstanceForm::getNodeId));
+        if(Objects.isNull(processInstanceForm) || !StringUtils.hasText(processInstanceForm.getFormInstanceId())){
+            return null;
+        }
+
+        TaskFormVO taskFormVO = new TaskFormVO();
+        DynamicForm form = dynamicFormService.infoInstance(processInstanceForm.getFormInstanceId());
+        loadPermission(form, new ArrayList<>());
         taskFormVO.setGlobalForm(form);
 
         return taskFormVO;
@@ -288,6 +305,7 @@ public class ProcessFormServiceImpl implements ProcessFormService {
     }
 
     private FormConfig getFormConfig(Integer processDefinitionId, String processVersion, String nodeId){
+
 
         // 查询节点配置
         ProcessDefinitionForm nodeBinding = processDefinitionFormMapper.selectOne(

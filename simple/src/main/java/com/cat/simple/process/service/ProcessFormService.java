@@ -31,6 +31,8 @@ public interface ProcessFormService {
 
     TaskFormVO buildTaskFormByNodeIdWithData(Integer processDefinitionId, String processVersion, Integer processInstanceId, String nodeId);
 
+    TaskFormVO buildGlobalFormWithData(Integer processDefinitionId, String processVersion, Integer processInstanceId);
+
     void writeFormData(ProcessInstance instance, Map<String, Object> formData);
 
     List<DynamicFormField> getGlobalFields(Integer processInstanceId);

@@ -116,4 +116,8 @@ public class ProcessInstance implements Serializable {
     @TableField(exist = false)
     private List<NextUserTaskInfo> nextUserTaskInfos;
 
+    @Schema(description = "流程追踪信息")
+    @TableField(exist = false)
+    private ProcessTrack processTrack;
+
 }

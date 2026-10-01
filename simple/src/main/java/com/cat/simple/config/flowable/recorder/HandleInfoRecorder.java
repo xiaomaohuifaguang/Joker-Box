@@ -1,12 +1,16 @@
 package com.cat.simple.config.flowable.recorder;
 
+import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessHandleInfo;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.enums.HandleTypeEnum;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
+import com.cat.simple.config.flowable.util.FlowableUtils;
+import com.cat.simple.process.mapper.ProcessDefinitionMapper;
 import com.cat.simple.process.mapper.ProcessHandleInfoMapper;
 import jakarta.annotation.Resource;
+import org.flowable.bpmn.model.StartEvent;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -23,14 +27,23 @@ public class HandleInfoRecorder {
 
     @Resource private ProcessHandleInfoMapper processHandleInfoMapper;
     @Resource private ProcessGuard guard;
+    @Resource private ProcessDefinitionMapper processDefinitionMapper;
+    @Resource private FlowableUtils flowableUtils;
 
     /**
      * 记录流程申请动作。
      */
     public void recordApply(ProcessInstance instance, String userId) {
+
+
+        ProcessDefinition processDefinition = processDefinitionMapper.selectById(instance.getProcessDefinitionId());
+        StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
+
         insert(buildBase(instance, userId)
                 .setHandleType(HandleTypeEnum.APPLY.getCode())
                 .setRemark(HandleTypeEnum.APPLY.getName())
+                .setTaskName(startEvent.getName()) // 最好是读取流程模板再赋值开始节点id
+                .setTaskDefinitionKey(startEvent.getId()) // 最好是读取流程模板再赋值开始节点id
                 .setRound(1));
     }
 

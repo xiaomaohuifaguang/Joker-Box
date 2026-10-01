@@ -651,6 +651,43 @@ public class FlowableUtils {
         return result;
     }
 
+    public ProcessTrack getProcessTrack(String processInstanceId){
+        ProcessTrack processTrack = new ProcessTrack();
+        if(!StringUtils.hasText(processInstanceId)){
+            return processTrack;
+        }
+        // 1. 查历史活动（包含已结束和运行中的）
+        List<HistoricActivityInstance> activities = historyService
+                .createHistoricActivityInstanceQuery()
+                .processInstanceId(processInstanceId)
+                .orderByHistoricActivityInstanceStartTime().asc()
+                .list();
+
+        Set<String> done = new LinkedHashSet<>();
+        Set<String> active = new LinkedHashSet<>();
+        Set<String> edges = new LinkedHashSet<>();
+
+        for (HistoricActivityInstance act : activities) {
+            String type = act.getActivityType();
+            if ("sequenceFlow".equals(type)) {
+                // 连线ID = BPMN里的 sequenceFlow id
+                edges.add(act.getActivityId());
+                continue;
+            }
+            if (act.getEndTime() == null) {
+                active.add(act.getActivityId());   // 运行中 → 当前待办节点
+            } else {
+                done.add(act.getActivityId());     // 已结束 → 走过的节点
+            }
+        }
+
+        processTrack.setDoneNodeIds(done);
+        processTrack.setActiveNodeIds(active);
+        processTrack.setPassedEdgeIds(edges);
+
+        return processTrack;
+    }
+
     private void collectNextUserTasks(Process process, String elementId, List<UserTask> result, Set<String> visited) {
         // 防死循环
         if (!visited.add(elementId)) {
