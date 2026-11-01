@@ -96,13 +96,6 @@ public class ProcessInstance implements Serializable {
     @TableField(exist = false)
     private BackConfig backConfig;
 
-    @Schema(description = "流程处理记录")
-    @TableField(exist = false)
-    private List<ProcessHandleInfo> processHandleInfoList;
-
-    @Schema(description = "流程节点时间线")
-    @TableField(exist = false)
-    private List<ProcessTimelineNode> timeline;
 
     @Schema(description = "任务表单渲染数据")
     @TableField(exist = false)

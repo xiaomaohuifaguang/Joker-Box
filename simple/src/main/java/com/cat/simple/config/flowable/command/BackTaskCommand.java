@@ -2,6 +2,7 @@ package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.BackConfig;
 import com.cat.common.entity.process.ProcessHandleParam;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.engine.BackEngine;
 import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
 import com.cat.simple.config.flowable.hook.context.BackContext;
@@ -13,7 +14,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * 驳回任务命令，将当前任务回退到指定或上一节点。
  */
-public class BackTaskCommand extends ProcessCommand<Void> {
+public class BackTaskCommand extends ProcessCommand<CatTaskInfo> {
 
 
     @Resource private FlowableUtils flowableUtils;
@@ -33,44 +34,20 @@ public class BackTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
-    protected Void doExecute() {
-        com.cat.common.entity.process.ProcessInstance instance =
-                guard.getInstance(param.getProcessInstanceId());
-        task = guard.getTask(param.getTaskId());
-//        String currentUserId = guard.getCurrentUserId();
-//
-//        BackConfig cfg = flowableUtils.getBackConfig(param.getTaskId());
-//
-//        if (!cfg.isAllowBack()) {
-//            throw new IllegalStateException("该节点未配置驳回方式, taskId: " + param.getTaskId());
-//        }
+    protected CatTaskInfo doExecute() {
 
+
+        task = guard.getTask(param.getTaskId());
+        CatTaskInfo taskInfo = guard.toTaskInfo(task);
 
         backEngine.back(param, task);
 
-
-//        param.setTargetNodeId(flowableUtils.resolveTargetNodeId(
-//                task, cfg.getBackType(), cfg.getBackNodeId(), param.getTargetNodeId()));
-//        param.setTargetNodeName(flowableUtils.resolveTargetNodeName(
-//                instance.getProcessInstanceId(), param.getTargetNodeId()));
-//
-//        boolean isMultiInstance = task.getProcessInstanceId() != null && flowableUtils.isMultiInstance(task);
-//
-//        if (isMultiInstance) {
-//            flowableUtils.backMultiInstanceAllBack(instance, task, param.getTargetNodeId(), currentUserId, param.getRemark(),
-//                    cfg.getBackAssigneePolicy(), param.getTargetNodeName());
-//        } else {
-//            flowableUtils.backSingleInstance(instance, task, param.getTargetNodeId(), currentUserId, param.getRemark(),
-//                    cfg.getBackAssigneePolicy(), param.getTargetNodeName());
-//        }
-
-
-        return null;
+        return taskInfo;
     }
 
     @Override
-    protected void record(Void result) {
-        recorder.recordBack(param, task);
+    protected void record(CatTaskInfo result) {
+        recorder.recordBack(param, task,result);
     }
 
     @Override
@@ -84,7 +61,7 @@ public class BackTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
-    protected void afterHook(Void result) {
+    protected void afterHook(CatTaskInfo result) {
         BackContext ctx = new BackContext(param);
         if (!CollectionUtils.isEmpty(lifecycleHooks)) {
             for (ProcessLifecycleHook hook : lifecycleHooks) {

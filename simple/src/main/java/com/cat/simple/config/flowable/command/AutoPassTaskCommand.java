@@ -1,6 +1,7 @@
 package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
@@ -11,7 +12,7 @@ import org.flowable.task.api.Task;
  * 由 ApprovalTaskCreateListener 在事务提交后异步触发，无登录上下文，
  * 因此不复用 PassTaskCommand（其 assignee 校验与记录均依赖 SecurityUtils）。
  */
-public class AutoPassTaskCommand extends ProcessCommand<Void> {
+public class AutoPassTaskCommand extends ProcessCommand<CatTaskInfo> {
 
     @Resource private TaskService taskService;
     @Resource private RuntimeService runtimeService;
@@ -36,13 +37,14 @@ public class AutoPassTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
-    protected Void doExecute() {
+    protected CatTaskInfo doExecute() {
+        CatTaskInfo taskInfo = guard.toTaskInfo(task);
         taskService.complete(taskId);
-        return null;
+        return taskInfo;
     }
 
     @Override
-    protected void record(Void result) {
-        recorder.recordAutoPass(instance, task);
+    protected void record(CatTaskInfo result) {
+        recorder.recordAutoPass(instance, task, result);
     }
 }

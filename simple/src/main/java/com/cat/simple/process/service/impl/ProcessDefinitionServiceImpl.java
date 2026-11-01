@@ -326,6 +326,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         } else {
             queryVersion = "DRAFT";
         }
+        processDefinition.setVersion(queryVersion);
 
         ProcessDefinitionBytearray bytearray = selectBytearray(processDefinition.getId(), queryVersion);
         if (bytearray != null) {

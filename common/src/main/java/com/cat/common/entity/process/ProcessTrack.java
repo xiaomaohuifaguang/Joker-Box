@@ -6,11 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.springframework.util.CollectionUtils;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Data
 @AllArgsConstructor
@@ -37,5 +39,41 @@ public class ProcessTrack implements Serializable {
     @Schema(description = "当前任务节点id")
     private String currentNodeId;
 
+
+    @Schema(description = "流程处理记录")
+    private List<ProcessHandleInfo> processHandleInfoList;
+
+    @Schema(description = "节点轮次处理记录")
+    private Map<String, List<RoundRecordVO>> nodeRoundRecordInfoList;
+
+
+    public void setProcessHandleInfoList(List<ProcessHandleInfo> processHandleInfoList) {
+        this.processHandleInfoList = processHandleInfoList;
+        this.nodeRoundRecordInfoList = new LinkedHashMap<>();
+
+        if (CollectionUtils.isEmpty(processHandleInfoList)) {
+            return;
+        }
+
+        Map<String, List<ProcessHandleInfo>> byNode = processHandleInfoList.stream()
+                .collect(Collectors.groupingBy(
+                        ProcessHandleInfo::getTaskDefinitionKey,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        byNode.forEach((nodeId, nodeRecords) -> {
+            Map<Integer, List<ProcessHandleInfo>> byRound = nodeRecords.stream()
+                    .collect(Collectors.groupingBy(
+                            ProcessHandleInfo::getRound,
+                            TreeMap::new,               // round 自动升序
+                            Collectors.toList()));
+
+            List<RoundRecordVO> roundInfos = byRound.entrySet().stream()
+                    .map(e -> new RoundRecordVO(e.getKey(), e.getValue()))
+                    .collect(Collectors.toList());
+
+            this.nodeRoundRecordInfoList.put(nodeId, roundInfos);
+        });
+    }
 
 }

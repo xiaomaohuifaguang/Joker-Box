@@ -2,6 +2,7 @@ package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
 import com.cat.simple.config.flowable.hook.context.RejectContext;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 /**
  * 拒绝任务命令，终止当前流程实例。
  */
-public class RejectTaskCommand extends ProcessCommand<Void> {
+public class RejectTaskCommand extends ProcessCommand<CatTaskInfo> {
 
     @Resource private RuntimeService runtimeService;
     private final ProcessHandleParam param;
@@ -32,18 +33,19 @@ public class RejectTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
-    protected Void doExecute() {
+    protected CatTaskInfo doExecute() {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
         this.task = guard.getTask(param.getTaskId());
+        CatTaskInfo taskInfo = guard.toTaskInfo(task);
         String remark = param.getRemark() != null && !param.getRemark().isBlank()
                 ? param.getRemark() : "拒绝";
         runtimeService.deleteProcessInstance(instance.getProcessInstanceId(), remark);
-        return null;
+        return taskInfo;
     }
 
     @Override
-    protected void record(Void result) {
-        recorder.recordReject(param, task);
+    protected void record(CatTaskInfo result) {
+        recorder.recordReject(param, task,result);
     }
 
     @Override
@@ -57,12 +59,7 @@ public class RejectTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
-    protected void afterHook(Void result) {
-//        ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-//        processInstanceMapper.update(new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<ProcessInstance>()
-//                .eq(ProcessInstance::getId, instance.getId())
-//                .set(ProcessInstance::getProcessStatus, ProcessStatusEnum.TERMINATED.getStatus())
-//                .set(ProcessInstance::getUpdateTime, LocalDateTime.now()));
+    protected void afterHook(CatTaskInfo result) {
         RejectContext ctx = new RejectContext(param);
         if (!CollectionUtils.isEmpty(lifecycleHooks)) {
             for (ProcessLifecycleHook hook : lifecycleHooks) {

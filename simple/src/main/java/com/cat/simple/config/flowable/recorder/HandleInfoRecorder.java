@@ -4,6 +4,7 @@ import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessHandleInfo;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.enums.HandleTypeEnum;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
 import com.cat.simple.config.flowable.util.FlowableUtils;
@@ -18,6 +19,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * 流程处理记录记录器，负责将各类操作（申请、认领、通过、驳回、拒绝）持久化为 ProcessHandleInfo。
@@ -50,9 +52,9 @@ public class HandleInfoRecorder {
     /**
      * 记录任务认领动作。
      */
-    public void recordClaim(ProcessHandleParam param, Task task) {
+    public void recordClaim(ProcessHandleParam param, Task task, CatTaskInfo catTaskInfo) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer round = resolveRound(instance.getId(), task);
+        Integer round = resolveRound(instance.getId(), task, catTaskInfo);
         String remark = StringUtils.hasText(param.getRemark())
                 ? param.getRemark() : HandleTypeEnum.CLAIM.getName();
         insert(buildBase(instance, guard.getCurrentUserId())
@@ -67,9 +69,9 @@ public class HandleInfoRecorder {
     /**
      * 记录任务通过动作。
      */
-    public void recordPass(ProcessHandleParam param, Task task) {
+    public void recordPass(ProcessHandleParam param, Task task, CatTaskInfo catTaskInfo) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer round = resolveRound(instance.getId(), task);
+        Integer round = resolveRound(instance.getId(), task, catTaskInfo);
         String remark = StringUtils.hasText(param.getRemark())
                 ? param.getRemark() : HandleTypeEnum.PASS.getName();
         insert(buildBase(instance, guard.getCurrentUserId())
@@ -85,8 +87,8 @@ public class HandleInfoRecorder {
      * 记录自动通过动作（审批人与申请人相同，系统免审）。
      * 处理人取任务 assignee（触发时已校验与申请人一致），不依赖登录上下文。
      */
-    public void recordAutoPass(ProcessInstance instance, Task task) {
-        Integer round = resolveRound(instance.getId(), task);
+    public void recordAutoPass(ProcessInstance instance, Task task, CatTaskInfo catTaskInfo) {
+        Integer round = resolveRound(instance.getId(), task, catTaskInfo);
         insert(buildBase(instance, task.getAssignee())
                 .setTaskId(task.getId())
                 .setTaskName(task.getName())
@@ -99,9 +101,9 @@ public class HandleInfoRecorder {
     /**
      * 记录任务拒绝动作。
      */
-    public void recordReject(ProcessHandleParam param, Task task) {
+    public void recordReject(ProcessHandleParam param, Task task, CatTaskInfo catTaskInfo) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer round = resolveRound(instance.getId(), task);
+        Integer round = resolveRound(instance.getId(), task, catTaskInfo);
         String remark = StringUtils.hasText(param.getRemark())
                 ? param.getRemark() : HandleTypeEnum.REJECT.getName();
         insert(buildBase(instance, guard.getCurrentUserId())
@@ -116,9 +118,9 @@ public class HandleInfoRecorder {
     /**
      * 记录任务驳回动作。
      */
-    public void recordBack(ProcessHandleParam param, Task task) {
+    public void recordBack(ProcessHandleParam param, Task task, CatTaskInfo catTaskInfo) {
         ProcessInstance instance = guard.getInstance(param.getProcessInstanceId());
-        Integer round = resolveRound(instance.getId(), task);
+        Integer round = resolveRound(instance.getId(), task, catTaskInfo);
         String remark = StringUtils.hasText(param.getRemark()) ? param.getRemark() : "驳回";
         String extra = String.format("{\"targetNodeId\":\"%s\",\"targetNodeName\":\"%s\"}",
                 param.getTargetNodeId(), param.getTargetNodeName() != null ? param.getTargetNodeName() : "");
@@ -146,8 +148,12 @@ public class HandleInfoRecorder {
      * 根据任务创建时间与历史最大轮次的最后处理时间比较，判断当前任务应归属的轮次。
      * 若任务创建时间晚于历史最后处理时间，则视为新一轮次；否则复用当前轮次。
      */
-    private Integer resolveRound(Integer processInstanceId, Task task) {
+    private Integer resolveRound(Integer processInstanceId, Task task, CatTaskInfo catTaskInfo) {
         String taskDefinitionKey = task.getTaskDefinitionKey();
+        if(Objects.nonNull(catTaskInfo) && Objects.nonNull(catTaskInfo.getRound())){
+            return catTaskInfo.getRound();
+        }
+
         Integer max = processHandleInfoMapper.selectMaxRound(processInstanceId, taskDefinitionKey);
         if (max == null) {
             return 1;

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.process.mapper.ProcessDefinitionMapper;
@@ -12,7 +13,10 @@ import jakarta.annotation.Resource;
 import org.flowable.engine.HistoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
+import org.flowable.engine.impl.persistence.entity.ExecutionEntity;
+import org.flowable.engine.runtime.Execution;
 import org.flowable.task.api.Task;
+import org.flowable.variable.api.history.HistoricVariableInstance;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -141,4 +145,53 @@ public class ProcessGuard {
                 new LambdaQueryWrapper<ProcessInstance>()
                         .eq(ProcessInstance::getId, businessKey));
     }
+
+
+    public CatTaskInfo toTaskInfo(Task task){
+
+        String execId = task.getExecutionId();
+        String keyId = execId; // 默认：普通节点用自己
+
+        // 第一查：当前 execution
+        Execution execution = runtimeService.createExecutionQuery()
+                .executionId(execId)
+                .singleResult();
+
+        // 判断是否 MI 子执行：不看 getParent()（会懒加载炸），看 parentId 是否存在，
+        // 再查父执行，用 isMi... 的公开判断方式
+        if (execution != null && execution.getParentId() != null) {
+            Execution parent = runtimeService.createExecutionQuery()
+                    .executionId(execution.getParentId())
+                    .singleResult();
+            // ExecutionQuery 查出来的实例是 ExecutionEntity，可安全强转
+            // MI root 的 scopeType... 用活动类型判断
+            if (parent instanceof ExecutionEntity
+                    && isMultiInstanceRoot((ExecutionEntity) parent)) {
+                keyId = parent.getId(); // MI 场景：key 用 MI root
+            }
+        }
+
+        String varName = "ROUND_" + keyId + "_" + task.getTaskDefinitionKey();
+
+        Integer round = (Integer) taskService.getVariable(task.getId(), varName);
+
+
+        if (round == null) {
+            round = 1;
+        }
+
+        CatTaskInfo info = new CatTaskInfo();
+        info.setRound(round);
+        return info;
+    }
+
+    private boolean isMultiInstanceRoot(ExecutionEntity parent) {
+        // MI root 的活动ID 与子执行相同，且 activityId 非空
+        return parent.getActivityId() != null
+                && runtimeService.createExecutionQuery()
+                .executionId(parent.getId())
+                .count() > 0
+                && parent.getProcessInstanceId().equals(parent.getRootProcessInstanceId());
+    }
+
 }

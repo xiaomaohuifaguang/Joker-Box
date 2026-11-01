@@ -5,9 +5,8 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.*;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
-import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
-import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.command.*;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.enums.BackTypeEnum;
 import com.cat.simple.config.flowable.enums.HandleTypeEnum;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
@@ -21,16 +20,13 @@ import com.cat.simple.process.service.ProcessFormService;
 import com.cat.simple.system.mapper.UserMapper;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.model.StartEvent;
-import org.flowable.bpmn.model.UserTask;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class ProcessInstanceServiceImpl implements ProcessInstanceService {
@@ -42,10 +38,8 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private FlowableUtils flowableUtils;
     @Resource private TaskService taskService;
     @Resource private ProcessFormService processFormService;
-    @Resource private com.cat.simple.process.service.ProcessDefinitionService processDefinitionService;
     @Resource private UserMapper userMapper;
     @Resource private ProcessDefinitionMapper processDefinitionMapper;
-    @Resource private CandidateResolver candidateResolver;
 
     @Override
     public ProcessInstance start(ProcessHandleParam param) {
@@ -65,10 +59,6 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         if (instance == null) {
             return null;
         }
-//        List<ProcessHandleInfo> handleList =
-//                processHandleInfoMapper.selectDetailListByProcessInstanceId(instance.getId());
-//        instance.setProcessHandleInfoList(handleList);
-//        instance.setTimeline(buildTimeline(handleList, instance));
 
         ProcessDefinition processDefinition = processDefinitionMapper.selectById(instance.getProcessDefinitionId());
 
@@ -115,8 +105,9 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     task.getTaskDefinitionKey());
             instance.setNextUserTaskInfos(nextUserTaskInfosSkipGateway);
 
-            ProcessTrack processTrack = flowableUtils.getProcessTrack(task.getProcessInstanceId());
+            ProcessTrack processTrack = makeProcessTrack(instance);
             processTrack.setCurrentNodeId(task.getTaskDefinitionKey());
+            instance.setProcessTrack(processTrack);
             instance.setProcessTrack(processTrack);
 
         } else if (ProcessStatusEnum.DRAFT.getStatus().equals(instance.getProcessStatus())) {
@@ -140,114 +131,12 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 //            StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
             TaskFormVO taskFormVO = processFormService.buildGlobalFormWithData(processDefinition.getId(), instance.getProcessDefinitionVersion(), instance.getId());
             instance.setTaskForm(taskFormVO);
-            ProcessTrack processTrack = flowableUtils.getProcessTrack(instance.getProcessInstanceId());
-            instance.setProcessTrack(processTrack);
+
+            instance.setProcessTrack(makeProcessTrack(instance));
         }
         return instance;
     }
 
-    private List<ProcessTimelineNode> buildTimeline(List<ProcessHandleInfo> list, ProcessInstance instance) {
-        List<ProcessTimelineNode> timeline = new ArrayList<>();
-
-        // 1. 已有记录：先排序，再分组构建节点，节点之间按 startTime 正序排
-        if (list != null && !list.isEmpty()) {
-            list.sort(Comparator.comparing(ProcessHandleInfo::getHandleTime,
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-            timeline = list.stream()
-                    .collect(Collectors.groupingBy(h -> {
-                        String nodeKey = h.getTaskDefinitionKey() != null ? h.getTaskDefinitionKey() : "_start";
-                        int round = h.getRound() != null ? h.getRound() : 1;
-                        return nodeKey + "#" + round;
-                    }))
-                    .values().stream()
-                    .map(group -> {
-                        group.sort(Comparator.comparing(ProcessHandleInfo::getHandleTime,
-                                Comparator.nullsLast(Comparator.naturalOrder())));
-                        ProcessHandleInfo first = group.get(0);
-                        String nodeId = first.getTaskDefinitionKey() != null ? first.getTaskDefinitionKey() : "_start";
-                        ProcessTimelineNode node = new ProcessTimelineNode();
-                        node.setNodeId(nodeId);
-                        node.setNodeName(first.getTaskName() != null ? first.getTaskName()
-                                : ("_start".equals(nodeId) ? "申请" : nodeId));
-                        node.setRound(first.getRound() != null ? first.getRound() : 1);
-                        node.setHandlers(new ArrayList<>(group));
-                        node.setStartTime(first.getHandleTime());
-                        node.setEndTime(group.get(group.size() - 1).getHandleTime());
-                        boolean hasEndAction = group.stream()
-                                .anyMatch(h -> h.getHandleType() != null
-                                        && Set.of("pass", "reject", "back", "apply").contains(h.getHandleType()));
-                        node.setNodeStatus(hasEndAction ? "completed" : "active");
-                        return node;
-                    })
-                    .collect(Collectors.toList());
-            timeline.sort(Comparator.comparing(ProcessTimelineNode::getStartTime,
-                    Comparator.nullsLast(Comparator.naturalOrder())));
-        }
-
-        // 2. 追加待办节点及待处理人：不参与整体排序，直接 append 到末尾
-        if (instance != null && StringUtils.hasText(instance.getProcessInstanceId())) {
-            List<org.flowable.task.api.Task> activeTasks = taskService.createTaskQuery()
-                    .processInstanceId(instance.getProcessInstanceId())
-                    .list();
-            Map<String, List<org.flowable.task.api.Task>> pendingGroups = new HashMap<>();
-            for (org.flowable.task.api.Task task : activeTasks) {
-                String nodeId = task.getTaskDefinitionKey();
-                if (nodeId == null) continue;
-                Integer round = resolveRoundForActiveTask(instance.getId(), task);
-                pendingGroups.computeIfAbsent(nodeId + "#" + round, k -> new ArrayList<>()).add(task);
-            }
-            for (Map.Entry<String, List<org.flowable.task.api.Task>> entry : pendingGroups.entrySet()) {
-                String[] parts = entry.getKey().split("#", 2);
-                String nodeId = parts[0];
-                Integer round = Integer.parseInt(parts[1]);
-                List<org.flowable.task.api.Task> tasks = entry.getValue();
-
-                ProcessTimelineNode node = timeline.stream()
-                        .filter(n -> nodeId.equals(n.getNodeId()) && round.equals(n.getRound()))
-                        .findFirst()
-                        .orElse(null);
-                if (node == null) {
-                    node = new ProcessTimelineNode();
-                    node.setNodeId(nodeId);
-                    node.setNodeName(tasks.get(0).getName() != null ? tasks.get(0).getName() : nodeId);
-                    node.setRound(round);
-                    node.setNodeStatus("active");
-                    node.setHandlers(new ArrayList<>());
-                    if (tasks.get(0).getCreateTime() != null) {
-                        node.setStartTime(tasks.get(0).getCreateTime().toInstant()
-                                .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime());
-                    }
-                    timeline.add(node);
-                } else {
-                    node.setNodeStatus("active");
-                }
-                List<String> existingTaskIds = node.getHandlers().stream()
-                        .map(ProcessHandleInfo::getTaskId)
-                        .filter(Objects::nonNull)
-                        .toList();
-                for (org.flowable.task.api.Task task : tasks) {
-                    if (existingTaskIds.contains(task.getId())) continue;
-                    ProcessHandleInfo pending = new ProcessHandleInfo();
-                    pending.setTaskId(task.getId());
-                    pending.setTaskName(task.getName());
-                    pending.setTaskDefinitionKey(task.getTaskDefinitionKey());
-                    pending.setHandleUser(task.getAssignee());
-                    String nickname = null;
-                    if (task.getAssignee() != null) {
-                        com.cat.common.entity.auth.User user = userMapper.selectById(task.getAssignee());
-                        if (user != null) nickname = user.getNickname();
-                    }else {
-                        nickname = "待认领";
-                    }
-                    pending.setHandleUserName(nickname);
-                    pending.setRound(round);
-                    node.getHandlers().add(pending);
-                }
-            }
-        }
-
-        return timeline;
-    }
 
     private Integer resolveRoundForActiveTask(Integer processInstanceId, org.flowable.task.api.Task task) {
         String taskDefinitionKey = task.getTaskDefinitionKey();
@@ -358,6 +247,36 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Override
     public BackConfig getBackConfig(String taskId) {
         return flowableUtils.getBackConfig(taskId);
+    }
+
+
+    private ProcessTrack makeProcessTrack(ProcessInstance instance){
+        ProcessTrack processTrack = flowableUtils.getProcessTrack(instance.getProcessInstanceId());
+        List<ProcessHandleInfo> handleList = processHandleInfoMapper.selectDetailListByProcessInstanceId(instance.getId());
+
+        List<Task> tasks = taskService.createTaskQuery().processInstanceId(instance.getProcessInstanceId()).list();
+
+        for (Task task : tasks) {
+            ProcessHandleInfo handleInfo = new ProcessHandleInfo();
+            handleInfo.setTaskName(task.getName());
+            handleInfo.setTaskDefinitionKey(task.getTaskDefinitionKey());
+            CatTaskInfo taskInfo = guard.toTaskInfo(task);
+            handleInfo.setRound(taskInfo.getRound());
+
+            if(task.getAssignee() == null){
+                handleInfo.setHandleType("to_claim");
+            }else {
+                handleInfo.setHandleUser(task.getAssignee());
+                handleInfo.setHandleType("to_do");
+                User user = userMapper.selectById(task.getAssignee());
+                handleInfo.setHandleUserName(user.getNickname());
+            }
+
+            handleList.add(handleInfo);
+        }
+
+        processTrack.setProcessHandleInfoList(handleList);
+        return processTrack;
     }
 
 

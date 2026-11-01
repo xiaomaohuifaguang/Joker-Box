@@ -1,6 +1,7 @@
 package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.ProcessHandleParam;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
 import com.cat.simple.config.flowable.hook.context.ClaimContext;
 import jakarta.annotation.Resource;
@@ -11,7 +12,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * 认领任务命令，当前候选人将任务指派给自己。
  */
-public class ClaimTaskCommand extends ProcessCommand<Void> {
+public class ClaimTaskCommand extends ProcessCommand<CatTaskInfo> {
 
     @Resource private TaskService taskService;
 
@@ -29,15 +30,15 @@ public class ClaimTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
-    protected Void doExecute() {
+    protected CatTaskInfo doExecute() {
         taskService.claim(param.getTaskId(), guard.getCurrentUserId());
         this.task = guard.getTask(param.getTaskId());
-        return null;
+        return guard.toTaskInfo(task);
     }
 
     @Override
-    protected void record(Void result) {
-        recorder.recordClaim(param, task);
+    protected void record(CatTaskInfo result) {
+        recorder.recordClaim(param, task,result);
     }
 
     @Override
@@ -51,7 +52,7 @@ public class ClaimTaskCommand extends ProcessCommand<Void> {
     }
 
     @Override
-    protected void afterHook(Void result) {
+    protected void afterHook(CatTaskInfo result) {
         ClaimContext ctx = new ClaimContext(param);
         if (!CollectionUtils.isEmpty(lifecycleHooks)) {
             for (ProcessLifecycleHook hook : lifecycleHooks) {

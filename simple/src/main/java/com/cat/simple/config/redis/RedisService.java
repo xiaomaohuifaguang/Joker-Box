@@ -1,4 +1,4 @@
-package com.cat.simple.config.cache.redis;
+package com.cat.simple.config.redis;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;

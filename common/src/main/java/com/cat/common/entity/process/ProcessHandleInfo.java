@@ -57,7 +57,7 @@ public class ProcessHandleInfo implements Serializable {
     private String remark;
 
     @Schema(description = "处理时间")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone ="GMT+8")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS", timezone ="GMT+8")
     private LocalDateTime handleTime;
 
     @Schema(description = "审批轮次")

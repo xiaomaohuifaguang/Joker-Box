@@ -7,8 +7,9 @@
     </select>
     <select id="selectDetailListByProcessInstanceId" resultType="com.cat.common.entity.process.ProcessHandleInfo">
         SELECT cphi.*, IFNULL(cu.nickname, cphi.handle_user) as handleUserName FROM cat_process_handle_info cphi
-        LEFT JOIN (SELECT * FROM cat_user WHERE deleted = '0') cu ON cphi.handle_user = cu.id
+        INNER JOIN cat_user cu ON cphi.handle_user = cu.id
         <where>
+            and cu.deleted = '0'
             and cphi.process_instance_id = #{processInstanceId}
         </where>
     </select>

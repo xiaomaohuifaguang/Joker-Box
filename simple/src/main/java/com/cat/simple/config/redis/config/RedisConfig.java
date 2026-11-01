@@ -1,4 +1,4 @@
-package com.cat.simple.config.cache.redis;
+package com.cat.simple.config.redis.config;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;

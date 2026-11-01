@@ -1,11 +1,10 @@
 package com.cat.simple.config.cache;
 
-import com.cat.simple.config.cache.redis.RedisService;
-import jakarta.annotation.PostConstruct;
+import com.cat.simple.config.redis.RedisService;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -22,19 +21,12 @@ public class CacheService {
     @Resource
     private RedisService redisService;
 
-    /**
-     * key 统一前缀（应用名），启动时解析一次，避免每次读写都查 Environment
-     */
-    private String keyPrefix;
+    @Value("${spring.application.name}")
+    private String applicationName;
 
-    @PostConstruct
-    void initKeyPrefix(){
-        String applicationName = env.getProperty("spring.application.name");
-        this.keyPrefix = StringUtils.hasText(applicationName) ? applicationName + ":" : "";
-    }
 
-    private String makeKey(String key){
-        return keyPrefix + key;
+    public String makeKey(String key){
+        return applicationName + ":" + key;
     }
 
     /**

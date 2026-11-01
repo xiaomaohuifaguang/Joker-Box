@@ -7,6 +7,7 @@ import com.cat.common.entity.process.ProcessInstance;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
+import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.flowable.gateway.GatewayConditionEngine;
 import com.cat.simple.config.flowable.hook.ProcessLifecycleHook;
@@ -188,7 +189,8 @@ public class StartProcessCommand extends ProcessCommand<ProcessInstance> {
             passParam.setProcessInstanceId(result.getId());
             passParam.setRemark("开始申请申请人节点自动通过");
             passParam.setTaskId(task.getId());
-            recorder.recordPass(passParam,task);
+            CatTaskInfo taskInfo = guard.toTaskInfo(task);
+            recorder.recordPass(passParam,task, taskInfo);
             taskService.complete(task.getId());
         }
 
