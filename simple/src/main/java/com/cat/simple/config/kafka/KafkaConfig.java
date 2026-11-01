@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 //import org.springframework.kafka.core.KafkaTemplate;
 
 @Configuration
+@Deprecated
 public class KafkaConfig {
 
 //    @Bean
