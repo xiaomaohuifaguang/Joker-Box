@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.Page;
 import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.*;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.command.*;
 import com.cat.simple.config.flowable.core.CatTaskInfo;
@@ -19,9 +20,13 @@ import com.cat.simple.process.service.ProcessInstanceService;
 import com.cat.simple.process.service.ProcessFormService;
 import com.cat.simple.system.mapper.UserMapper;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.flowable.bpmn.model.StartEvent;
 import org.flowable.engine.TaskService;
 import org.flowable.task.api.Task;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -29,6 +34,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
+@Slf4j
 public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     @Resource private CommandBus commandBus;
@@ -41,9 +47,17 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Resource private UserMapper userMapper;
     @Resource private ProcessDefinitionMapper processDefinitionMapper;
 
+    @Resource
+    private AsyncTaskExecutor securityExecutor;
+
     @Override
-    public ProcessInstance start(ProcessHandleParam param) {
-        return commandBus.execute(new StartProcessCommand(param));
+    public void start(ProcessHandleParam param) {
+        commandBus.execute(new StartProcessCommand(param));
+//        securityExecutor.submit(()->{
+//            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//            log.info("异步线程auth: {}", auth);
+//            commandBus.execute(new StartProcessCommand(param));
+//        });
     }
 
     @Override
@@ -105,10 +119,9 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
                     task.getTaskDefinitionKey());
             instance.setNextUserTaskInfos(nextUserTaskInfosSkipGateway);
 
-            ProcessTrack processTrack = makeProcessTrack(instance);
-            processTrack.setCurrentNodeId(task.getTaskDefinitionKey());
-            instance.setProcessTrack(processTrack);
-            instance.setProcessTrack(processTrack);
+//            ProcessTrack processTrack = makeProcessTrack(instance);
+//            processTrack.setCurrentNodeId(task.getTaskDefinitionKey());
+//            instance.setProcessTrack(processTrack);
 
         } else if (ProcessStatusEnum.DRAFT.getStatus().equals(instance.getProcessStatus())) {
             StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), instance.getProcessDefinitionVersion());
@@ -197,7 +210,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
         if (id != null) {
             ProcessInstance exist = guard.assertInstanceDraft(id);
             if (!currentUserId.equals(exist.getCreateBy())) {
-                throw new IllegalStateException("无权更新他人草稿: " + id);
+                throw new JokerBoxException("无权更新他人草稿: " + id);
             }
             processInstanceMapper.update(new LambdaUpdateWrapper<ProcessInstance>()
                     .eq(ProcessInstance::getId, id)

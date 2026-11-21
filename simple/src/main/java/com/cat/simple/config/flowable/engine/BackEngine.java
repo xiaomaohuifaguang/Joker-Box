@@ -2,6 +2,7 @@ package com.cat.simple.config.flowable.engine;
 
 import com.cat.common.entity.process.BackConfig;
 import com.cat.common.entity.process.ProcessHandleParam;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.enums.BackAssigneePolicyEnum;
@@ -45,11 +46,11 @@ public class BackEngine {
 
         BackTypeEnum type = BackTypeEnum.of(cfg.getBackType());
         if (type == null) {
-            throw new IllegalStateException("不支持的驳回方式: " + cfg.getBackType());
+            throw new JokerBoxException("不支持的驳回方式: " + cfg.getBackType());
         }
 
         if (!cfg.isAllowBack()) {
-            throw new IllegalStateException("该节点未配置驳回方式, taskId: " + param.getTaskId());
+            throw new JokerBoxException("该节点未配置驳回方式, taskId: " + param.getTaskId());
         }
 
         UserTask backUserTask = null;
@@ -59,7 +60,7 @@ public class BackEngine {
             }
             case SPECIFIC -> {
                 if (cfg.getBackNodeId() == null || cfg.getBackNodeId().isBlank()) {
-                    throw new IllegalStateException("该节点未配置固定驳回目标");
+                    throw new JokerBoxException("该节点未配置固定驳回目标");
                 }
                 backUserTask = getBackUserTask(task.getProcessInstanceId(), cfg.getBackNodeId());
             }
@@ -88,7 +89,7 @@ public class BackEngine {
                 .taskDefinitionKey(param.getTargetNodeId())
                 .count();
         if (activeCount > 0) {
-            throw new IllegalStateException("目标节点已有进行中的任务，无法驳回");
+            throw new JokerBoxException("目标节点已有进行中的任务，无法驳回");
         }
 
 
@@ -103,7 +104,7 @@ public class BackEngine {
                     .singleResult();
 
             if (childExecution == null || childExecution.getParentId() == null) {
-                throw new IllegalStateException("无法定位多实例父执行");
+                throw new JokerBoxException("无法定位多实例父执行");
             }
             targetExecutionId = childExecution.getParentId();
         } else {
@@ -159,7 +160,7 @@ public class BackEngine {
                 .list().stream()
                 .filter(h -> !h.getActivityId().equals(task.getTaskDefinitionKey()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("没有可驳回的上级节点"));
+                .orElseThrow(() -> new JokerBoxException("没有可驳回的上级节点"));
 
         return getBackUserTask(task.getProcessInstanceId(), last.getActivityId());
     }

@@ -10,12 +10,12 @@ import com.cat.common.entity.process.constants.FormBindType;import com.cat.commo
 import com.cat.common.entity.process.designer.Edge;
 import com.cat.common.entity.process.designer.Node;
 import com.cat.common.entity.process.designer.RawData;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.JSONUtils;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
 import com.cat.simple.config.flowable.enums.BackAssigneePolicyEnum;
-import com.cat.simple.config.flowable.enums.BackTypeEnum;
 import jakarta.annotation.Resource;
 import org.flowable.bpmn.converter.BpmnXMLConverter;
 import org.flowable.bpmn.model.*;
@@ -26,14 +26,9 @@ import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.TaskService;
 import org.flowable.engine.history.HistoricActivityInstance;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.repository.Deployment;
 import org.flowable.task.api.Task;
-import org.flowable.task.api.history.HistoricTaskInstance;
-import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
@@ -565,7 +560,7 @@ public class FlowableUtils {
         // 2. 通过流程定义ID获取 BpmnModel
         BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinition.getId());
         if (bpmnModel == null || bpmnModel.getMainProcess() == null) {
-            throw new IllegalStateException("获取流程模型失败或模型中无主流程");
+            throw new JokerBoxException("获取流程模型失败或模型中无主流程");
         }
 
         // 3. 从主流程中获取开始节点
@@ -584,7 +579,7 @@ public class FlowableUtils {
 //            }
 //        }
 
-        throw new IllegalStateException("流程定义中未找到开始节点 (StartEvent)，请检查流程设计");
+        throw new JokerBoxException("流程定义中未找到开始节点 (StartEvent)，请检查流程设计");
     }
 
     public List<NextUserTaskInfo> findStartNextUserTaskInfosSkipGateway(String processKey, String version){

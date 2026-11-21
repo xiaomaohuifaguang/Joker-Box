@@ -19,8 +19,8 @@ public class ModelBuilder {
 
     public ChatModel makeChatModel(AiModel aiModel){
         return OpenAiChatModel.builder()
-                .apiKey(aiModel.getApiKey())
-                .baseUrl(aiModel.getBaseUrl())
+                .apiKey(aiModel.getUseApiKey())
+                .baseUrl(aiModel.getUseBaseUrl())
                 .modelName(aiModel.getModel())
                 .returnThinking(true)
                 .temperature(1D)
@@ -32,8 +32,8 @@ public class ModelBuilder {
 
     public StreamingChatModel makeStreamingChatModel(AiModel aiModel){
         return OpenAiStreamingChatModel.builder()
-                .apiKey(aiModel.getApiKey())
-                .baseUrl(aiModel.getBaseUrl())
+                .apiKey(aiModel.getUseApiKey())
+                .baseUrl(aiModel.getUseBaseUrl())
                 .modelName(aiModel.getModel())
                 .returnThinking(true)
                 .temperature(1D)
@@ -43,8 +43,8 @@ public class ModelBuilder {
     }
 
     public EmbeddingModel makeEmbeddingModel(AiModel aiModel){
-        return OpenAiEmbeddingModel.builder().apiKey(aiModel.getApiKey())
-                .baseUrl(aiModel.getBaseUrl())
+        return OpenAiEmbeddingModel.builder().apiKey(aiModel.getUseApiKey())
+                .baseUrl(aiModel.getUseBaseUrl())
                 .modelName(aiModel.getModel())
                 .dimensions(aiModel.getDimension())
                 .build();

@@ -69,7 +69,7 @@ private MenuService menuService;
     }
 
     @Operation(summary = "具有权限菜单树")
-    @RequestMapping(value = "/menuTree",method = { RequestMethod.POST, RequestMethod.GET })
+    @RequestMapping(value = "/menuTree",method = { RequestMethod.POST })
     @Parameters({
             @Parameter(name = "menuType",description = "菜单类型")
     })
@@ -78,7 +78,7 @@ private MenuService menuService;
     }
 
     @Operation(summary = "菜单树全部")
-    @RequestMapping(value = "/menuTreeAll",method = { RequestMethod.POST, RequestMethod.GET })
+    @RequestMapping(value = "/menuTreeAll",method = { RequestMethod.POST })
     @Parameters({
             @Parameter(name = "menuType",description = "菜单类型")
     })
@@ -88,7 +88,7 @@ private MenuService menuService;
 
 
     @Operation(summary = "菜单权限id集合")
-    @RequestMapping(value = "/menuChoose",method = { RequestMethod.POST, RequestMethod.GET })
+    @RequestMapping(value = "/menuChoose",method = { RequestMethod.POST })
     @Parameters({
             @Parameter(name = "roleId",description = "角色id",required = true),
             @Parameter(name = "menuType",description = "菜单类型")

@@ -36,33 +36,35 @@
     </repositories>
 
     <properties>
+        <java.verion>21</java.verion>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <myModule.version>1.0-SNAPSHOT</myModule.version>
         <!-- knife4j版本 https://doc.xiaominfo.com/docs/quick-start -->
-        <knife4j.version>4.5.0</knife4j.version>
+<!--        <knife4j.version>4.5.0</knife4j.version>-->
+        <baizhukui.knife4j.version>5.8.3</baizhukui.knife4j.version>
         <jjwt.version>0.13.0</jjwt.version>
-        <mybatis-plus.verson>3.5.7</mybatis-plus.verson>
-        <mysql-connector.version>9.7.0</mysql-connector.version>
-        <lombok.version>1.18.32</lombok.version>
-        <okhttp.version>4.12.0</okhttp.version>
+        <mybatis-plus.verson>3.5.18.1</mybatis-plus.verson>
+        <mysql-connector.version>26.10.0</mysql-connector.version>
+<!--        <lombok.version>1.18.32</lombok.version>-->
+        <okhttp.version>5.5.1</okhttp.version>
 <!--        <springcloud.verson>2023.0.2</springcloud.verson>-->
 <!--        <springcloudalibaba.verson>2023.0.1.0</springcloudalibaba.verson>-->
-        <minio.version>9.0.3</minio.version>
+        <minio.version>9.0.4</minio.version>
         <commons-fileupload.version>2.0.0-M2</commons-fileupload.version>
         <hutool.version>5.8.46</hutool.version>
         <TinyPinyin.version>2.0.3.RELEASE</TinyPinyin.version>
-<!--        <httpclient5.version>5.2.1</httpclient5.version>-->
+<!--        <httpclient5.version>5.7-beta1</httpclient5.version>-->
         <flowable.version>8.0.0</flowable.version>
         <fastjson2.version>2.0.53</fastjson2.version>
         <googleauth.version>1.5.0</googleauth.version>
         <zxing.version>3.5.3</zxing.version>
-        <jackson-bom.version>2.17.0</jackson-bom.version>
-        <spring.ai.version>1.1.8</spring.ai.version>
-        <spring.ai.alibaba.version>1.1.2.3</spring.ai.alibaba.version>
-        <langchain4j.version>1.20.0</langchain4j.version>
-        <opensearch.version>3.9.0</opensearch.version>
+<!--        <jackson-bom.version>2.17.0</jackson-bom.version>-->
+<!--        <spring.ai.version>1.1.8</spring.ai.version>-->
+<!--        <spring.ai.alibaba.version>1.1.2.3</spring.ai.alibaba.version>-->
+        <langchain4j.version>1.24.0</langchain4j.version>
+        <opensearch.version>3.11.0</opensearch.version>
 <!--        <rocketmq.version>5.5.0</rocketmq.version>-->
         <rocketmq-spring.version>2.3.6</rocketmq-spring.version>
         <shedlock-spring.version>7.8.0</shedlock-spring.version>
@@ -103,11 +105,24 @@
 <!--                <scope>import</scope>-->
 <!--            </dependency>-->
 
+<!--            <dependency>-->
+<!--                <groupId>com.github.xiaoymin</groupId>-->
+<!--                <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>-->
+<!--                <version>${knife4j.version}</version>-->
+<!--            </dependency>-->
+
+
             <dependency>
-                <groupId>com.github.xiaoymin</groupId>
+                <groupId>com.baizhukui</groupId>
                 <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
-                <version>${knife4j.version}</version>
+                <version>${baizhukui.knife4j.version}</version>
             </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.baizhukui</groupId>-->
+<!--                <artifactId>knife4j-openapi3-boot4-spring-boot-starter</artifactId>-->
+<!--                <version>${baizhukui.knife4j.version}</version>-->
+<!--            </dependency>-->
+
 
             <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
             <dependency>
@@ -138,19 +153,27 @@
 
             <dependency>
                 <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <artifactId>mybatis-plus-bom</artifactId>
                 <version>${mybatis-plus.verson}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-generator</artifactId>
-                <version>${mybatis-plus.verson}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-core</artifactId>
-                <version>${mybatis-plus.verson}</version>
-            </dependency>
+
+<!--            <dependency>-->
+<!--                <groupId>com.baomidou</groupId>-->
+<!--                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>-->
+<!--                <version>${mybatis-plus.verson}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.baomidou</groupId>-->
+<!--                <artifactId>mybatis-plus-generator</artifactId>-->
+<!--                <version>${mybatis-plus.verson}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.baomidou</groupId>-->
+<!--                <artifactId>mybatis-plus-core</artifactId>-->
+<!--                <version>${mybatis-plus.verson}</version>-->
+<!--            </dependency>-->
             <!-- https://mvnrepository.com/artifact/com.mysql/mysql-connector-j -->
             <dependency>
                 <groupId>com.mysql</groupId>
@@ -190,10 +213,18 @@
 <!--            </dependency>-->
 
             <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
+<!--            <dependency>-->
+<!--                <groupId>com.squareup.okhttp3</groupId>-->
+<!--                <artifactId>okhttp-jvm</artifactId>-->
+<!--                <version>${okhttp.version}</version>-->
+<!--            </dependency>-->
+
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>okhttp</artifactId>
+                <artifactId>okhttp-bom</artifactId>
                 <version>${okhttp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>
@@ -221,20 +252,20 @@
                 <version>${zxing.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-bom</artifactId>
-                <version>${spring.ai.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-bom</artifactId>
-                <version>${spring.ai.alibaba.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.springframework.ai</groupId>-->
+<!--                <artifactId>spring-ai-bom</artifactId>-->
+<!--                <version>${spring.ai.version}</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.alibaba.cloud.ai</groupId>-->
+<!--                <artifactId>spring-ai-alibaba-bom</artifactId>-->
+<!--                <version>${spring.ai.alibaba.version}</version>-->
+<!--                <type>pom</type>-->
+<!--                <scope>import</scope>-->
+<!--            </dependency>-->
 <!--            <dependency>-->
 <!--                <groupId>com.alibaba.cloud.ai</groupId>-->
 <!--                <artifactId>spring-ai-alibaba-extensions-bom</artifactId>-->

@@ -1,6 +1,7 @@
 package com.cat.simple.config.flowable.candidate;
 
 import com.cat.common.entity.auth.User;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.process.mapper.ProcessInstanceMapper;
@@ -54,7 +55,7 @@ public class CandidateResolver {
     public String resolveSingleAssignee(DelegateExecution execution) {
         ApprovalContext ctx = readContext(execution.getProcessDefinitionId(), execution.getCurrentActivityId());
         if (ctx == null) {
-            throw new IllegalStateException("activityId=" + execution.getCurrentActivityId() + " 缺少 approvalType");
+            throw new JokerBoxException("activityId=" + execution.getCurrentActivityId() + " 缺少 approvalType");
         }
         List<String> pool = resolve(ctx, execution.getProcessInstanceId());
 
@@ -64,7 +65,7 @@ public class CandidateResolver {
                 List<Integer> chooseUsers = (List<Integer>) list;
                 String one = String.valueOf(chooseUsers.get(0));
                 if(!pool.contains(one)){
-                    throw new IllegalStateException("选择人不在候选人内");
+                    throw new JokerBoxException("选择人不在候选人内");
                 }
                 return one;
             }
@@ -83,7 +84,7 @@ public class CandidateResolver {
     public List<String> resolveCandidateUsers(DelegateExecution execution) {
         ApprovalContext ctx = readContext(execution.getProcessDefinitionId(), execution.getCurrentActivityId());
         if (ctx == null) {
-            throw new IllegalStateException("activityId=" + execution.getCurrentActivityId() + " 缺少 approvalType");
+            throw new JokerBoxException("activityId=" + execution.getCurrentActivityId() + " 缺少 approvalType");
         }
         return resolve(ctx, execution.getProcessInstanceId());
     }
@@ -140,7 +141,7 @@ public class CandidateResolver {
         if(ctx.type().equals(ApprovalTypeEnum.APPLICANT_SELF) && StringUtils.hasText(processInstanceId)){
             String applicant = findApplicant(processInstanceId);
             if (applicant == null) {
-                throw new IllegalStateException("无法解析流程申请人, processInstanceId=" + processInstanceId);
+                throw new JokerBoxException("无法解析流程申请人, processInstanceId=" + processInstanceId);
             }
             return List.of(applicant);
         }
@@ -151,7 +152,7 @@ public class CandidateResolver {
 
         List<String> result = new java.util.ArrayList<>(List.copyOf(set));
         if (result.isEmpty()) {
-            throw new IllegalStateException("候选人解析结果为空，请检查流程配置");
+            throw new JokerBoxException("候选人解析结果为空，请检查流程配置");
         }
         if(ctx.type().equals(ApprovalTypeEnum.RANDOM_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.RANDOM_OR_SIGN)){
             BigDecimal bigDecimal = ctx.randomCount();
@@ -169,7 +170,7 @@ public class CandidateResolver {
         }
 
 //        if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
-//            throw new IllegalStateException("请选择合适的审批人");
+//            throw new JokerBoxException("请选择合适的审批人");
 //        }
 
 

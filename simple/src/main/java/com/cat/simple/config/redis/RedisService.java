@@ -147,5 +147,54 @@ public class RedisService {
         return redisTemplate.opsForHash().hasKey(key, field);
     }
 
+    /**
+     * 分布式锁：SET key value NX EX expire
+     * @param key    锁的 key
+     * @param value  唯一标识（建议 UUID），用于安全解锁
+     * @param expire 过期时间（秒），防止死锁
+     * @return true=加锁成功，false=锁已被占用
+     */
+    public boolean lock(String key, String value, long expire) {
+        Boolean ok = stringRedisTemplate.opsForValue()
+                .setIfAbsent(key, value, Duration.ofSeconds(expire));
+        return Boolean.TRUE.equals(ok);
+    }
+
+    private static final DefaultRedisScript<Long> UNLOCK_SCRIPT = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then " +
+                    "return redis.call('del', KEYS[1]) " +
+                    "else return 0 end",
+            Long.class
+    );
+
+    /**
+     * 解锁：只有 value 匹配（是自己加的锁）才删除，防止误删他人的锁
+     */
+    public boolean unlock(String key, String value) {
+        Long result = stringRedisTemplate.execute(
+                UNLOCK_SCRIPT, Collections.singletonList(key), value);
+        return result > 0;
+    }
+
+    /**
+     * 无条件删除锁（不校验持锁人）
+     * ⚠️ 注意：如果锁已过期被他人重新获取，会误删别人的锁
+     */
+    public boolean unlock(String key) {
+        return stringRedisTemplate.delete(key);
+    }
+
+    /**
+     * 判断当前锁是否由指定 value（唯一标识）持有
+     * @return true=该锁存在且属于这个 value
+     */
+    public boolean isHeldBy(String key, String value) {
+        String current = stringRedisTemplate.opsForValue().get(key);
+        return value.equals(current);
+    }
+
+
+
+
 
 }

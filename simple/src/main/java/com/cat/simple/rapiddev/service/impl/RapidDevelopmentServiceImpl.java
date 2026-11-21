@@ -3,6 +3,7 @@ package com.cat.simple.rapiddev.service.impl;
 import com.cat.common.entity.rapidDevelopment.FieldInfo;
 import com.cat.common.entity.rapidDevelopment.SampleCode;
 import com.cat.common.entity.rapidDevelopment.TableInfo;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.ServletUtils;
 import com.cat.simple.rapiddev.mapper.RapidDevelopmentMapper;
 import com.cat.simple.rapiddev.service.RapidDevelopmentService;
@@ -63,7 +64,7 @@ public class RapidDevelopmentServiceImpl implements RapidDevelopmentService {
     private TableInfo makeTableInfo(String tableName){
         TableInfo tableInfo = rapidDevelopmentMapper.getBaseTableInfo(tableName);
         if(Objects.isNull(tableInfo)){
-            throw new IllegalStateException("表不存在");
+            throw new JokerBoxException("表不存在");
         }
 
         List<FieldInfo> fieldInfos = rapidDevelopmentMapper.queryAllFields(tableName);

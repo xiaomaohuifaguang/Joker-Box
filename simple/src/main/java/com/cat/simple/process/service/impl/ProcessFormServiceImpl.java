@@ -5,6 +5,7 @@ import com.cat.common.entity.dynamicForm.*;
 import com.cat.common.entity.process.*;
 import com.cat.common.entity.process.constants.FieldPermissionConstants;
 import com.cat.common.entity.process.constants.FormBindType;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.flowable.guard.ProcessGuard;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.form.mapper.*;
@@ -260,7 +261,7 @@ public class ProcessFormServiceImpl implements ProcessFormService {
         boolean exists = dynamicFormPublishHistoryMapper.exists(new LambdaQueryWrapper<DynamicFormPublishHistory>()
                 .eq(DynamicFormPublishHistory::getFormId, formId).eq(DynamicFormPublishHistory::getVersion, formVersion));
         if(!exists){
-            throw new IllegalStateException("绑定表单或版本不存在");
+            throw new JokerBoxException("绑定表单或版本不存在");
         }
 
         DynamicForm form = new DynamicForm();

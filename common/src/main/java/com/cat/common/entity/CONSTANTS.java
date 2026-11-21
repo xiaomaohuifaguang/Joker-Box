@@ -18,6 +18,8 @@ public class CONSTANTS {
 
     public static final String DEFAULT_PASSWORD = "12345678";
 
+
+    public static final int SUPER_SUPER_ADMIN_ID = 1;
     public static final Integer ROLE_ADMIN_CODE = 1;
     public static final Integer ROLE_EVERYONE_CODE = 2;
 

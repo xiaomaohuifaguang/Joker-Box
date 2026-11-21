@@ -91,7 +91,8 @@
                 FROM cat_process_instance cpi
                 INNER JOIN cat_process_definition cpd on cpi.process_definition_id = cpd.id
                 INNER JOIN cat_user cu ON cpi.create_by = cu.id
-                INNER JOIN cat_process_handle_info cphi ON cpi.id = cphi.process_instance_id and cphi.task_definition_key is not null and cphi.task_definition_key &lt;&gt; 'applyNode'
+                INNER JOIN cat_process_handle_info cphi ON cpi.id = cphi.process_instance_id and cphi.task_definition_key is not null
+                and cphi.task_definition_key &lt;&gt; 'applyNode' and cphi.task_definition_key &lt;&gt; 'start'
                 WHERE cpi.deleted = '0'
                 <include refid="commonFilters"/>
                 ORDER BY cpi.create_time DESC

@@ -9,6 +9,8 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 
 /**
  * <p>
@@ -30,6 +32,9 @@ public interface AiModelMapper extends BaseMapper<AiModel> {
 
    int deleteDefaultByType(@Param("type") String type);
 
+   List<AiModel> selectListByChannelId(@Param("channelId") Integer channelId);
+
+   AiModel selectById(@Param("id") String id);
 
 
 }

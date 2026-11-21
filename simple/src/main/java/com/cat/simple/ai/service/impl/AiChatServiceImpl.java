@@ -12,12 +12,14 @@ import com.cat.common.entity.ai.model.ModelType;
 import com.cat.common.entity.ai.systemPrompt.AiSystemPrompt;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.file.FileInfo;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.UUIDUtils;
 import com.cat.simple.ai.core.Role;
 import com.cat.simple.ai.langchain4j.aiService.AiServicesBuilder;
 import com.cat.simple.ai.langchain4j.aiService.CatAiService;
 import com.cat.simple.ai.mapper.ChatMessageMapper;
 import com.cat.simple.ai.mapper.ChatSessionMapper;
+import com.cat.simple.ai.service.AiChannelService;
 import com.cat.simple.ai.service.AiChatService;
 import com.cat.simple.ai.service.AiModelService;
 import com.cat.simple.ai.service.AiSystemPromptService;
@@ -32,7 +34,6 @@ import dev.langchain4j.service.Result;
 import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -66,6 +67,9 @@ public class AiChatServiceImpl implements AiChatService {
 
     @Resource
     private QAVectorRockerMqProductor qaVectorRockerMqProductor;
+
+    @Resource
+    private AiChannelService aiChannelService;
 
 
     @Resource
@@ -124,7 +128,7 @@ public class AiChatServiceImpl implements AiChatService {
                     .eq(ChatSession::getUserId, userId)
             );
             if (Objects.isNull(chatSession)) {
-                throw new IllegalStateException("sessionId is error");
+                throw new JokerBoxException("sessionId is error");
             }
 //            chatSession.setUpdateTime(now);
             // ✅ FIX: 上一版已修复为 getSessionId，此处保留；增加排序保证上下文顺序
@@ -322,7 +326,7 @@ public class AiChatServiceImpl implements AiChatService {
     public List<ChatMessage> messages(String sessionId) {
         ChatSession session = chatSessionMapper.selectOne(new LambdaQueryWrapper<ChatSession>().eq(ChatSession::getSessionId, sessionId).eq(ChatSession::getUserId, Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId()));
         if(Objects.isNull(session)){
-            throw new IllegalStateException("会话id无效");
+            throw new JokerBoxException("会话id无效");
         }
 
 
@@ -334,15 +338,16 @@ public class AiChatServiceImpl implements AiChatService {
         return aiModelService.list(ModelType.CHAT);
     }
 
+
     @Override
     public FileInfo fileUpload(MultipartFile file) throws IOException {
         String contentType = file.getContentType();
         if(!StringUtils.hasText(contentType)){
-            throw new IllegalStateException("未知类型上传");
+            throw new JokerBoxException("未知类型上传");
         }
         MimeType mimeType = MimeType.valueOf(contentType);
         if(!ALLOW_IMAGE_TYPE.contains(mimeType) && !ALLOW_DOC_TYPE.contains(mimeType)){
-            throw new IllegalStateException("文件类型不在解析范围内");
+            throw new JokerBoxException("文件类型不在解析范围内");
         }
 
         DTO<FileInfo> fileInfoDTO = fileService.uploadAgentFile(file);

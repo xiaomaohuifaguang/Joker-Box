@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.*;
 import com.cat.common.entity.file.FileInfo;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.CatUUID;
 import com.cat.common.utils.IOUtils;
 import com.cat.common.utils.ServletUtils;
@@ -370,7 +371,7 @@ public class FileServiceImpl implements FileService {
             if (!parentDir.exists()) {
                 boolean mkdir = parentDir.mkdirs();
                 if(!mkdir){
-                    throw new IllegalStateException("文件夹创建失败");
+                    throw new JokerBoxException("文件夹创建失败");
                 }
             }
 

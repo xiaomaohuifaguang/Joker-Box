@@ -4,17 +4,23 @@
 
 
     <select id="selectPage" resultType="com.cat.common.entity.ai.model.AiModel">
-        SELECT cam.*
+        SELECT distinct cam.*,camd.model_id,cac.name channelName, cap.name providerName
         FROM cat_ai_model cam
+        LEFT JOIN cat_ai_model_default camd on cam.id = camd.model_id
+        LEFT JOIN cat_ai_channel cac on cam.channel_id = cac.id
+        LEFT JOIN cat_ai_provider cap on cac.provider_id = cap.id
         <where>
             <if test='param.type != null and param.type != ""'>
                 and cam.type = #{param.type}
             </if>
         </where>
+        ORDER BY camd.model_id desc, cac.name, cap.name, cam.name
     </select>
     <select id="selectDefaultByType" resultType="com.cat.common.entity.ai.model.AiModel">
-        SELECT * FROM cat_ai_model_default camd
+        SELECT cam.*, cap.base_url providerBaseUrl, cac.base_url channelBaseUrl, cac.api_key channelApiKey FROM cat_ai_model_default camd
         INNER JOIN cat_ai_model cam on camd.model_id = cam.id
+        LEFT JOIN cat_ai_channel cac on cam.channel_id = cac.id
+        LEFT JOIN cat_ai_provider cap on cac.provider_id = cap.id
         <where>
             camd.type = #{type}
         </where>
@@ -30,6 +36,24 @@
         <where>
             cam.id = #{modelId}
         </where>
+    </select>
+    <select id="selectListByChannelId" resultType="com.cat.common.entity.ai.model.AiModel">
+        SELECT distinct cam.*,camd.model_id
+        FROM cat_ai_model cam
+        LEFT JOIN cat_ai_model_default camd on cam.id = camd.model_id
+        <where>
+            and cam.channel_id = #{channelId}
+        </where>
+        ORDER BY camd.model_id desc
+    </select>
+    <select id="selectById" resultType="com.cat.common.entity.ai.model.AiModel">
+        SELECT cam.*, cap.base_url providerBaseUrl, cac.base_url channelBaseUrl, cac.api_key channelApiKey FROM cat_ai_model cam
+        LEFT JOIN cat_ai_channel cac on cam.channel_id = cac.id
+        LEFT JOIN cat_ai_provider cap on cac.provider_id = cap.id
+        <where>
+            and cam.id = #{id}
+        </where>
+
     </select>
 
     <delete id="deleteDefaultByType">

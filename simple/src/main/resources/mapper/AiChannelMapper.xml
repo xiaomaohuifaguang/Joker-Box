@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cat.simple.ai.mapper.AiChannelMapper">
+    <select id="selectPage" resultType="com.cat.common.entity.ai.channel.AiChannel">
+        SELECT cac.*,
+        CASE WHEN cap.id IS NULL THEN TRUE ELSE FALSE END AS isCustom,
+        cap.name providerName, cap.base_url providerBaseUrl FROM cat_ai_channel cac
+        LEFT JOIN cat_ai_provider cap on cac.provider_id = cap.id
+        <where>
+            <if test="param.search != null and param.search != ''">
+                and (
+                    cac.name like concat('%',#{param.search},'%')
+                    or
+                    cap.name  like concat('%',#{param.search},'%')
+                )
+            </if>
+        </where>
+    </select>
+    <select id="selectById" resultType="com.cat.common.entity.ai.channel.AiChannel">
+        SELECT cac.*,
+        CASE WHEN cap.id IS NULL THEN TRUE ELSE FALSE END AS isCustom,
+        cap.name providerName, cap.base_url providerBaseUrl FROM cat_ai_channel cac
+        LEFT JOIN cat_ai_provider cap on cac.provider_id = cap.id
+        <where>
+            and cac.id = #{id}
+        </where>
+    </select>
+</mapper>

@@ -31,9 +31,8 @@ public interface ProcessInstanceService {
      * 便于后续业务扩展(审批轨迹/转办/抄送等)。
      *
      * @param param 流程操作参数，需包含 processDefinitionId、title、formData
-     * @return 自建 {@link ProcessInstance}
      */
-    ProcessInstance start(ProcessHandleParam param);
+    void start(ProcessHandleParam param);
 
 
     /**

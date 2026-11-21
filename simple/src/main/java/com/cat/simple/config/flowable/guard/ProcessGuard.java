@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.flowable.core.CatTaskInfo;
 import com.cat.simple.config.flowable.enums.ProcessStatusEnum;
 import com.cat.simple.config.security.SecurityUtils;
@@ -38,7 +39,7 @@ public class ProcessGuard {
     public String getCurrentUserId() {
         return Optional.ofNullable(SecurityUtils.getLoginUser())
                 .map(LoginUser::getUserId)
-                .orElseThrow(() -> new IllegalStateException("当前未登录"));
+                .orElseThrow(() -> new JokerBoxException("当前未登录"));
     }
 
     /** 断言流程实例存在且处于审批中状态。 */
@@ -48,7 +49,7 @@ public class ProcessGuard {
             throw new IllegalArgumentException("流程实例不存在: " + processInstanceId);
         }
         if (!ProcessStatusEnum.ACTIVE.getStatus().equals(instance.getProcessStatus())) {
-            throw new IllegalStateException("流程实例非审批中状态: " + processInstanceId);
+            throw new JokerBoxException("流程实例非审批中状态: " + processInstanceId);
         }
         return instance;
     }
@@ -60,7 +61,7 @@ public class ProcessGuard {
             throw new IllegalArgumentException("草稿不存在: " + processInstanceId);
         }
         if (!ProcessStatusEnum.DRAFT.getStatus().equals(instance.getProcessStatus())) {
-            throw new IllegalStateException("该流程实例不是草稿状态: " + processInstanceId);
+            throw new JokerBoxException("该流程实例不是草稿状态: " + processInstanceId);
         }
         return instance;
     }
@@ -73,7 +74,7 @@ public class ProcessGuard {
                 .taskAssignee(userId)
                 .singleResult();
         if (task == null) {
-            throw new IllegalStateException("当前用户没有该任务的办理权限, taskId: " + taskId);
+            throw new JokerBoxException("当前用户没有该任务的办理权限, taskId: " + taskId);
         }
         return task;
     }
@@ -86,7 +87,7 @@ public class ProcessGuard {
                 .taskCandidateUser(userId)
                 .singleResult();
         if (task == null) {
-            throw new IllegalStateException("当前用户没有该任务的认领权限, taskId: " + taskId);
+            throw new JokerBoxException("当前用户没有该任务的认领权限, taskId: " + taskId);
         }
         return task;
     }
@@ -107,7 +108,7 @@ public class ProcessGuard {
             throw new IllegalArgumentException("流程定义不存在: " + definitionId);
         }
         if (!"1".equals(definition.getStatus())) {
-            throw new IllegalStateException("流程定义未发布: " + definitionId);
+            throw new JokerBoxException("流程定义未发布: " + definitionId);
         }
         return definition;
     }
@@ -118,7 +119,7 @@ public class ProcessGuard {
             throw new IllegalArgumentException("流程定义不存在: " + definitionId);
         }
         if ("0".equals(definition.getStatus())) {
-            throw new IllegalStateException("流程定义未经发布: " + definitionId);
+            throw new JokerBoxException("流程定义未经发布: " + definitionId);
         }
         return definition;
     }

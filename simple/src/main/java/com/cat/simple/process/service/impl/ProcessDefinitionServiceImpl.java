@@ -9,7 +9,10 @@ import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.*;
 import com.cat.common.entity.process.constants.FormBindType;
 import com.cat.common.entity.process.enums.CategoryTypeEnum;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.UUIDUtils;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
@@ -80,6 +83,9 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
     @Resource
     private FlowableUtils flowableUtils;
 
+    @Resource
+    private CacheService cacheService;
+
 
     @Override
     @Transactional
@@ -99,7 +105,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
         CategoryTypeEnum categoryTypeEnum = CategoryTypeEnum.of(processDefinition.getProcessCategory());
         if(categoryTypeEnum == null){
-            throw new IllegalStateException("流程分类不合法");
+            throw new JokerBoxException("流程分类不合法");
         }
 
 
@@ -313,6 +319,14 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
 
     @Override
     public ProcessDefinition info(ProcessDefinition processDefinition, String version) {
+
+        String cacheKey = CacheKeyEnum.PROCESS_DEFINITION.getPrefix() + processDefinition.getId() + ":" + version;
+        ProcessDefinition processDefinitionCache = cacheService.get(cacheKey, ProcessDefinition.class);
+        if(Objects.nonNull(processDefinitionCache)){
+            return processDefinitionCache;
+        }
+
+
         processDefinition = processDefinitionMapper.selectById(processDefinition.getId());
         if (processDefinition == null) {
             return null;
@@ -370,6 +384,13 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         processDefinition.setGatewayConditions(gatewayConditions);
 
         processDefinition.setDeletable(isDeletable(processDefinition));
+
+
+        if(!queryVersion.equals("DRAFT")){
+            cacheService.set(cacheKey, processDefinition, CacheKeyEnum.PROCESS_DEFINITION.getExpire());
+        }
+
+
         return processDefinition;
     }
 
@@ -579,7 +600,7 @@ public class ProcessDefinitionServiceImpl implements ProcessDefinitionService {
         // TODO processVersion 实现指定版本 发起
         ProcessDefinition processDefinition = processDefinitionMapper.selectById(processDefinitionId);
         if (processDefinition == null || !processDefinition.getStatus().equals("1")) {
-            throw new IllegalStateException("流程不存在或不可用");
+            throw new JokerBoxException("流程不存在或不可用");
         }
 
         StartEvent startEvent = flowableUtils.getStartEvent(processDefinition.getProcessKey(), processDefinition.getVersion());

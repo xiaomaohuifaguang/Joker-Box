@@ -111,7 +111,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginUser getLoginUser(String username) {
-        LoginUser loginUser;
+
+        LoginUser loginUserCache = cacheService.get(CacheKeyEnum.LOGIN_USER_INFO, username, LoginUser.class);
+        if(Objects.nonNull(loginUserCache)){
+            return loginUserCache;
+        }
         // 数据库读取
         User user = this.getUserByUsername(username); // 获取用户通过username
         if(Objects.isNull(user)){
@@ -135,7 +139,11 @@ public class UserServiceImpl implements UserService {
             }
         });
 
-        loginUser = new LoginUser(user, roles, orgs);
+        LoginUser loginUser = new LoginUser(user, roles, orgs);
+
+
+        cacheService.set(CacheKeyEnum.LOGIN_USER_INFO, username, loginUser);
+
         return loginUser;
     }
 

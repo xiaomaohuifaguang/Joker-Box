@@ -32,8 +32,9 @@ public class ProcessInstanceController {
 
     @Operation(summary = "发起流程")
     @RequestMapping(value = "/start", method = RequestMethod.POST)
-    public HttpResult<ProcessInstance> start(@RequestBody ProcessHandleParam param) {
-        return HttpResult.back(processInstanceService.start(param));
+    public HttpResult<?> start(@RequestBody ProcessHandleParam param) {
+        processInstanceService.start(param);
+        return HttpResult.back(HttpResultStatus.SUCCESS);
     }
 
 

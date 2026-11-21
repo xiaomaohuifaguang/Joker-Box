@@ -3,8 +3,12 @@ package com.cat.simple.task;
 import com.cat.common.entity.auth.Role;
 import com.cat.common.entity.auth.User;
 import com.cat.common.utils.CryptoUtils;
+import com.cat.common.utils.UUIDUtils;
+import com.cat.simple.config.cache.CacheKeyEnum;
+import com.cat.simple.config.cache.CacheService;
 import com.cat.simple.system.mapper.RoleMapper;
 import com.cat.simple.system.mapper.UserMapper;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,6 +25,9 @@ import static com.cat.common.entity.CONSTANTS.*;
 @Component
 public class InitSystemTask {
 
+    @Resource
+    private CacheService cacheService;
+
 
     @Resource
     private UserMapper userMapper;
@@ -29,7 +36,7 @@ public class InitSystemTask {
     private RoleMapper roleMapper;
 
 
-    private static final int ADMIN_ID = 1;
+
 
 
     /**
@@ -44,19 +51,24 @@ public class InitSystemTask {
     /**
      * 人员权限初始化
      */
-//    @PostConstruct
+    @PostConstruct
     private void initAuth(){
+
+        boolean lock = cacheService.lock(CacheKeyEnum.SYSTEM_INIT, UUIDUtils.randomUUID());
+        if(!lock){
+            return;
+        }
 
         // 初始化 系统 查看是否拥有系统运行必要 用户及角色
         log.info("验证系统必备信息");
 
 
-        User user = userMapper.selectById(ADMIN_ID);
+        User user = userMapper.selectById(SUPER_SUPER_ADMIN_ID);
         if(ObjectUtils.isEmpty(user)){
             log.info("超级管理员不存在!!!");
             log.info("初始化超级管理员...");
             user = new User()
-                    .setId(ADMIN_ID)
+                    .setId(SUPER_SUPER_ADMIN_ID)
                     .setType(USER_TYPE_USER)
                     .setUsername("admin")
                     .setPassword(CryptoUtils.encrypt(DEFAULT_PASSWORD))
@@ -94,22 +106,24 @@ public class InitSystemTask {
         }
 
 
-        List<Role> rolesByUserId = roleMapper.getRolesByUserId(String.valueOf(ADMIN_ID));
+        List<Role> rolesByUserId = roleMapper.getRolesByUserId(String.valueOf(SUPER_SUPER_ADMIN_ID));
         Set<Integer> collect = rolesByUserId.stream().map(Role::getId).collect(Collectors.toSet());
         if(CollectionUtils.isEmpty(collect) || !collect.contains(ROLE_ADMIN_CODE) || !collect.contains(ROLE_EVERYONE_CODE)){
             log.info("用户：超级管理员角色不完整!!!");
             collect = CollectionUtils.isEmpty(collect) ? new HashSet<>() : collect;
             if(!collect.contains(ROLE_ADMIN_CODE)){
-                userMapper.insertUserAndRole(String.valueOf(ADMIN_ID),String.valueOf(ROLE_ADMIN_CODE), LocalDateTime.now());
+                userMapper.insertUserAndRole(String.valueOf(SUPER_SUPER_ADMIN_ID),String.valueOf(ROLE_ADMIN_CODE), LocalDateTime.now());
             }
 
             if(!collect.contains(ROLE_EVERYONE_CODE)){
-                userMapper.insertUserAndRole(String.valueOf(ADMIN_ID),String.valueOf(ROLE_EVERYONE_CODE), LocalDateTime.now());
+                userMapper.insertUserAndRole(String.valueOf(SUPER_SUPER_ADMIN_ID),String.valueOf(ROLE_EVERYONE_CODE), LocalDateTime.now());
 
             }
 
         }
 
+        // 推荐等剩余时间结束自动解锁
+//        cacheService.unlock(CacheKeyEnum.SYSTEM_INIT);
 
     }
 

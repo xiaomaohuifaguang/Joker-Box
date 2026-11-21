@@ -22,11 +22,22 @@ public abstract class ProcessCommand<T> {
      * 执行命令模板，按固定顺序调用各阶段方法。
      */
     public final T execute() {
+//        System.out.println("开始: "+ System.currentTimeMillis() + "ms");
+//        long start = System.currentTimeMillis();
         validate();
+//        System.out.println("validate: "+ (System.currentTimeMillis() - start) + "ms");
+//        start = System.currentTimeMillis();
         beforeHook();
+//        System.out.println("beforeHook: "+ (System.currentTimeMillis() - start) + "ms");
+//        start = System.currentTimeMillis();
         T result = doExecute();
+//        System.out.println("doExecute: "+ (System.currentTimeMillis() - start) + "ms");
+//        start = System.currentTimeMillis();
         record(result);
+//        System.out.println("record: "+ (System.currentTimeMillis() - start) + "ms");
+//        start = System.currentTimeMillis();
         afterHook(result);
+//        System.out.println("afterHook: "+ (System.currentTimeMillis() - start) + "ms");
         return result;
     }
 

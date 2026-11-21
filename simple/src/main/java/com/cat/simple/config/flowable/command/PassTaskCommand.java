@@ -4,6 +4,7 @@ import com.cat.common.entity.auth.User;
 import com.cat.common.entity.process.ProcessDefinition;
 import com.cat.common.entity.process.ProcessHandleParam;
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.flowable.approval.ApprovalContext;
 import com.cat.simple.config.flowable.approval.ApprovalTypeEnum;
 import com.cat.simple.config.flowable.candidate.CandidateResolver;
@@ -64,24 +65,24 @@ public class PassTaskCommand extends ProcessCommand<CatTaskInfo> {
             ApprovalContext ctx = ApprovalContext.from(userTask);
             if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_COUNTERSIGN) || ctx.type().equals(ApprovalTypeEnum.CHOOSE_OR_SIGN)){
                 if(Objects.isNull(nodeCandidateUsersChoose)){
-                    throw new IllegalStateException("请选择处理人");
+                    throw new JokerBoxException("请选择处理人");
                 }
                 List<Integer> chooseUsers = nodeCandidateUsersChoose.get(userTask.getId());
                 List<Integer> chooseUsersFilterNull = chooseUsers.stream()
                         .filter(Objects::nonNull)
                         .toList();
                 if(CollectionUtils.isEmpty(chooseUsersFilterNull)){
-                    throw new IllegalStateException("请选择合适的处理人");
+                    throw new JokerBoxException("请选择合适的处理人");
                 }
                 if(ctx.type().equals(ApprovalTypeEnum.CHOOSE) && chooseUsersFilterNull.size() > 1){
-                    throw new IllegalStateException("请选择合适的处理人");
+                    throw new JokerBoxException("请选择合适的处理人");
                 }
                 LinkedHashSet<User> usersByCtxWithoutApplicant = candidateResolver.getUsersByCtxWithoutApplicant(ctx);
                 List<Integer>  candidateUsers = usersByCtxWithoutApplicant.stream().map(User::getId).toList();
                 boolean hasInvalid = chooseUsersFilterNull.stream()
                         .anyMatch(user -> !candidateUsers.contains(user));
                 if(hasInvalid){
-                    throw new IllegalStateException("请选择合适的处理人");
+                    throw new JokerBoxException("请选择合适的处理人");
                 }
                 variables.put(CHOOSE_PRE+userTask.getId(), chooseUsersFilterNull);
             }

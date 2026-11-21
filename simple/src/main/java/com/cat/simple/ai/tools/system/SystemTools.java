@@ -1,5 +1,6 @@
 package com.cat.simple.ai.tools.system;
 
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.system.service.UserService;
 import dev.langchain4j.invocation.InvocationParameters;
 import jakarta.annotation.Resource;
@@ -47,7 +48,7 @@ public class SystemTools {
 
         String userId = parameters.get("userId");
         if(!StringUtils.hasText(userId)){
-            throw new IllegalStateException("工具上下文中缺少 userId");
+            throw new JokerBoxException("工具上下文中缺少 userId");
         }
         return userService.getUserInfoVO(userId);
 

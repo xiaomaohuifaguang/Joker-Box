@@ -1,6 +1,7 @@
 package com.cat.simple.config.flowable.command;
 
 import com.cat.common.entity.process.ProcessInstance;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.flowable.core.CatTaskInfo;
 import jakarta.annotation.Resource;
 import org.flowable.engine.RuntimeService;
@@ -31,7 +32,7 @@ public class AutoPassTaskCommand extends ProcessCommand<CatTaskInfo> {
         org.flowable.engine.runtime.ProcessInstance processInstance = runtimeService.createProcessInstanceQuery().processInstanceId(task.getProcessInstanceId()).singleResult();
         this.instance = guard.selectByFlowableBusinessKey(processInstance.getBusinessKey());
         if (instance == null) {
-            throw new IllegalStateException("业务流程实例不存在, flowableProcessInstanceId: " + task.getProcessInstanceId());
+            throw new JokerBoxException("业务流程实例不存在, flowableProcessInstanceId: " + task.getProcessInstanceId());
         }
 //        guard.assertInstanceActive(instance.getId());
     }

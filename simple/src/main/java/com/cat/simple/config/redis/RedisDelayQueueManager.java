@@ -1,5 +1,6 @@
 package com.cat.simple.config.redis;
 
+import com.cat.common.exception.JokerBoxException;
 import com.cat.simple.config.redis.core.RedisDelayEnvelope;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
@@ -110,7 +111,7 @@ public class RedisDelayQueueManager {
             log.debug("[DelayQueue] 投递 queue={} key={} delay={}{}", queue, key, delay, unit);
         } catch (Exception e) {
             log.error("[DelayQueue] 投递失败 queue={} key={}", queue, key, e);
-            throw new IllegalStateException("延迟消息投递失败: " + key, e);
+            throw new JokerBoxException("延迟消息投递失败: " + key, e);
         }
     }
 

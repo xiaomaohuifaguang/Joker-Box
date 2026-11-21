@@ -2,11 +2,14 @@ package com.cat.simple.ai.controller;
 
 
 import com.cat.common.entity.HttpResult;
+import com.cat.common.entity.ai.channel.AiChannel;
 import com.cat.common.entity.ai.chat.ChatMessage;
 import com.cat.common.entity.ai.chat.ChatRequestParam;
 import com.cat.common.entity.ai.chat.ChatSession;
 import com.cat.common.entity.ai.model.AiModel;
+import com.cat.common.entity.ai.model.ModelType;
 import com.cat.common.entity.file.FileInfo;
+import com.cat.simple.ai.service.AiChannelService;
 import com.cat.simple.ai.service.AiChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,6 +32,9 @@ public class AiController {
 
     @Resource
     private AiChatService aiChatService;
+
+    @Resource
+    private AiChannelService aiChannelService;
 
 
     @Operation(summary = "聊天")
@@ -57,6 +63,12 @@ public class AiController {
     @RequestMapping(value = "/models", method = RequestMethod.POST)
     public HttpResult<List<AiModel>> chatModels() {
         return HttpResult.back(aiChatService.chatModels());
+    }
+
+    @Operation(summary = "渠道列表携带模型列表")
+    @RequestMapping(value = "/channelsWithModels",method = RequestMethod.POST)
+    public HttpResult<List<AiChannel>> channelsWithModels() {
+        return HttpResult.back(aiChannelService.listByType(ModelType.CHAT));
     }
 
 

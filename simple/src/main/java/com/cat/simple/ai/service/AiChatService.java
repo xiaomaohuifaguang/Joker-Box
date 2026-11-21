@@ -22,6 +22,7 @@ public interface AiChatService {
 
     List<AiModel> chatModels();
 
+
     FileInfo fileUpload(MultipartFile file) throws IOException;
 
     void fileDownload(String fileId) throws IOException;

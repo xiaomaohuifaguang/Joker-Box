@@ -162,4 +162,45 @@ public class CacheService {
         return hHasKey(cacheKeyEnum, "", field);
     }
 
+    public boolean lock(CacheKeyEnum cacheKeyEnum, String suffixStr, String value){
+        return lock(cacheKeyEnum.getPrefix() + suffixStr, value, cacheKeyEnum.getExpire());
+    }
+
+    public boolean unlock(CacheKeyEnum cacheKeyEnum, String suffixStr){
+        return unlock(cacheKeyEnum.getPrefix() + suffixStr);
+    }
+
+    public boolean isHeldBy(CacheKeyEnum cacheKeyEnum, String suffixStr, String value){
+        return isHeldBy(cacheKeyEnum.getPrefix() + suffixStr, value);
+    }
+
+
+    public boolean lock(CacheKeyEnum cacheKeyEnum, String value){
+        return lock(cacheKeyEnum.getPrefix(), value, cacheKeyEnum.getExpire());
+    }
+
+    public boolean unlock(CacheKeyEnum cacheKeyEnum){
+        return unlock(cacheKeyEnum.getPrefix());
+    }
+
+    public boolean isHeldBy(CacheKeyEnum cacheKeyEnum, String value){
+        return isHeldBy(cacheKeyEnum.getPrefix(), value);
+    }
+
+
+    public boolean lock(String key, String value, long delta){
+        return redisService.lock(makeKey(key), value, delta);
+    }
+
+    public boolean unlock(String key){
+        return redisService.unlock(makeKey(key));
+    }
+
+    public boolean isHeldBy(String key, String value){
+        return redisService.isHeldBy(makeKey(key), value);
+    }
+
+
+
+
 }

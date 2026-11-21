@@ -5,6 +5,7 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.ai.model.AiModel;
 import com.cat.common.entity.ai.model.AiModelPageParam;
 import com.cat.common.entity.ai.model.ModelType;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.crypto.AESUtils;
 import com.cat.simple.config.cache.CacheKeyEnum;
 import com.cat.simple.config.cache.CacheService;
@@ -37,7 +38,7 @@ public class AiModelServiceImpl implements AiModelService {
     public boolean add(AiModel aiModel){
         ModelType modelType = ModelType.of(aiModel.getType());
         if(Objects.isNull(modelType)){
-            throw new IllegalStateException("模型类型错误");
+            throw new JokerBoxException("模型类型错误");
         }
         String apiKey = aiModel.getApiKey();
         if(StringUtils.hasText(apiKey)){
@@ -52,7 +53,7 @@ public class AiModelServiceImpl implements AiModelService {
     public boolean delete(AiModel aiModel){
         int defaultCount = aiModelMapper.selectDefaultCountByModelId(aiModel.getId());
         if(defaultCount > 0){
-            throw new IllegalStateException("绑定默认模型请取消绑定后删除");
+            throw new JokerBoxException("绑定默认模型请取消绑定后删除");
         }
         return aiModelMapper.deleteById(aiModel) == 1;
     }
@@ -61,7 +62,7 @@ public class AiModelServiceImpl implements AiModelService {
     public boolean update(AiModel aiModel){
         ModelType modelType = ModelType.of(aiModel.getType());
         if(Objects.isNull(modelType)){
-            throw new IllegalStateException("模型类型错误");
+            throw new JokerBoxException("模型类型错误");
         }
 
         AiModel original = aiModelMapper.selectById(aiModel.getId());
@@ -110,6 +111,13 @@ public class AiModelServiceImpl implements AiModelService {
         }
         String decrypted = AESUtils.decrypt(aiModel.getApiKey(), aesKey);
         aiModel.setApiKey(decrypted);
+
+
+        String decryptedChannelApiKey = AESUtils.decrypt(aiModel.getChannelApiKey(), aesKey);
+        aiModel.setChannelApiKey(decryptedChannelApiKey);
+
+
+
         return aiModel;
     }
 
@@ -131,26 +139,26 @@ public class AiModelServiceImpl implements AiModelService {
     public AiModel defaultByType(String type) {
         ModelType modelType = ModelType.of(type);
         if(Objects.isNull(modelType)){
-            throw new IllegalStateException("模型类型错误");
+            throw new JokerBoxException("模型类型错误");
         }
         AiModel aiModel;
-        aiModel = cacheService.get( CacheKeyEnum.AI_MODEL_DEFAULT, type, AiModel.class);
-        if(Objects.isNull(aiModel)){
+//        aiModel = cacheService.get( CacheKeyEnum.AI_MODEL_DEFAULT, type, AiModel.class);
+//        if(Objects.isNull(aiModel)){
             aiModel = aiModelMapper.selectDefaultByType(modelType.getCode());
-            if(Objects.nonNull(aiModel)){
-                cacheService.set(CacheKeyEnum.AI_MODEL_DEFAULT,  type, aiModel);
-            }
-        }
+//            if(Objects.nonNull(aiModel)){
+//                cacheService.set(CacheKeyEnum.AI_MODEL_DEFAULT,  type, aiModel);
+//            }
+//        }
         return aiModel;
     }
 
     @Override
     public AiModel defaultByTypeDecryptApiKey(String type) {
         AiModel aiModel = defaultByType(type);
-        if(Objects.nonNull(aiModel) && StringUtils.hasText(aiModel.getApiKey())){
-            String decrypted = AESUtils.decrypt(aiModel.getApiKey(), aesKey);
-            aiModel.setApiKey(decrypted);
-        }
+        aiModel.setApiKey(AESUtils.decrypt(aiModel.getApiKey(), aesKey));
+        aiModel.setChannelApiKey(AESUtils.decrypt(aiModel.getChannelApiKey(), aesKey));
+
+
         return aiModel;
     }
 
@@ -158,12 +166,12 @@ public class AiModelServiceImpl implements AiModelService {
     public boolean setDefaultModel(String type, String modelId) {
         ModelType modelType = ModelType.of(type);
         if(Objects.isNull(modelType)){
-            throw new IllegalStateException("模型类型错误");
+            throw new JokerBoxException("模型类型错误");
         }
 
         AiModel aiModel = aiModelMapper.selectOne(new LambdaQueryWrapper<AiModel>().eq(AiModel::getId, modelId).eq(AiModel::getType, type));
         if(Objects.isNull(aiModel)){
-            throw new IllegalStateException("模型不存在");
+            throw new JokerBoxException("模型不存在");
         }
 
         int i = aiModelMapper.insertOrUpdateDefault(type, modelId);

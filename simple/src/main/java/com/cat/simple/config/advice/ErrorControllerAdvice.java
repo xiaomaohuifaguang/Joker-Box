@@ -2,6 +2,7 @@ package com.cat.simple.config.advice;
 
 import com.cat.common.entity.HttpResult;
 import com.cat.common.entity.HttpResultStatus;
+import com.cat.common.exception.JokerBoxException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +96,15 @@ public class ErrorControllerAdvice {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         return HttpResult.back(HttpResultStatus.FORBIDDEN);
     }
+
+    @ExceptionHandler(JokerBoxException.class)
+    public HttpResult<?> HandleJokerException(JokerBoxException e, HttpServletRequest request) {
+        // 业务异常是预期内的,用 warn 甚至 info,别打成 error 堆栈刷屏
+        log.warn("[{} {}] 业务异常: {}", request.getMethod(), request.getRequestURI(), e.getMessage());
+        return back(HttpResultStatus.ERROR, e.getMessage());
+    }
+
+
 
     /** 兜底：其余所有异常。不回原始 message，避免泄露内部信息 */
     @ExceptionHandler(Exception.class)

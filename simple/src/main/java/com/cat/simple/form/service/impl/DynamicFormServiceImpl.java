@@ -6,6 +6,7 @@ import com.cat.common.entity.Page;
 import com.cat.common.entity.PageParam;
 import com.cat.common.entity.auth.LoginUser;
 import com.cat.common.entity.dynamicForm.*;
+import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.UUIDUtils;
 import com.cat.common.utils.dynamicForm.LinkageValidator;
 import com.cat.simple.config.security.SecurityUtils;
@@ -308,7 +309,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
                         .eq(DynamicFormField::getFormId, formData.getFormId())
                         .eq(DynamicFormField::getVersion, version));
         if (CollectionUtils.isEmpty(fields)) {
-            throw new IllegalStateException("表单模板为空, 无法提交: " + formData.getFormId());
+            throw new JokerBoxException("表单模板为空, 无法提交: " + formData.getFormId());
         }
 
         List<DynamicFormLinkageRule> rules = loadLinkageRules(formData.getFormId(), version);
@@ -374,7 +375,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
             DynamicFormInstance dynamicFormInstance = dynamicFormInstanceMapper.selectOne(new LambdaQueryWrapper<DynamicFormInstance>()
                     .eq(DynamicFormInstance::getId, formData.getFormInstanceId()));
             if(Objects.isNull(dynamicFormInstance)){
-                throw new IllegalStateException("表单实例不存在");
+                throw new JokerBoxException("表单实例不存在");
             }
             formData.setVersion(dynamicFormInstance.getVersion());
             formData.setFormId(dynamicFormInstance.getFormId());
@@ -453,7 +454,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
 
 
         if ("DRAFT".equals(version)) {
-            throw new IllegalStateException("表单未发布, 无法提交: " + formId);
+            throw new JokerBoxException("表单未发布, 无法提交: " + formId);
         }
 
         return version;
@@ -576,7 +577,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     private String currentUserId() {
         LoginUser user = SecurityUtils.getLoginUser();
         if (user == null) {
-            throw new IllegalStateException("当前未登录");
+            throw new JokerBoxException("当前未登录");
         }
         return user.getUserId();
     }
@@ -584,7 +585,7 @@ public class DynamicFormServiceImpl implements DynamicFormService {
     private void checkOwner(DynamicForm form) {
         String userId = currentUserId();
         if (!userId.equals(form.getCreateBy())) {
-            throw new IllegalStateException("无权操作他人表单");
+            throw new JokerBoxException("无权操作他人表单");
         }
     }
 

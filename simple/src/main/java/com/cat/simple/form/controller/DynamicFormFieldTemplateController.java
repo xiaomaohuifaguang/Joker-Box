@@ -13,7 +13,7 @@ import com.cat.common.entity.dynamicForm.DynamicFormFieldTemplate;
 
 @RestController
 @RequestMapping("/dynamicFormFieldTemplate")
-@Tag(name = "cat_dynamic_form_field_template")
+@Tag(name = "字段模板管理")
 public class DynamicFormFieldTemplateController {
 
     @Resource
