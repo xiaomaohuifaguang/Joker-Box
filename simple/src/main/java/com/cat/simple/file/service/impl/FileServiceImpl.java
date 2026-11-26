@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cat.common.entity.*;
 import com.cat.common.entity.file.FileInfo;
+import com.cat.common.entity.file.FileTypeEnum;
 import com.cat.common.exception.JokerBoxException;
 import com.cat.common.utils.CatUUID;
 import com.cat.common.utils.IOUtils;
 import com.cat.common.utils.ServletUtils;
 import com.cat.common.utils.UUIDUtils;
-import com.cat.simple.config.minio.MinioService;
+import com.cat.simple.config.s3.S3Service;
 import com.cat.simple.config.security.SecurityUtils;
 import com.cat.simple.file.mapper.FileInfoMapper;
 import com.cat.simple.system.mapper.UserMapper;
@@ -40,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,14 +57,14 @@ import java.util.Objects;
 @Slf4j
 public class FileServiceImpl implements FileService {
 
-    @Value("${minio.bucketName}")
+    @Value("${s3.bucketName}")
     private String BUCKET_NAME;
 
     @Resource
     private FileInfoMapper fileInfoMapper;
 
     @Resource
-    private MinioService minioService;
+    private S3Service s3Service;
 
     @Resource
     private ResourceLoader resourceLoader;
@@ -82,7 +84,7 @@ public class FileServiceImpl implements FileService {
     @Override
     @Transactional
     public DTO<FileInfo> upload(MultipartFile uploadFile, String parentId) throws IOException {
-        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && notExistFolder(parentId)){
+        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && !existFolder(parentId)){
             return DTO.error("文件夹不存在",null);
         }
         String userId = Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId();
@@ -100,7 +102,7 @@ public class FileServiceImpl implements FileService {
         String realFilename = "/头像/"+ Objects.requireNonNull(SecurityUtils.getLoginUser()).getUserId();
         new Thread(()->{
             try {
-                minioService.putObject(BUCKET_NAME, realFilename, uploadFile.getInputStream(), uploadFile.getContentType());
+                s3Service.putObject(BUCKET_NAME, realFilename, uploadFile.getInputStream(), uploadFile.getContentType());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -116,7 +118,7 @@ public class FileServiceImpl implements FileService {
         String realFilename = "/头像/"+userId;
         new Thread(()->{
             try {
-                minioService.putObject(BUCKET_NAME, realFilename, uploadFile.getInputStream(), uploadFile.getContentType());
+                s3Service.putObject(BUCKET_NAME, realFilename, uploadFile.getInputStream(), uploadFile.getContentType());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -134,14 +136,15 @@ public class FileServiceImpl implements FileService {
         FileInfo fileInfo = new FileInfo()
                 .setId(CatUUID.randomUUID())
                 .setFilename(uploadFile.getOriginalFilename())
-                .setType(CONSTANTS.FILE_TYPE_1)
+                .setType(FileTypeEnum.file.name())
                 .setParentId(parentId)
                 .setSize(uploadFile.getSize())
                 .setContentType(uploadFile.getContentType())
-                .setUserId(Integer.parseInt(userId));
+                .setUserId(Integer.parseInt(userId))
+                .copyTime();
         new Thread(()->{
             try {
-                minioService.putObject(BUCKET_NAME, realPath+fileInfo.getId(), uploadFile.getInputStream(), uploadFile.getContentType());
+                s3Service.putObject(BUCKET_NAME, realPath+fileInfo.getId(), uploadFile.getInputStream(), uploadFile.getContentType());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -158,26 +161,29 @@ public class FileServiceImpl implements FileService {
         if(!StringUtils.hasText(fileName)){
             return DTO.error("文件夹名称不能为空",null);
         }
-        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && notExistFolder(parentId)){
+        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && !existFolder(parentId)){
             return DTO.error("父级文件夹不存在",null);
         }
-        Long fFolderCount = fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId()).eq(FileInfo::getFilename, fileName).eq(FileInfo::getType,CONSTANTS.FILE_TYPE_2));
+        Long fFolderCount = fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>()
+                .eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId())
+                .eq(FileInfo::getFilename, fileName).eq(FileInfo::getType,FileTypeEnum.folder.name()));
         if(fFolderCount > 0){
             return DTO.error("文件夹已存在，列表不好看",null);
         }
         FileInfo fileInfo = new FileInfo()
                 .setId(CatUUID.randomUUID())
                 .setFilename(fileName)
-                .setType(CONSTANTS.FILE_TYPE_2)
+                .setType(FileTypeEnum.folder.name())
                 .setParentId(parentId)
-                .setUserId(Integer.parseInt(SecurityUtils.getLoginUser().getUserId()));
+                .setUserId(Integer.parseInt(SecurityUtils.getLoginUser().getUserId()))
+                .copyTime();
         fileInfoMapper.insert(fileInfo);
         return DTO.success(fileInfo);
     }
 
     @Override
     public void download(String fileId) throws IOException {
-        download(fileId, UPLOAD_PATH+userMapper.selectById(fileInfoMapper.selectById(fileId).getUserId()).getIdStr()+"/");
+        download(fileId, UPLOAD_PATH+userMapper.selectById(fileInfoMapper.selectById(fileId).getUserId()).getId()+"/");
     }
 
     @Override
@@ -192,7 +198,7 @@ public class FileServiceImpl implements FileService {
             // 获取 Range 头部信息
             String rangeHeader = request.getHeader(HttpHeaders.RANGE);
             // 如果没有 Range 头部，则直接返回整个文件内容
-            inputStream = minioService.getObject(BUCKET_NAME, "/头像/"+userId);
+            inputStream = s3Service.getObject(BUCKET_NAME, "/头像/"+userId);
             OutputStream outputStream = response.getOutputStream();
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -235,7 +241,7 @@ public class FileServiceImpl implements FileService {
                     // 计算需要返回的字节数
                     long contentLength = end - start + 1;
                     response.setHeader(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength));
-                    inputStream = minioService.getObject(BUCKET_NAME, realPath+fileId, start, end - start + 1);
+                    inputStream = s3Service.getObject(BUCKET_NAME, realPath+fileId, start, end - start + 1);
                     // 写入输出流
                     OutputStream outputStream = response.getOutputStream();
                     byte[] buffer = new byte[1024];
@@ -246,7 +252,7 @@ public class FileServiceImpl implements FileService {
                     outputStream.flush();
                 } else {
                     // 如果没有 Range 头部，则直接返回整个文件内容
-                    inputStream = minioService.getObject(BUCKET_NAME, realPath+fileId);
+                    inputStream = s3Service.getObject(BUCKET_NAME, realPath+fileId);
                     OutputStream outputStream = response.getOutputStream();
                     byte[] buffer = new byte[1024];
                     int bytesRead;
@@ -272,14 +278,14 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public DTO<List<FileInfo>> list(String parentId) {
-        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && notExistFolder(parentId)){
+        if(!parentId.equals(CONSTANTS.FILE_ALL_PARENT) && !existFolder(parentId)){
             return DTO.error("父级文件夹不存在",null);
         }
         List<FileInfo> fileInfos = fileInfoMapper.selectList(new LambdaQueryWrapper<FileInfo>()
                 .eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId())
                 .eq(FileInfo::getParentId, parentId).orderByDesc(FileInfo::getType,FileInfo::getCreateTime)
                 .and(c->{
-                    c.eq(FileInfo::getType, CONSTANTS.FILE_TYPE_1).or().eq(FileInfo::getType, CONSTANTS.FILE_TYPE_2);
+                    c.eq(FileInfo::getType, FileTypeEnum.file.name()).or().eq(FileInfo::getType, FileTypeEnum.folder.name());
                 })
         );
         return DTO.back(fileInfos);
@@ -292,12 +298,12 @@ public class FileServiceImpl implements FileService {
         if(ObjectUtils.isEmpty(fileInfo)){
             return DTO.error("文件不存在");
         }
-        if(fileInfo.getType().equals(CONSTANTS.FILE_TYPE_2) && fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId()).eq(FileInfo::getParentId, fileInfo.getId())) > 0){
+        if(fileInfo.getType().equals(FileTypeEnum.folder.name()) && fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId()).eq(FileInfo::getParentId, fileInfo.getId())) > 0){
             return DTO.error("请先删除文件夹里内容");
         }
 
         fileInfoMapper.deleteById(fileId);
-        minioService.removeObject(BUCKET_NAME,UPLOAD_PATH+userMapper.selectById(fileInfo.getUserId()).getUsername()+"/"+fileInfo.getId());
+        s3Service.removeObject(BUCKET_NAME,UPLOAD_PATH+userMapper.selectById(fileInfo.getUserId()).getUsername()+"/"+fileInfo.getId());
         return DTO.success();
     }
 
@@ -311,7 +317,9 @@ public class FileServiceImpl implements FileService {
         if(ObjectUtils.isEmpty(fileInfo)){
             return DTO.error("文件不存在");
         }
-        fileInfoMapper.update(new LambdaUpdateWrapper<FileInfo>().set(FileInfo::getFilename,filename).eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId()).eq(FileInfo::getId, fileId));
+        fileInfoMapper.update(new LambdaUpdateWrapper<FileInfo>()
+                .set(FileInfo::getFilename,filename).set(FileInfo::getUpdateTime, LocalDateTime.now())
+                .eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId()).eq(FileInfo::getId, fileId));
         return DTO.success();
     }
 
@@ -341,13 +349,13 @@ public class FileServiceImpl implements FileService {
     @Override
     public String getAgentFileBase64(String fileId) {
         FileInfo fileInfo = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getId, fileId));
-        return minioService.getBase64(BUCKET_NAME, AGENT_FILE+fileInfo.getId());
+        return s3Service.getBase64(BUCKET_NAME, AGENT_FILE+fileInfo.getId());
     }
 
     @Override
     public String getAgentFileBase64WithoutMineType(String fileId) {
         FileInfo fileInfo = fileInfoMapper.selectOne(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getId, fileId));
-        return minioService.getBase64WithoutMimeType(BUCKET_NAME, AGENT_FILE+fileInfo.getId());
+        return s3Service.getBase64WithoutMimeType(BUCKET_NAME, AGENT_FILE+fileInfo.getId());
     }
 
     @Override
@@ -362,7 +370,7 @@ public class FileServiceImpl implements FileService {
         String path = LOCAL_FILE_TMP + UUIDUtils.randomUUID() + "/" + agentFileInfoById.getFilename();
 
         // 使用 try-with-resources 确保 InputStream 自动关闭
-        try (InputStream inputStream = minioService.getObject(BUCKET_NAME, AGENT_FILE + fileId)) {
+        try (InputStream inputStream = s3Service.getObject(BUCKET_NAME, AGENT_FILE + fileId)) {
 
             Path destinationPath = Paths.get(path);
 
@@ -388,9 +396,11 @@ public class FileServiceImpl implements FileService {
         return path;
     }
 
-    private boolean notExistFolder(String folderId){
-        Long parentFolderCount = fileInfoMapper.selectCount(new LambdaQueryWrapper<FileInfo>().eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId()).eq(FileInfo::getId, folderId).eq(FileInfo::getType,CONSTANTS.FILE_TYPE_2));
-        return parentFolderCount != 1;
+    private boolean existFolder(String folderId){
+        return fileInfoMapper.exists(new LambdaQueryWrapper<FileInfo>()
+                .eq(FileInfo::getUserId, SecurityUtils.getLoginUser().getUserId())
+                .eq(FileInfo::getId, folderId)
+        .eq(FileInfo::getType,FileTypeEnum.folder.name()));
     }
 
 }
